@@ -1,0 +1,2813 @@
+{
+  "schemaVersion": 1,
+  "label": "tools",
+  "message": "16 tools",
+  "color": "blue",
+  "toolCount": 16,
+  "tools": [
+    {
+      "name": "get_asset_preview",
+      "title": "Get Asset Preview",
+      "module": "Assets",
+      "description": "Get inline image previews for digital assets so the user can see them. Use when the user wants to SEE / VIEW / DISPLAY / RENDER specific assets or images. Accepts a list of asset IDs \u2014 typically obtained from query_asset (or any other tool that returns asset IDs). Returns a JSON object with a \u0060previews\u0060 array of { assetId, url } \u2014 render each as ![assetId](url) in your reply so the user can see the images. URLs are short-lived presigned links. Do NOT use for searching, listing, or counting assets \u2014 use query_asset for that.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "assetIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Asset IDs to fetch preview images for. Pass as a JSON array of strings, e.g. [\u0022id1\u0022,\u0022id2\u0022]. Get IDs from query_asset or any tool that returns assetIds."
+        }
+      ],
+      "exampleInput": "{ \u0022assetIds\u0022: [\u0022a1b2c3\u0022, \u0022d4e5f6\u0022] }",
+      "exampleOutput": "{ \u0022previews\u0022: [ { \u0022assetId\u0022: \u0022a1b2c3\u0022, \u0022url\u0022: \u0022https://cdn.../a1b2c3.jpg?sig=...\u0022, \u0022fileName\u0022: \u0022shot_001.jpg\u0022 } ], \u0022missing\u0022: [], \u0022truncated\u0022: false }",
+      "knownLimitations": "Hard cap of 200 asset IDs per call (extras are dropped and \u0060truncated: true\u0060 is returned). Preview URLs are short-lived presigned links that expire. Returns images only \u2014 use query_asset to search/list/count."
+    },
+    {
+      "name": "get_talent_crew_preview",
+      "title": "Get Talent \u0026 Crew Preview",
+      "module": "Talent \u0026 Crew",
+      "description": "Inline avatar GALLERY widget for a list of talent crew IDs. **TRIGGER STRICTLY when user prompt is purely visual** \u2014 e.g. \u0027show me their faces\u0027, \u0027what do they look like\u0027, \u0027photo gallery of these models\u0027. **DO NOT TRIGGER**:   \u2022 after \u0060query_talent_crew\u0060 (its table widget already shows Photo column)   \u2022 after \u0060query_talent_crew_schedule\u0060 (its widget renders avatars inline post-improvements-v1)   \u2022 for \u0027show profile\u0027 / \u0027who is X\u0027 / \u0027list talents\u0027 (use \u0060query_talent_crew\u0060) **Best fit**: standalone visual question without data context. Returns \u0060previews\u0060 array of { talentCrewId, displayName, avatarUrl, deepLinkUrl }. Widget owns visual \u2014 text response = ONE sentence (\u0027Showing N avatars.\u0027).",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "talentCrewIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Talent crew IDs to fetch avatar previews for. Pass as a JSON array of strings, e.g. [\u0022id1\u0022,\u0022id2\u0022]."
+        }
+      ],
+      "exampleInput": "{ \u0022talentCrewIds\u0022: [\u0022t-101\u0022, \u0022t-102\u0022] }",
+      "exampleOutput": "{ \u0022previews\u0022: [ { \u0022talentCrewId\u0022: \u0022t-101\u0022, \u0022name\u0022: \u0022Jane Doe\u0022, \u0022avatarUrl\u0022: \u0022https://cdn.../t-101.jpg?sig=...\u0022 } ], \u0022missing\u0022: [] }",
+      "knownLimitations": "Visual-only avatar gallery. Do NOT chain after query_talent_crew or query_talent_crew_schedule \u2014 those already render avatars. Avatars are resolved in chunks of 50; talent without an avatarId are omitted."
+    },
+    {
+      "name": "query_asset",
+      "title": "Query Asset",
+      "module": "Assets",
+      "description": "List or count/aggregate digital asset metadata (id, name, step, dates) \u2014 does NOT return preview images. Use when the user wants to FIND, LIST, or COUNT assets/photos/shots/deliverables. Filter by job, product, production type, step, workspace, photographer, stylist, model, star rating, time range. Drill-down: pass workUnitIds/jobIds/productIds from upstream queries. When groupBy params set, returns counts/aggregations instead of list. Default: latest step only when step not specified. Use names for filters (production type, step). IDs accepted as fallback. If the user wants to SEE/VIEW/RENDER the images, follow up with the get_asset_preview tool using the returned asset IDs.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "jobCode",
+          "type": "string",
+          "required": false,
+          "description": "Job code"
+        },
+        {
+          "name": "jobName",
+          "type": "string",
+          "required": false,
+          "description": "Job name"
+        },
+        {
+          "name": "productCode",
+          "type": "string",
+          "required": false,
+          "description": "Product code (exact)"
+        },
+        {
+          "name": "productName",
+          "type": "string",
+          "required": false,
+          "description": "Product name (exact)"
+        },
+        {
+          "name": "product",
+          "type": "string",
+          "required": false,
+          "description": "Search product by code or name (OR)"
+        },
+        {
+          "name": "productionType",
+          "type": "string",
+          "required": false,
+          "description": "Production type name (e.g. Flatlay, On-Model) or ID"
+        },
+        {
+          "name": "step",
+          "type": "string",
+          "required": false,
+          "description": "Step name: Photography, InternalPostProduction, AssetDelivery, etc."
+        },
+        {
+          "name": "dateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Task finished date from (ISO)"
+        },
+        {
+          "name": "dateTo",
+          "type": "string",
+          "required": false,
+          "description": "Task finished date to (ISO)"
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client name or ID"
+        },
+        {
+          "name": "photographer",
+          "type": "string",
+          "required": false,
+          "description": "Photographer name or user ID"
+        },
+        {
+          "name": "videographer",
+          "type": "string",
+          "required": false,
+          "description": "Videographer name or user ID"
+        },
+        {
+          "name": "stylist",
+          "type": "string",
+          "required": false,
+          "description": "Stylist name or user ID"
+        },
+        {
+          "name": "model",
+          "type": "string",
+          "required": false,
+          "description": "Model name or user ID"
+        },
+        {
+          "name": "artDirector",
+          "type": "string",
+          "required": false,
+          "description": "Art director name or user ID"
+        },
+        {
+          "name": "hairAndMakeup",
+          "type": "string",
+          "required": false,
+          "description": "Hair \u0026 Makeup artist name or user ID"
+        },
+        {
+          "name": "assistant",
+          "type": "string",
+          "required": false,
+          "description": "Assistant on set name or user ID"
+        },
+        {
+          "name": "externalPostVendor",
+          "type": "string",
+          "required": false,
+          "description": "External post-production vendor name or ID"
+        },
+        {
+          "name": "starRating",
+          "type": "int?",
+          "required": false,
+          "description": "Star rating (0-5). 0 = no rating assigned"
+        },
+        {
+          "name": "isVariant",
+          "type": "bool?",
+          "required": false,
+          "description": "Only variant assets"
+        },
+        {
+          "name": "heroOnly",
+          "type": "bool?",
+          "required": false,
+          "description": "Only hero/primary assets"
+        },
+        {
+          "name": "isAlternative",
+          "type": "bool?",
+          "required": false,
+          "description": "Only alternative assets"
+        },
+        {
+          "name": "isLatestStep",
+          "type": "bool?",
+          "required": false,
+          "description": "Latest step only (default true when step omitted)"
+        },
+        {
+          "name": "workUnitIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter by work-unit (production) GUIDs. JSON array. Drill-down from query_ecomm_production."
+        },
+        {
+          "name": "jobIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter by job GUIDs. JSON array. Drill-down from query_ecomm_job."
+        },
+        {
+          "name": "productIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter by product GUIDs. JSON array. Drill-down from query_ecomm_product_request."
+        },
+        {
+          "name": "editorialProjectIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter assets to one or more Editorial Projects. Pass as JSON array of projectId GUID strings. Drill-down: pass projectIds returned from query_editorial_project. Editorial-asset only \u2014 Asset doc carries editorialProjectId denormalized when contentCreationTypeId=2."
+        },
+        {
+          "name": "editorialDeliverableName",
+          "type": "string",
+          "required": false,
+          "description": "Filter editorial assets by Editorial Deliverable name. Exact match, lowercased. Matches assets that are EITHER assigned to a deliverable with this name (pre-finalize: nested editorialAssignedToDeliverables) OR whose parent workUnit finalizes to a deliverable with this name (post-finalize: has_parent.editorialDeliverableOfFinalizeWorkflow). Editorial-asset only."
+        },
+        {
+          "name": "editorialDeliverableCode",
+          "type": "string",
+          "required": false,
+          "description": "Filter editorial assets by Editorial Deliverable code (e.g. \u0027ED105426CF\u0027). Exact match, lowercased. Same OR-of-paths semantics as editorialDeliverableName."
+        },
+        {
+          "name": "editorialDeliverableOutputName",
+          "type": "string",
+          "required": false,
+          "description": "Filter editorial assets by Editorial Deliverable output name (publishing/output label). Exact match, lowercased. Same OR-of-paths semantics as editorialDeliverableName."
+        },
+        {
+          "name": "editorialDeliverableDueDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Filter editorial assets by Editorial Deliverable due-date \u2014 earliest. ISO date or epoch ms. Pair with editorialDeliverableDueDateTo. Same OR-of-paths semantics as editorialDeliverableName."
+        },
+        {
+          "name": "editorialDeliverableDueDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Filter editorial assets by Editorial Deliverable due-date \u2014 latest. ISO date or epoch ms. Inclusive (\u0060lte\u0060). Same OR-of-paths semantics as editorialDeliverableName."
+        },
+        {
+          "name": "editorialDeliverableCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Deliverable custom property name (e.g. \u0027season\u0027) or its GUID. Pair with editorialDeliverableCustomPropertyValue. Resolved via masterDataCache.GetEditorialDeliverableCustomPropertiesAsync (objectType=101). Same OR-of-paths semantics."
+        },
+        {
+          "name": "editorialDeliverableCustomPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Value to match for editorialDeliverableCustomPropertyName. Required when name is set. Exact match, lowercased."
+        },
+        {
+          "name": "groupByStep",
+          "type": "bool",
+          "required": false,
+          "description": "Group by step \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByPeriod",
+          "type": "string",
+          "required": false,
+          "description": "Group by period: hour, day, week, month \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByProductionType",
+          "type": "bool",
+          "required": false,
+          "description": "Group by production type \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByStarRating",
+          "type": "bool",
+          "required": false,
+          "description": "Group by star rating \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. Use for any \u0027per workspace\u0027, \u0027per client\u0027, \u0027by workspace\u0027 question."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (ignored in aggregation)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page 0-based (ignored in aggregation)"
+        }
+      ],
+      "exampleInput": "{ \u0022step\u0022: \u0022Photography\u0022, \u0022starRating\u0022: 5, \u0022dateFrom\u0022: \u00222026-06-01\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 87, \u0022hits\u0022: [ { \u0022assetId\u0022: \u0022a1b2...\u0022, \u0022name\u0022: \u0022shot_001.jpg\u0022, \u0022step\u0022: \u0022Photography\u0022, \u0022starRating\u0022: 5 } ] }",
+      "knownLimitations": "Returns metadata only \u2014 no image URLs. To display images, pass these assetIds to get_asset_preview. When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list."
+    },
+    {
+      "name": "query_ecomm_job",
+      "title": "Query E-Comm Job",
+      "module": "Jobs",
+      "description": "Search production jobs \u2014 containers that group products for production. Use this to answer: what jobs exist, job status, deadline, how many jobs by status. Filter by code or name (use \u0027job\u0027 param for OR search), status, workspace, deadline range. Pass jobIds to look up specific jobs by ID (e.g. from detail page context). Supports custom property filters via customPropertyName \u002B customPropertyValue. When groupBy params set, returns counts/aggregations instead of list.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "jobIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Job GUIDs \u2014 look up specific jobs by ID. JSON array or single ID. Use when navigating from a Job detail page."
+        },
+        {
+          "name": "job",
+          "type": "string",
+          "required": false,
+          "description": "Search job by code or name (OR)"
+        },
+        {
+          "name": "jobCode",
+          "type": "string",
+          "required": false,
+          "description": "Job code (exact)"
+        },
+        {
+          "name": "jobName",
+          "type": "string",
+          "required": false,
+          "description": "Job name (exact)"
+        },
+        {
+          "name": "jobStatusName",
+          "type": "string",
+          "required": false,
+          "description": "Job status name"
+        },
+        {
+          "name": "jobStatusId",
+          "type": "int?",
+          "required": false,
+          "description": "Job status ID (if known)"
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client name or ID"
+        },
+        {
+          "name": "deadlineFrom",
+          "type": "string",
+          "required": false,
+          "description": "Deadline from (epoch ms or ISO)"
+        },
+        {
+          "name": "deadlineTo",
+          "type": "string",
+          "required": false,
+          "description": "Deadline to (epoch ms or ISO)"
+        },
+        {
+          "name": "customPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Custom property name (resolved to GUID) or GUID directly"
+        },
+        {
+          "name": "customPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Custom property value to match (exact)"
+        },
+        {
+          "name": "groupByStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by status \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. Use for any \u0027per workspace\u0027, \u0027per client\u0027, \u0027by workspace\u0027 question."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (ignored in aggregation)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page (0-based, ignored in aggregation)"
+        }
+      ],
+      "exampleInput": "{ \u0022jobStatusName\u0022: \u0022In Production\u0022, \u0022deadlineTo\u0022: \u00222026-06-30\u0022, \u0022pageSize\u0022: 5 }",
+      "exampleOutput": "{ \u0022total\u0022: 12, \u0022hits\u0022: [ { \u0022jobId\u0022: \u0022f14e694e-...\u0022, \u0022jobCode\u0022: \u0022JOB1042\u0022, \u0022jobName\u0022: \u0022SS26 Campaign\u0022, \u0022jobStatusName\u0022: \u0022In Production\u0022, \u0022deadline\u0022: \u00222026-06-28T00:00:00Z\u0022 } ] }",
+      "knownLimitations": "Returns job containers only \u2014 not the products inside them (use query_ecomm_product_request for those)."
+    },
+    {
+      "name": "query_ecomm_product_request",
+      "title": "Query E-Comm Product Request",
+      "module": "Product Hub",
+      "description": "Search products in the catalog. Filter by code, name, job, category, brand, color, style code, vendor material code, status, workspace, product state (Active/Inactive), sample check-in status, sample code, sample location, sample check-in date, pool first-check-in date, product created date, container code, product tagging, custom property. Status: Backlog, Todo, InProgress, Done. Use product param to search both productCode and productName (OR). Pass productIds to look up specific products by ID (e.g. from detail page context). When any groupBy* param is set, returns aggregation buckets instead of a list. For any \u0027per workspace\u0027 or \u0027per client\u0027 breakdown, use groupByWorkspace=true \u2014 do not try to derive workspace names from list results.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "productIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Product GUIDs \u2014 look up specific products by ID. JSON array or single ID. Use when navigating from a Product detail page."
+        },
+        {
+          "name": "productCode",
+          "type": "string",
+          "required": false,
+          "description": "Product code (exact)"
+        },
+        {
+          "name": "productName",
+          "type": "string",
+          "required": false,
+          "description": "Product name (exact)"
+        },
+        {
+          "name": "product",
+          "type": "string",
+          "required": false,
+          "description": "Search product by code or name (OR)"
+        },
+        {
+          "name": "jobIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Job GUIDs \u2014 filter products belonging to specific jobs. JSON array or single ID. Drill-down from query_ecomm_job or Job detail page context."
+        },
+        {
+          "name": "jobCode",
+          "type": "string",
+          "required": false,
+          "description": "Job code"
+        },
+        {
+          "name": "jobName",
+          "type": "string",
+          "required": false,
+          "description": "Job name"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "required": false,
+          "description": "Category"
+        },
+        {
+          "name": "brand",
+          "type": "string",
+          "required": false,
+          "description": "Brand"
+        },
+        {
+          "name": "color",
+          "type": "string",
+          "required": false,
+          "description": "Color"
+        },
+        {
+          "name": "styleCode",
+          "type": "string",
+          "required": false,
+          "description": "Style code"
+        },
+        {
+          "name": "vendorMaterialCode",
+          "type": "string",
+          "required": false,
+          "description": "Vendor material code"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "required": false,
+          "description": "Status: Backlog, Todo, InProgress, Done"
+        },
+        {
+          "name": "statusId",
+          "type": "int?",
+          "required": false,
+          "description": "Status ID (if known)"
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client name or ID"
+        },
+        {
+          "name": "customPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Custom property name (resolved to GUID) or GUID directly"
+        },
+        {
+          "name": "customPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Custom property value to match (exact)"
+        },
+        {
+          "name": "editorialProjectIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Editorial Project \u2014 projects this product is associated with. Pass projectId GUID array (drill-down: pass projectIds returned from query_editorial_project). Multi-value \u2014 product matches if ANY of its associated projects are in the list."
+        },
+        {
+          "name": "productState",
+          "type": "string",
+          "required": false,
+          "description": "Product state: \u0027Active\u0027 (in production) or \u0027Inactive\u0027 (ignored/excluded)."
+        },
+        {
+          "name": "sampleCheckInStatus",
+          "type": "string",
+          "required": false,
+          "description": "Sample check-in status: \u0027CheckedIn\u0027 (at least one sample at studio) or \u0027NotCheckedIn\u0027 (no sample arrived yet)."
+        },
+        {
+          "name": "sampleCode",
+          "type": "string",
+          "required": false,
+          "description": "Sample code in the product\u0027s pool (exact match)."
+        },
+        {
+          "name": "sampleLocation",
+          "type": "string",
+          "required": false,
+          "description": "Location/sub-location where the product\u0027s samples are stored. Name or ID."
+        },
+        {
+          "name": "sampleCheckedInDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest sample check-in date. ISO date or epoch ms."
+        },
+        {
+          "name": "sampleCheckedInDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest sample check-in date. Pair with sampleCheckedInDateFrom."
+        },
+        {
+          "name": "containerCode",
+          "type": "string",
+          "required": false,
+          "description": "Container/box code where the product\u0027s sample is stored."
+        },
+        {
+          "name": "poolFirstCheckedInDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest pool first-check-in date \u2014 when the first sample ever arrived for this product. ISO date or epoch ms."
+        },
+        {
+          "name": "poolFirstCheckedInDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest pool first-check-in date. Pair with poolFirstCheckedInDateFrom."
+        },
+        {
+          "name": "productCreatedDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest product creation date. ISO date or epoch ms."
+        },
+        {
+          "name": "productCreatedDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest product creation date."
+        },
+        {
+          "name": "isProductTagged",
+          "type": "bool?",
+          "required": false,
+          "description": "Whether the product has been tagged in assets."
+        },
+        {
+          "name": "groupByStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by status \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByCategory",
+          "type": "bool",
+          "required": false,
+          "description": "Group by category \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByBrand",
+          "type": "bool",
+          "required": false,
+          "description": "Group by brand \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByJob",
+          "type": "bool",
+          "required": false,
+          "description": "Group by job \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByColor",
+          "type": "bool",
+          "required": false,
+          "description": "Group by color \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. MUST be set to true for any \u0027per workspace\u0027, \u0027per client\u0027, \u0027by workspace\u0027, \u0027breakdown by client\u0027 question. Returns counts by workspace name. Do NOT attempt to group by workspace manually from list results \u2014 use this param to get accurate server-side aggregation."
+        },
+        {
+          "name": "groupByCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of customPropertyName \u2014 aggregation mode. Requires customPropertyName to be set."
+        },
+        {
+          "name": "groupByPeriod",
+          "type": "string",
+          "required": false,
+          "description": "Time-bucket aggregation: hour, day, week, or month. Pair with groupByPeriodField to choose which date drives the histogram."
+        },
+        {
+          "name": "groupByPeriodField",
+          "type": "string",
+          "required": false,
+          "description": "Date field for time-bucket histogram. Options: productCreated (default), poolFirstCheckedIn. Other pool date fields available for future use."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (ignored in aggregation)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page (0-based, ignored in aggregation)"
+        }
+      ],
+      "exampleInput": "{ \u0022category\u0022: \u0022Footwear\u0022, \u0022status\u0022: \u0022In Production\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 34, \u0022hits\u0022: [ { \u0022productId\u0022: \u002200010664-...\u0022, \u0022productCode\u0022: \u0022SKU-9001\u0022, \u0022productName\u0022: \u0022Runner Low\u0022, \u0022category\u0022: \u0022Footwear\u0022, \u0022status\u0022: \u0022In Production\u0022 } ] }",
+      "knownLimitations": "Searches the product catalog \u2014 not physical samples (use query_sample) and not work-unit progress (use query_ecomm_production)."
+    },
+    {
+      "name": "query_ecomm_production",
+      "title": "Query E-Comm Production",
+      "module": "Production",
+      "description": "Search productions (work units) \u2014 the central entity tracking a product through the workflow. Use this to answer: what step is a production on, who\u0027s working on it, how many are done/in-progress, production counts by photographer/vendor/location/type, and turnaround times. Status: New, Todo, InProgress, Done. Step names: Photography, InternalPostProduction, FinalSelection, etc. Filter by job, product, sample, production type, vendor team, post-production vendor, photographer, stylist, model, art director, videographer, digital-processing user, location, workspace. **Job lookup param choice \u2014 strict per user phrasing:** caller says \u0027job code JOB-123\u0027 \u2192 \u0060jobCode\u0060; \u0027job named Spring Campaign\u0027 \u2192 \u0060jobName\u0060; \u0027job X\u0027 without saying code-vs-name \u2192 \u0060job\u0060 (ambiguous, matches code OR name). Same pattern for product (\u0060productCode\u0060/\u0060productName\u0060/\u0060product\u0060). **Codes are EXACT (case-sensitive); names are case-insensitive.** **Sample lookup**: \u0060sample\u0060 is ambiguous \u2014 matches sample UUID OR sampleCode (exact, case-sensitive) OR cfBarcode (exact, case-sensitive) OR sampleName (case-insensitive). Filter by planning session: \u0060session\u0060 (ambiguous session UUID, code, or name partial \u2014 matches against planningSessionId OR planningSession.sessionCode OR planningSession.sessionName). Drill-down: pass jobIds/productIds/planningSessionIds from upstream queries. Use human-readable names for all filters (resolved to IDs automatically). Returns: current step \u0026 status, production type, products, job, samples (codes/names/cfBarcodes/sizes/total/checkedIn), team on set (all 8 roles), vendors, location, style guide, outfit (incl. styling item codes), planning session (id/name/code/start/end), timing. When groupBy params set, returns counts/aggregations instead of list.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "status",
+          "type": "string",
+          "required": false,
+          "description": "Status: New, Todo, InProgress, Done"
+        },
+        {
+          "name": "step",
+          "type": "string",
+          "required": false,
+          "description": "Current step name"
+        },
+        {
+          "name": "stepStatus",
+          "type": "string",
+          "required": false,
+          "description": "Current step status"
+        },
+        {
+          "name": "jobCode",
+          "type": "string",
+          "required": false,
+          "description": "Job code \u2014 EXACT match (case-sensitive). Use when caller explicitly says the job CODE."
+        },
+        {
+          "name": "jobName",
+          "type": "string",
+          "required": false,
+          "description": "Job name \u2014 exact match, case-insensitive. Use when caller explicitly says the job NAME."
+        },
+        {
+          "name": "job",
+          "type": "string",
+          "required": false,
+          "description": "Job identifier when the caller said \u0027job X\u0027 WITHOUT specifying code-vs-name \u2014 matches jobCode (exact, case-sensitive) OR jobName (case-insensitive)."
+        },
+        {
+          "name": "productCode",
+          "type": "string",
+          "required": false,
+          "description": "Product code \u2014 EXACT match (case-sensitive). Use when caller explicitly says the product CODE."
+        },
+        {
+          "name": "productName",
+          "type": "string",
+          "required": false,
+          "description": "Product name \u2014 exact match, case-insensitive. Use when caller explicitly says the product NAME."
+        },
+        {
+          "name": "product",
+          "type": "string",
+          "required": false,
+          "description": "Product identifier when the caller said \u0027product X\u0027 WITHOUT specifying code-vs-name \u2014 matches productCode (exact, case-sensitive) OR productName (case-insensitive)."
+        },
+        {
+          "name": "sample",
+          "type": "string",
+          "required": false,
+          "description": "Sample identifier \u2014 ambiguous match. UUID matches \u0060samples.sampleIds\u0060; sampleCode and cfBarcode match EXACT (case-sensitive); sampleName matches case-insensitive."
+        },
+        {
+          "name": "productionType",
+          "type": "string",
+          "required": false,
+          "description": "Production type name or ID"
+        },
+        {
+          "name": "vendorTeam",
+          "type": "string",
+          "required": false,
+          "description": "Vendor team name or ID"
+        },
+        {
+          "name": "postProductionVendor",
+          "type": "string",
+          "required": false,
+          "description": "Post-production vendor name or ID"
+        },
+        {
+          "name": "photographer",
+          "type": "string",
+          "required": false,
+          "description": "Photographer name or user ID"
+        },
+        {
+          "name": "stylist",
+          "type": "string",
+          "required": false,
+          "description": "Stylist name or user ID"
+        },
+        {
+          "name": "model",
+          "type": "string",
+          "required": false,
+          "description": "Model name or user ID"
+        },
+        {
+          "name": "artDirector",
+          "type": "string",
+          "required": false,
+          "description": "Art director name or user ID"
+        },
+        {
+          "name": "hairAndMakeup",
+          "type": "string",
+          "required": false,
+          "description": "Hair \u0026 makeup artist name or user ID"
+        },
+        {
+          "name": "assistant",
+          "type": "string",
+          "required": false,
+          "description": "Assistant name or user ID"
+        },
+        {
+          "name": "videographer",
+          "type": "string",
+          "required": false,
+          "description": "Videographer name or user ID"
+        },
+        {
+          "name": "digitalProcessing",
+          "type": "string",
+          "required": false,
+          "description": "Digital-processing operator name or user ID"
+        },
+        {
+          "name": "session",
+          "type": "string",
+          "required": false,
+          "description": "Planning session \u2014 UUID, code (e.g. \u0027SES137123CF\u0027), or name partial. Matches planningSessionId OR planningSession.sessionCode OR planningSession.sessionName (wildcard contains, case-insensitive)."
+        },
+        {
+          "name": "location",
+          "type": "string",
+          "required": false,
+          "description": "Location/set name or ID"
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client name or ID"
+        },
+        {
+          "name": "styleGuide",
+          "type": "string",
+          "required": false,
+          "description": "Style guide name or ID"
+        },
+        {
+          "name": "outfitCode",
+          "type": "string",
+          "required": false,
+          "description": "Outfit code (exact match)"
+        },
+        {
+          "name": "jobIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter by job GUIDs from upstream query_ecomm_job. JSON array or single ID."
+        },
+        {
+          "name": "productIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter by product GUIDs from upstream query_ecomm_product_request. JSON array or single ID."
+        },
+        {
+          "name": "planningSessionIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter by planning session GUIDs from upstream query_planning. JSON array or single ID."
+        },
+        {
+          "name": "dateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Finished date from (ISO)"
+        },
+        {
+          "name": "dateTo",
+          "type": "string",
+          "required": false,
+          "description": "Finished date to (ISO)"
+        },
+        {
+          "name": "groupByStep",
+          "type": "bool",
+          "required": false,
+          "description": "Group by current step \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by status \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByProductionType",
+          "type": "bool",
+          "required": false,
+          "description": "Group by production type \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByLocation",
+          "type": "bool",
+          "required": false,
+          "description": "Group by location \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByVendorTeam",
+          "type": "bool",
+          "required": false,
+          "description": "Group by vendor team \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByPostProductionVendor",
+          "type": "bool",
+          "required": false,
+          "description": "Group by post-production vendor \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByPhotographer",
+          "type": "bool",
+          "required": false,
+          "description": "Group by photographer \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByPeriod",
+          "type": "string",
+          "required": false,
+          "description": "Group by period: hour, day, week, month \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. Use for any \u0027per workspace\u0027, \u0027per client\u0027, \u0027by workspace\u0027 question."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (ignored in aggregation)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page (0-based, ignored in aggregation)"
+        }
+      ],
+      "exampleInput": "{ \u0022step\u0022: \u0022Photography\u0022, \u0022status\u0022: \u0022InProgress\u0022, \u0022photographer\u0022: \u0022John Smith\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 18, \u0022hits\u0022: [ { \u0022workUnitId\u0022: \u0022c1...\u0022, \u0022productCode\u0022: \u0022SKU-9001\u0022, \u0022step\u0022: \u0022Photography\u0022, \u0022status\u0022: \u0022InProgress\u0022, \u0022photographer\u0022: \u0022John Smith\u0022 } ] }",
+      "knownLimitations": "The central work-unit entity. When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list."
+    },
+    {
+      "name": "query_editorial_deliverable",
+      "title": "Query Editorial Deliverable",
+      "module": "Editorial",
+      "description": "Search Editorial Deliverables \u2014 the per-output unit inside an Editorial Project (each Deliverable is one delivery row, e.g. \u0027AEM Deliverable 1\u0027, \u0027D 20230627 3\u0027). Does NOT return sample records \u2014 to list or find specific samples, use query_sample. Use to answer: which deliverables exist for a project/campaign, what step a deliverable is at, who owns it, what\u0027s overdue, how many at each step, deliverable counts by status/project/workspace/period. Filter by code, name, output-name, owner (full name), project (code/name/id), workspace, current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status (Backlog/Todo/InProgress/Done/Failed/Rejected), deliverable status, due-date range, content readiness flags (boolean only), asset-workflow status, finalization status, preset, custom property. Pass deliverableIds to look up specific deliverables by ID (e.g. from detail page context). When any groupBy* param is set, returns aggregation buckets instead of a list. For any \u0027per workspace\u0027 or \u0027per client\u0027 breakdown, use groupByWorkspace=true \u2014 do not try to derive workspace names from list results.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "deliverableIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Editorial Deliverable GUIDs \u2014 look up specific deliverables by ID. JSON array or single ID. Use when navigating from an Editorial Deliverable detail page."
+        },
+        {
+          "name": "deliverableCode",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Deliverable code, e.g. \u0027ED151009CF\u0027. Exact match."
+        },
+        {
+          "name": "deliverableName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Deliverable name (free-text label set by user, e.g. \u0027AEM Deliverable 2\u0027). Exact match."
+        },
+        {
+          "name": "deliverableOutputName",
+          "type": "string",
+          "required": false,
+          "description": "Output name attached to the deliverable (the customer-facing/publishing label, distinct from internal deliverable name \u2014 e.g. \u0027D 20230627 3\u0027). Exact match."
+        },
+        {
+          "name": "deliverableStatus",
+          "type": "string",
+          "required": false,
+          "description": "Deliverable lifecycle status: Backlog, Todo, InProgress, Done."
+        },
+        {
+          "name": "deliverableStatusId",
+          "type": "int?",
+          "required": false,
+          "description": "Deliverable status as raw integer ID (1000 Backlog, 2000 Todo, 3000 InProgress, 9000 Done). Prefer deliverableStatus (name). Takes precedence over deliverableStatus when both supplied."
+        },
+        {
+          "name": "currentStep",
+          "type": "string",
+          "required": false,
+          "description": "Workflow step the deliverable is currently at. Canonical EnumStep names: Photography (a.k.a. Capture), FinalSelection, ExternalPostProduction (a.k.a. External Post), ExternalPostProductionQc, InternalPostProduction (a.k.a. Internal Post), InternalPostProductionQc, PostReview, AssetDelivery. Resolved via StepNames.FromName."
+        },
+        {
+          "name": "currentStepId",
+          "type": "int?",
+          "required": false,
+          "description": "Workflow step as raw integer stepId. Prefer currentStep (name). Takes precedence over currentStep when both supplied."
+        },
+        {
+          "name": "currentStepStatus",
+          "type": "string",
+          "required": false,
+          "description": "Status WITHIN the current step: Backlog, Todo, InProgress, Done, Failed (7000), Rejected (5000), QCRejected (5100), Bypassed (8000)."
+        },
+        {
+          "name": "currentStepStatusId",
+          "type": "int?",
+          "required": false,
+          "description": "Step status as raw integer ID (1000 Backlog / 2000 Todo / 3000 InProgress / 9000 Done / 7000 Failed / 5000 Rejected / 5100 QCRejected / 8000 Bypassed). Prefer currentStepStatus (name). Takes precedence over currentStepStatus when both supplied."
+        },
+        {
+          "name": "deliverableDueDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest deliverable deadline. ISO date or epoch ms."
+        },
+        {
+          "name": "deliverableDueDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest deliverable deadline. ISO date or epoch ms. Exclusive (\u0060lt\u0060). For overdue: set to now and combine with deliverableStatus != Done."
+        },
+        {
+          "name": "ownerName",
+          "type": "string",
+          "required": false,
+          "description": "Deliverable Owner full name (or GUID) \u2014 the user who owns this deliverable. No \u0027me\u0027/currentUser resolver \u2014 caller must pass the explicit name."
+        },
+        {
+          "name": "hasNoOwner",
+          "type": "bool",
+          "required": false,
+          "description": "When true, matches deliverables where ownerId is empty/missing (no owner assigned)."
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client display name (or GUID) \u2014 the customer that owns this deliverable\u0027s project."
+        },
+        {
+          "name": "projectIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter deliverables to a set of Editorial Project GUIDs. Single project: pass [guid]. Multiple: [guid1, guid2, ...]. Populate by upstream-calling query_editorial_project (by code/name/campaign/PM/custom-property) and reading projectId from each hit. Filters via top-level denormalized projectId field on the deliverable doc \u2014 no has_parent join needed. Accepts a JSON array or a JSON-encoded string array."
+        },
+        {
+          "name": "projectName",
+          "type": "string",
+          "required": false,
+          "description": "Parent project name (campaign/initiative name set by user). Exact match. Filters deliverables whose parent Editorial Project has this name."
+        },
+        {
+          "name": "projectCode",
+          "type": "string",
+          "required": false,
+          "description": "Parent project code, e.g. \u0027EPJ107192CF\u0027. Exact match."
+        },
+        {
+          "name": "projectCampaign",
+          "type": "string",
+          "required": false,
+          "description": "Marketing campaign reference attached to the parent project (free-text). Exact match."
+        },
+        {
+          "name": "projectStatus",
+          "type": "string",
+          "required": false,
+          "description": "Parent project lifecycle status: Backlog, Todo, InProgress, Done."
+        },
+        {
+          "name": "projectStatusId",
+          "type": "int?",
+          "required": false,
+          "description": "Parent project status as raw integer ID (1000 Backlog, 2000 Todo, 3000 InProgress, 9000 Done). Prefer projectStatus (name). Takes precedence over projectStatus when both supplied."
+        },
+        {
+          "name": "projectDueDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest parent-project deadline. ISO date or epoch ms."
+        },
+        {
+          "name": "projectDueDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest parent-project deadline. ISO date or epoch ms. Exclusive (\u0060lt\u0060)."
+        },
+        {
+          "name": "projectManagerName",
+          "type": "string",
+          "required": false,
+          "description": "Parent project\u0027s Project Manager full name (or GUID). No \u0027me\u0027/currentUser resolver \u2014 caller must pass the explicit name."
+        },
+        {
+          "name": "projectCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Parent project custom property name (customer-defined field on the EditorialProject, e.g. \u0027season\u0027) or its GUID. Pair with projectCustomPropertyValue. Distinct from deliverableCustomPropertyName, which lives on the Deliverable doc itself."
+        },
+        {
+          "name": "projectCustomPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Value to match for projectCustomPropertyName. Required when projectCustomPropertyName is set. Exact match, lowercased."
+        },
+        {
+          "name": "productsAdded",
+          "type": "string",
+          "required": false,
+          "description": "Whether products have been added to the deliverable. Added (productsCount \u003E= 1), NotAdded (productsCount \u003C 1), All (no filter)."
+        },
+        {
+          "name": "samplesAdded",
+          "type": "string",
+          "required": false,
+          "description": "Sample-assignment flag on the deliverable (boolean-level only \u2014 does NOT return sample details). Added = at least one sample assigned (assignedSamplesCount \u003E= 1). NotAdded = no samples assigned. Available = at least one sample physically checked in (checkedInSamplesCount \u003E= 1). NotAvailable = no checked-in samples. All = no filter. To get the actual list of samples for a project, use query_sample with editorialProjectIds instead."
+        },
+        {
+          "name": "selectsAdded",
+          "type": "string",
+          "required": false,
+          "description": "Whether assets have been selected for the deliverable. Added (selectedAssetsCount \u003E= 1), NotAdded (selectedAssetsCount \u003C 1), All."
+        },
+        {
+          "name": "moodBoardImagesAdded",
+          "type": "string",
+          "required": false,
+          "description": "Whether the Creative Brief has mood-board images. Added (moodboardImagesCount \u003E= 1), NotAdded, All. Counts only \u2014 actual images not in ES."
+        },
+        {
+          "name": "directionTextAdded",
+          "type": "string",
+          "required": false,
+          "description": "Whether the Creative Brief has direction text. Added = field exists; NotAdded = field absent. Content itself is NOT in ES \u2014 only the existence check."
+        },
+        {
+          "name": "documentsAdded",
+          "type": "string",
+          "required": false,
+          "description": "Whether the Creative Brief has documents. Added (creativeBriefDocumentsCount \u003E= 1), NotAdded, All. Counts only."
+        },
+        {
+          "name": "mockupsAdded",
+          "type": "string",
+          "required": false,
+          "description": "Whether the Creative Brief has mock-ups. Added (creativeBriefMockupsCount \u003E= 1), NotAdded, All. Counts only."
+        },
+        {
+          "name": "assetWorkflowStatusIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Asset Workflow Status filter (multi-select). Status IDs of asset-side workflow: Todo (2000), InProgress (3000), Done (9000). Matches deliverables whose denormalized assetWorkflowStatusIds[] array contains any of the supplied IDs. Accepts a JSON array of integers or a JSON-encoded string array (ES coerces string\u2192int)."
+        },
+        {
+          "name": "finalizationStatus",
+          "type": "string",
+          "required": false,
+          "description": "Finalization workflow status: Todo, InProgress, Done."
+        },
+        {
+          "name": "finalizationStatusId",
+          "type": "int?",
+          "required": false,
+          "description": "Finalization status as raw integer ID. Prefer finalizationStatus (name). Takes precedence when both supplied."
+        },
+        {
+          "name": "presetName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Preset name (or GUID) attached to the deliverable. Resolved to presetId via masterDataCache.GetEditorialPresetsAsync."
+        },
+        {
+          "name": "deliverableCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Deliverable custom property name (customer-defined field, e.g. \u0027collection\u0027, \u0027season\u0027) or its GUID. Pair with deliverableCustomPropertyValue to filter, or with groupByCustomProperty=true to aggregate."
+        },
+        {
+          "name": "deliverableCustomPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Value to match for deliverableCustomPropertyName. Required when deliverableCustomPropertyName is set in filter mode. Exact match, lowercased."
+        },
+        {
+          "name": "groupByCurrentStep",
+          "type": "bool",
+          "required": false,
+          "description": "Group by current workflow step \u2014 aggregation mode. Returns counts by step name (resolved via StepNames.FromId)."
+        },
+        {
+          "name": "groupByCurrentStepStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by current step status \u2014 aggregation mode. Returns counts by status name (Backlog/Todo/InProgress/Done/Failed/Rejected, resolved via StepStatusNames.FromId)."
+        },
+        {
+          "name": "groupByDeliverableStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by deliverable lifecycle status \u2014 aggregation mode. Returns counts by status name (Backlog/Todo/InProgress/Done)."
+        },
+        {
+          "name": "groupByAssetWorkflowStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by asset workflow status \u2014 aggregation mode. Note: assetWorkflowStatusIds is an array field, so a deliverable with multiple values increments multiple buckets."
+        },
+        {
+          "name": "groupByProject",
+          "type": "bool",
+          "required": false,
+          "description": "Group by parent Editorial Project \u2014 aggregation mode. Returns counts by projectId (raw GUID \u2014 caller can resolve to projectCode/projectName via query_editorial_project if names needed)."
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. MUST be set to true for any \u0027per workspace\u0027, \u0027per client\u0027, \u0027by workspace\u0027, \u0027breakdown by client\u0027 question. Returns counts by workspace name. Do NOT attempt to group by workspace manually from list results \u2014 use this param to get accurate server-side aggregation."
+        },
+        {
+          "name": "groupByOwner",
+          "type": "bool",
+          "required": false,
+          "description": "Group by Deliverable Owner \u2014 aggregation mode. Returns counts by owner full name (batch-resolved from ownerId)."
+        },
+        {
+          "name": "groupByCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of deliverableCustomPropertyName \u2014 aggregation mode. Requires deliverableCustomPropertyName to be set."
+        },
+        {
+          "name": "groupByPeriod",
+          "type": "string",
+          "required": false,
+          "description": "Time-bucket aggregation: hour, day, week, or month. Pair with groupByPeriodField to choose which date drives the histogram."
+        },
+        {
+          "name": "groupByPeriodField",
+          "type": "string",
+          "required": false,
+          "description": "Date field driving the time-bucket histogram. Default updatedDatetimeUtc. Other options: deliverableDueDateUtc (deadlines), createdDateTimeUtc (creation pace), finishedDateTimeUtc (completion pace)."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results in list mode (ignored in aggregation). Default 50. Use 0 for total-count-only."
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "0-based page index for list mode (ignored in aggregation). Default 0."
+        }
+      ],
+      "exampleInput": "{ \u0022projectName\u0022: \u0022Back-to-school 2026\u0022, \u0022currentStepStatus\u0022: \u0022InProgress\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 9, \u0022hits\u0022: [ { \u0022deliverableId\u0022: \u0022c6391d01-...\u0022, \u0022deliverableName\u0022: \u0022AEM Deliverable 1\u0022, \u0022currentStep\u0022: \u0022InternalPostProduction\u0022, \u0022deliverableStatus\u0022: \u0022InProgress\u0022 } ] }",
+      "knownLimitations": "Per-output unit within an Editorial Project. For project-level rollups use query_editorial_project; for work-unit progress use query_editorial_production."
+    },
+    {
+      "name": "query_editorial_production",
+      "title": "Query Editorial Production",
+      "module": "Editorial",
+      "description": "Search Editorial Productions (also called Editorial work units) \u2014 the central WorkUnit-doc row that tracks an Editorial Deliverable\u0027s content through the workflow (contentCreationTypeId=2). Use to answer: which work units exist for a project/deliverable, what step a production is at, who\u0027s shooting it, how many at each status/step, throughput by week, work unit counts by project/workspace/photographer. Filter by project (name/code/due-date/custom-property), deliverable (name/code/due-date/custom-property), product code, sample (code/name/custom-property), workflow type (\u0027Asset Workflow\u0027 / \u0027Finalization\u0027), workflow status (\u0027To Do\u0027/\u0027In Progress\u0027/\u0027Done\u0027), current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status (\u0027Backlog\u0027/\u0027To Do\u0027/\u0027Rejected\u0027/\u0027In Progress\u0027/\u0027Failed\u0027/\u0027Done\u0027), photographer/videographer/stylist/hair-and-makeup/model/art-director/assistant (Editorial team-on-set), External Post Vendor, External Post QC / Internal Post / Internal Post QC / Post Review assignees, workspace, media type (Image/Video \u2014 feature-gated), round of review, asset-delivery-finished date range, Selection/Post-Review collection statuses. When any groupBy* param is set, returns aggregation buckets instead of a list. For any \u0027per workspace\u0027 or \u0027per client\u0027 breakdown, use groupByWorkspace=true \u2014 do not try to derive workspace names from list results. Editorial only \u2014 for E-comm production rows use query_ecomm_production. For the parent project itself use query_editorial_project; for deliverable-level filtering use query_editorial_deliverable.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "projectName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Project name (campaign/initiative label set by user, e.g. \u0027DN Project\u0027). Exact match. Filters work units whose denormalized parent project has this name."
+        },
+        {
+          "name": "projectCode",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Project code (e.g. \u0027EPJ101577CF\u0027). Exact match."
+        },
+        {
+          "name": "projectIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter work units to a set of Editorial Project GUIDs. Single project: pass [guid]. Multiple: [guid1, guid2, ...]. Drill-down: populate by upstream-calling query_editorial_project (by code/name/campaign/PM/custom-property) and reading projectId from each hit. Filters via top-level denormalized editorialProjectId field on the work unit doc \u2014 no has_parent join. Accepts a JSON array or a JSON-encoded string array."
+        },
+        {
+          "name": "projectDueDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest project deadline. ISO date or epoch ms. Pair with projectDueDateTo."
+        },
+        {
+          "name": "projectDueDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest project deadline. ISO date or epoch ms. Inclusive (\u0060lte\u0060)."
+        },
+        {
+          "name": "projectCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Project custom property name (customer-defined field on the parent project, e.g. \u0027season\u0027, \u0027region\u0027) or its GUID. Pair with projectCustomPropertyValue. Resolved via masterDataCache.GetEditorialProjectCustomPropertiesAsync (objectType=100). Distinct from deliverableCustomPropertyName, which lives on the Deliverable denormalization."
+        },
+        {
+          "name": "projectCustomPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Value to match for projectCustomPropertyName. Required when projectCustomPropertyName is set in filter mode. Exact match, lowercased."
+        },
+        {
+          "name": "deliverableName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Deliverable name (free-text label set by user, e.g. \u0027AEM Deliverable 3\u0027). Exact match. Matches against denormalized editorialDeliverableOfFinalizeWorkflow.deliverableName on the work unit doc."
+        },
+        {
+          "name": "deliverableCode",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Deliverable code (e.g. \u0027ED148161CF\u0027). Exact match."
+        },
+        {
+          "name": "deliverableIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter work units to a set of Editorial Deliverable GUIDs. Drill-down: populate by upstream-calling query_editorial_deliverable. Matches via the top-level denormalized editorialDeliverableIds[] array field on the work unit doc (a finalization workflow may target multiple deliverables). Accepts a JSON array or a JSON-encoded string array."
+        },
+        {
+          "name": "deliverableDueDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest deliverable deadline. ISO date or epoch ms. For overdue: leave From null and combine with editorialWorkflowStatusId not in [Done]."
+        },
+        {
+          "name": "deliverableDueDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest deliverable deadline. ISO date or epoch ms. Inclusive (\u0060lte\u0060)."
+        },
+        {
+          "name": "deliverableCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Deliverable custom property name (customer-defined field on the deliverable, e.g. \u0027channel\u0027, \u0027collection\u0027) or its GUID. Pair with deliverableCustomPropertyValue. Resolved via masterDataCache.GetEditorialDeliverableCustomPropertiesAsync (objectType=101)."
+        },
+        {
+          "name": "deliverableCustomPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Value to match for deliverableCustomPropertyName. Required when deliverableCustomPropertyName is set in filter mode. Exact match, lowercased."
+        },
+        {
+          "name": "productCode",
+          "type": "string",
+          "required": false,
+          "description": "Product code on the work unit (exact match, lowercased). Filters via nested query on the products array (each work unit may carry multiple products)."
+        },
+        {
+          "name": "productName",
+          "type": "string",
+          "required": false,
+          "description": "Product name on the work unit (exact match, lowercased). Same nested-array semantics as productCode."
+        },
+        {
+          "name": "workflowType",
+          "type": "string",
+          "required": false,
+          "description": "Editorial workflow type: \u0027Asset Workflow\u0027 (1 \u2014 upstream content-creation phase) or \u0027Finalization\u0027 (2 \u2014 targets a specific deliverable in the collation/finalize phase). Filter UI default is \u0027All\u0027 (no filter). Resolved by name to editorialWorkflowTypeId. Use workflowTypeId for raw integer."
+        },
+        {
+          "name": "workflowTypeId",
+          "type": "int?",
+          "required": false,
+          "description": "Editorial workflow type as raw integer ID (1 = Asset Workflow, 2 = Finalization). Prefer workflowType (name). Takes precedence over workflowType when both supplied."
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Production (work unit) lifecycle status: \u0027To Do\u0027 (2000), \u0027In Progress\u0027 (3000), \u0027Done\u0027 (9000)."
+        },
+        {
+          "name": "statusId",
+          "type": "int?",
+          "required": false,
+          "description": "Work unit status as raw integer (2000 = To Do, 3000 = In Progress, 9000 = Done). Prefer status (name). Takes precedence when both supplied."
+        },
+        {
+          "name": "currentStep",
+          "type": "string",
+          "required": false,
+          "description": "Workflow step the work unit is currently at. Canonical EnumStep names: Photography (a.k.a. Capture), FinalSelection, ExternalPostProduction (a.k.a. External Post), ExternalPostProductionQc, InternalPostProduction (a.k.a. Internal Post), InternalPostProductionQc, PostReview, AssetDelivery. Resolved via StepNames.FromName."
+        },
+        {
+          "name": "currentStepId",
+          "type": "int?",
+          "required": false,
+          "description": "Workflow step as raw integer stepId. Prefer currentStep (name). Takes precedence when both supplied."
+        },
+        {
+          "name": "currentStepStatus",
+          "type": "string",
+          "required": false,
+          "description": "Status WITHIN the current step. Editorial Production filter exposes: \u0027Backlog\u0027 (1000), \u0027To Do\u0027 (2000), \u0027Rejected\u0027 (5000), \u0027In Progress\u0027 (3000), \u0027Failed\u0027 (7000), \u0027Done\u0027 (9000). Use this for \u0027blockers\u0027 / \u0027rejected work\u0027 queries."
+        },
+        {
+          "name": "currentStepStatusId",
+          "type": "int?",
+          "required": false,
+          "description": "Step status as raw integer (1000 Backlog / 2000 To Do / 3000 In Progress / 5000 Rejected / 7000 Failed / 9000 Done). Prefer currentStepStatus (name)."
+        },
+        {
+          "name": "currentRound",
+          "type": "int?",
+          "required": false,
+          "description": "Round-of-review number the work unit is currently on (1, 2, 3, ...). Filters via top-level currentRound field on the work unit doc. Available only when POST_REVIEW \u002B ROUND_OF_REVIEW subscription features are enabled."
+        },
+        {
+          "name": "photographer",
+          "type": "string",
+          "required": false,
+          "description": "Photographer who shot/captured/photographed the work unit. Filter by photographer full name or user GUID. Use for \u0027shot by Anna\u0027, \u0027photos by John\u0027, \u0027work units captured by ...\u0027."
+        },
+        {
+          "name": "videographer",
+          "type": "string",
+          "required": false,
+          "description": "Videographer who recorded/filmed the work unit. Filter by full name or user GUID. Available only when ED_VIDEO or VIDEO subscription features are enabled."
+        },
+        {
+          "name": "stylist",
+          "type": "string",
+          "required": false,
+          "description": "Stylist who styled/dressed the work unit. Filter by full name or user GUID."
+        },
+        {
+          "name": "model",
+          "type": "string",
+          "required": false,
+          "description": "Model who appeared/posed in the work unit. Filter by full name or user GUID."
+        },
+        {
+          "name": "artDirector",
+          "type": "string",
+          "required": false,
+          "description": "Art Director who directed the work unit. Filter by full name or user GUID."
+        },
+        {
+          "name": "hairAndMakeup",
+          "type": "string",
+          "required": false,
+          "description": "Hair \u0026 Makeup artist on the work unit. Filter by full name or user GUID."
+        },
+        {
+          "name": "assistant",
+          "type": "string",
+          "required": false,
+          "description": "Assistant on set. Filter by full name or user GUID."
+        },
+        {
+          "name": "externalPostVendor",
+          "type": "string",
+          "required": false,
+          "description": "External Post Vendor assigned to the External Post Production step (only for the canonical ExternalPostProduction step). Resolved via masterDataCache.GetPostProductionVendorsAsync. Filter by vendor display name or GUID."
+        },
+        {
+          "name": "externalPostQcAssignee",
+          "type": "string",
+          "required": false,
+          "description": "Person assigned to the External Post QC step (canonical ExternalPostProductionQc). Filter by full name or user GUID."
+        },
+        {
+          "name": "internalPostAssignee",
+          "type": "string",
+          "required": false,
+          "description": "Retoucher / person assigned to the Internal Post Production step. Use for \u0027retouched by ...\u0027. Filter by full name or user GUID."
+        },
+        {
+          "name": "internalPostQcAssignee",
+          "type": "string",
+          "required": false,
+          "description": "Person assigned to the Internal Post QC step. Filter by full name or user GUID."
+        },
+        {
+          "name": "postReviewAssignee",
+          "type": "string",
+          "required": false,
+          "description": "Stakeholder assigned to a Post Review step. Filter by full name or user GUID. Multiple Post Review steps may exist (one per round); filter targets all post-review-category step IDs (PostReview, PostReviewL1..L5). Available only when POST_REVIEW subscription feature is enabled."
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client display name (or GUID). Resolved via masterDataCache.GetWorkspacesAsync. Filters via top-level clientId on the work unit doc."
+        },
+        {
+          "name": "sampleCode",
+          "type": "string",
+          "required": false,
+          "description": "Sample code on the work unit (exact match, lowercased). Filters via denormalized samples.sampleCodes[] array on the work unit doc."
+        },
+        {
+          "name": "sampleName",
+          "type": "string",
+          "required": false,
+          "description": "Sample name on the work unit (exact match, lowercased)."
+        },
+        {
+          "name": "sampleCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Sample custom property name (e.g. \u0027fabric\u0027, \u0027colorVariant\u0027) or GUID. Pair with sampleCustomPropertyValue. Resolved via masterDataCache.GetSampleCustomPropertiesAsync (objectType=3)."
+        },
+        {
+          "name": "sampleCustomPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Value to match for sampleCustomPropertyName. Required when sampleCustomPropertyName is set in filter mode. Exact match, lowercased."
+        },
+        {
+          "name": "mediaType",
+          "type": "string",
+          "required": false,
+          "description": "Media type bucket: \u0027Image\u0027 or \u0027Video\u0027. Video maps to shootingTypeCategoryId [30 video, 90 generative]; Image is the inverse (must_not [30, 90, 70 copyWriting]). Available only when ED_VIDEO subscription feature is enabled."
+        },
+        {
+          "name": "assetDeliveryFinishedDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest asset-delivery-finished date for the work unit (when assets were delivered to client \u2014 the canonical \u0027completion\u0027 moment for an Editorial Production). ISO date or epoch ms. Pair with assetDeliveryFinishedDateTo."
+        },
+        {
+          "name": "assetDeliveryFinishedDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest asset-delivery-finished date. ISO date or epoch ms. Inclusive (\u0060lte\u0060)."
+        },
+        {
+          "name": "workUnitIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter to a specific set of Editorial Production (work unit) GUIDs. Drill-down: pass the IDs returned from a previous query_editorial_production call when fetching specific rows. Accepts a JSON array or a JSON-encoded string array."
+        },
+        {
+          "name": "planningSessionIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter editorial productions (work units) by Planning Session GUIDs. Drill-down: pass sessionId(s) returned from query_planning. Multi-value \u2014 matches if the production\u0027s planningSessionId is in the list. Accepts a JSON array or a JSON-encoded string array."
+        },
+        {
+          "name": "collectionStatusIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Selection / Post-Review collection statuses (multi-select) attached to child tasks. Status IDs: 2000 Todo, 2010 Pending, 2100 Submitted, 2200 PartiallySubmitted, 3000 InProgress, 4000 Approved, 5000 Rejected, 9000 Done. Filter compiles to has_child(task) \u2192 nested(collections.collectionStatusId). Available only when SHARE_FOR_EXT_REVIEW or SELECTION_COLLECTIONS subscription features are enabled. Accepts a JSON array of integers or a JSON-encoded string array."
+        },
+        {
+          "name": "groupByStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by work unit lifecycle status \u2014 aggregation mode. Returns counts by status name (Todo/InProgress/Done)."
+        },
+        {
+          "name": "groupByCurrentStep",
+          "type": "bool",
+          "required": false,
+          "description": "Group by current workflow step \u2014 aggregation mode. Returns counts by step name (resolved via StepNames.FromId)."
+        },
+        {
+          "name": "groupByCurrentStepStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by current step status \u2014 aggregation mode."
+        },
+        {
+          "name": "groupByWorkflowType",
+          "type": "bool",
+          "required": false,
+          "description": "Group by editorial workflow type \u2014 aggregation mode. Counts split between AssetWorkflow (1) and FinalizationWorkflow (2)."
+        },
+        {
+          "name": "groupByProject",
+          "type": "bool",
+          "required": false,
+          "description": "Group by parent Editorial Project \u2014 aggregation mode. Returns counts by editorialProjectId (raw GUID)."
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. MUST be set to true for any \u0027per workspace\u0027, \u0027per client\u0027, \u0027by workspace\u0027, \u0027breakdown by client\u0027 question. Returns counts by workspace name. Do NOT attempt to group by workspace manually from list results \u2014 use this param to get accurate server-side aggregation."
+        },
+        {
+          "name": "groupByPhotographer",
+          "type": "bool",
+          "required": false,
+          "description": "Group by photographer \u2014 aggregation mode. Counts by photographer full name (batch-resolved)."
+        },
+        {
+          "name": "groupByPeriod",
+          "type": "string",
+          "required": false,
+          "description": "Time-bucket aggregation: hour, day, week, or month. Pair with groupByPeriodField to choose which date drives the histogram."
+        },
+        {
+          "name": "groupByPeriodField",
+          "type": "string",
+          "required": false,
+          "description": "Date field driving the time-bucket histogram. Default assetDeliveryFinishedDateTimeUtc (delivery completion pace). Alternative: deliverableDueDateUtc (workload by deadline \u2014 resolves to editorialDeliverableOfFinalizeWorkflow.deliverableDueDateUtc)."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results in list mode (ignored in aggregation). Default 50. Use 0 for total-count-only."
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "0-based page index for list mode (ignored in aggregation). Default 0."
+        }
+      ],
+      "exampleInput": "{ \u0022projectName\u0022: \u0022Back-to-school 2026\u0022, \u0022currentStep\u0022: \u0022InternalPostProduction\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 14, \u0022hits\u0022: [ { \u0022workUnitId\u0022: \u0022e2...\u0022, \u0022deliverableName\u0022: \u0022AEM Deliverable 1\u0022, \u0022currentStep\u0022: \u0022InternalPostProduction\u0022, \u0022status\u0022: \u0022InProgress\u0022 } ] }",
+      "knownLimitations": "Editorial work-unit (content moving through the workflow). For the delivery row itself use query_editorial_deliverable."
+    },
+    {
+      "name": "query_editorial_project",
+      "title": "Query Editorial Project",
+      "module": "Editorial",
+      "description": "Search Editorial Projects \u2014 campaign/initiative-level container in the Editorial module (e.g. \u0027Back-to-school 2026\u0027). Use to answer: which projects exist, project status, due date, who manages it, project counts by status/workspace/PM, how many projects per workspace/client. Filter by code, name, campaign, status, project manager, workspace, due/created date, deliverables count, custom property. Pass projectIds to look up specific projects by ID (e.g. from detail page context). When any groupBy* param is set, returns aggregation buckets instead of a list. For any \u0027per workspace\u0027 or \u0027per client\u0027 breakdown, use groupByWorkspace=true \u2014 do not try to derive workspace names from list results.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "projectIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Editorial Project GUIDs \u2014 look up specific projects by ID. JSON array or single ID. Use when navigating from an Editorial Project detail page."
+        },
+        {
+          "name": "projectCode",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Project code, e.g. \u0027EPJ101577CF\u0027. Exact match."
+        },
+        {
+          "name": "projectName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Project name (campaign/initiative name set by user). Exact match."
+        },
+        {
+          "name": "projectCampaign",
+          "type": "string",
+          "required": false,
+          "description": "Marketing campaign reference attached to the project (free-text). Exact match."
+        },
+        {
+          "name": "projectStatus",
+          "type": "string",
+          "required": false,
+          "description": "Project lifecycle status: Backlog, Todo, InProgress, Done."
+        },
+        {
+          "name": "projectStatusId",
+          "type": "int?",
+          "required": false,
+          "description": "Project status as raw integer ID (1000 Backlog, 2000 Todo, 3000 InProgress, 9000 Done). Prefer projectStatus (name). Takes precedence over projectStatus when both supplied."
+        },
+        {
+          "name": "projectDueDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest project deadline. ISO date or epoch ms."
+        },
+        {
+          "name": "projectDueDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest project deadline. ISO date or epoch ms. Exclusive (\u0060lt\u0060). For overdue: set to now and combine with projectStatus != Done."
+        },
+        {
+          "name": "projectManagerName",
+          "type": "string",
+          "required": false,
+          "description": "Project Manager full name (or GUID). No \u0027me\u0027/currentUser resolver \u2014 caller must pass the explicit name."
+        },
+        {
+          "name": "hasNoProjectManager",
+          "type": "bool",
+          "required": false,
+          "description": "When true, matches projects where projectManagerIds is empty/missing (unassigned PM)."
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client display name (or GUID) \u2014 the customer that owns the project."
+        },
+        {
+          "name": "projectCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial Project custom property name (customer-defined field, e.g. \u0027season\u0027, \u0027collection\u0027) or its GUID. Pair with projectCustomPropertyValue to filter, or with groupByCustomProperty=true to aggregate."
+        },
+        {
+          "name": "projectCustomPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Value to match for projectCustomPropertyName. Required when projectCustomPropertyName is set for filter mode. Exact match, lowercased."
+        },
+        {
+          "name": "projectCreatedDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest project-created date. ISO or epoch ms. Pair with groupByPeriod for time-series."
+        },
+        {
+          "name": "projectCreatedDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest project-created date. ISO or epoch ms. Exclusive (\u0060lt\u0060)."
+        },
+        {
+          "name": "deliverablesCountMin",
+          "type": "int?",
+          "required": false,
+          "description": "Minimum deliverable count."
+        },
+        {
+          "name": "deliverablesCountMax",
+          "type": "int?",
+          "required": false,
+          "description": "Maximum deliverable count. Set to 0 for projects with no deliverables yet."
+        },
+        {
+          "name": "groupByStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by project status \u2014 aggregation mode. Returns counts by status name."
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. MUST be set to true for any \u0027per workspace\u0027, \u0027per client\u0027, \u0027by workspace\u0027, \u0027breakdown by client\u0027 question. Returns counts by workspace name. Do NOT attempt to group by workspace manually from list results \u2014 use this param to get accurate server-side aggregation."
+        },
+        {
+          "name": "groupByProjectManager",
+          "type": "bool",
+          "required": false,
+          "description": "Group by Project Manager \u2014 aggregation mode. Returns counts by PM name. Note: a project with 2 PMs increments both buckets (array-field terms agg)."
+        },
+        {
+          "name": "groupByCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of projectCustomPropertyName \u2014 aggregation mode. Requires projectCustomPropertyName to be set."
+        },
+        {
+          "name": "groupByPeriod",
+          "type": "string",
+          "required": false,
+          "description": "Time-bucket aggregation: hour, day, week, or month. Pair with groupByPeriodField to choose which date drives the histogram."
+        },
+        {
+          "name": "groupByPeriodField",
+          "type": "string",
+          "required": false,
+          "description": "Date field driving the time-bucket histogram. Default createdDateTimeUtc. Other options: projectDueDateUtc (deadlines), finishedDateTimeUtc (completion pace), updatedDatetimeUtc (recently touched)."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results in list mode (ignored in aggregation). Default 50. Use 0 for total-count-only."
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "0-based page index for list mode (ignored in aggregation). Default 0."
+        }
+      ],
+      "exampleInput": "{ \u0022projectStatus\u0022: \u0022Active\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 6, \u0022hits\u0022: [ { \u0022projectId\u0022: \u00229d83efa3-...\u0022, \u0022projectCode\u0022: \u0022ED-2026-01\u0022, \u0022projectName\u0022: \u0022Back-to-school 2026\u0022, \u0022projectStatus\u0022: \u0022Active\u0022 } ] }",
+      "knownLimitations": "Campaign-level container only \u2014 for per-output rows use query_editorial_deliverable."
+    },
+    {
+      "name": "query_planning",
+      "title": "Query Planning",
+      "module": "Planning",
+      "description": "**Custom Resource trigger** \u2192 if user prompt names a production support role NOT in the standard productionTeam (Photographer/Stylist/Model/Art Director/Hair\u0026Makeup/Assistant/Videographer/DigitalProcessing) \u2192 call this tool with \u0060includeCustomResources=true\u0060. Common triggers: \u0027cater\u0027, \u0027lunch\u0027, \u0027runner\u0027, \u0027driver\u0027, \u0027PA\u0027, \u0027DIT\u0027, \u0027dog handler\u0027, \u0027medic\u0027 (and any similar free-form role). Custom Resource labels are FREE-FORM text studios type themselves \u2192 semantic-match them yourself from \u0060customResourceLabelsAvailable[]\u0060 \u002B \u0060customResources[]\u0060 in the response. **Tool-first, ask-later**: call the tool, then if \u0060customResourceLabelsAvailable=[]\u0060 ask user; otherwise semantic-match from availableLabels. **Trailing-junk / cut-off tolerance**: if user prompt has trailing backslash (\u0060\\\u0060), ellipsis (\u0060...\u0060), question marks (\u0060??\u0060), or appears truncated mid-word, IGNORE the noise and treat the readable trigger word as the query. Do NOT respond with \u0027your message looks cut off\u0027 \u2014 call the tool with the cleaned query. Examples: \u0027Who is today\u0027s Cater\u0027 \u2192 query for cater. \u0027Lunch...\u0027 \u2192 query for lunch. \u0027DIT??\u0027 \u2192 query for DIT. **Likely-misread tolerance**: if a trigger word could be misread as a proper noun (e.g. \u0027Cater\u0027 \u2192 \u0027Carter\u0027, \u0027DIT\u0027 \u2192 a person\u0027s initials), DEFAULT to the production-role interpretation (this tool is in a production planning context, not a general-knowledge chat). Don\u0027t suggest sports/celebrity readings of trigger words. **Default \u0027today\u0027 to ISO date**: when user says \u0027today\u0027, \u0027h\u00F4m nay\u0027, \u0027this morning\u0027, etc., automatically set \u0060dateFrom\u0060=\u0060dateTo\u0060=current date in \u0060YYYY-MM-DD\u0060 (server timezone UTC). Same for \u0027tomorrow\u0027 (\u002B1 day), \u0027yesterday\u0027 (-1 day), \u0027this week\u0027 (Mon-Sun current week). Don\u0027t ask the user to specify the date when they used a relative phrase. Search planning sessions \u2014 scheduled production shoots with team, time slots, and progress. Use this to answer: what\u0027s planned, when (ISO 8601 UTC), where, who\u0027s on set, sample check-in status, photography progress, alerts. **Who-is-working queries**: when user asks \u0027who is working this week\u0027, \u0027which talent has sessions today\u0027, \u0027list photographers on sessions next month\u0027 \u2192 set \u0060groupByTeamMember=true\u0060 with \u0060dateFrom\u0060/\u0060dateTo\u0060. Response flips to person-centric: each entry shows the team member with their sessions. This is the primary way to answer talent-on-session questions when the studio does not use the Resource Booking add-on. Filter by team member (any role) or specific role (photographer, stylist, model, art director, assistant, videographer, hair \u0026 makeup). Also filter by sessionCode (e.g. \u0027SES137123CF\u0027), sessionName (partial), location, production type, check-in/alert/photography status, date range. Filter by associated job (jobCode/jobName, or \u0060job\u0060 ambiguous = code OR name) and product attributes (productCode/productName, or \u0060product\u0060 ambiguous = code OR name, plus brand, category, color, styleCode) \u2014 exact match, case-insensitive, matches if ANY of the session\u0027s jobs/products satisfies the filter. Editorial workflow: filter by associated project (projectCode/projectName, or \u0060project\u0060 ambiguous = code OR name, plus campaign) and deliverable (deliverableCode/deliverableName, or \u0060deliverable\u0060 ambiguous = code OR name, plus deliverableOutputName) \u2014 exact match, case-insensitive, matches if ANY of the session\u0027s projects/deliverables satisfies the filter. Use \u0060user\u0060 to find a session where a given user is on the production team regardless of skill/role (V2 ProductionTeams). Returns: session \u0060id\u0060 (UUID), sessionName, sessionCode, time slots (ISO 8601 UTC), full production team (resolved names), check-in status, photography progress, job codes, product codes. When groupBy params set, returns counts/aggregations instead of list. **Session lookup param choice \u2014 strict per user phrasing:**   \u2022 User says \u0027session code SES137123CF\u0027 / \u0027code SES\u2026\u0027 \u2192 \u0060sessionCode\u0060 only.   \u2022 User says \u0027session named Nike Spring\u0027 / \u0027the Spring shoot\u0027 \u2192 \u0060sessionName\u0060 only.   \u2022 User says \u0027session SES137123CF\u0027 / \u0027session Nike Spring\u0027 WITHOUT specifying code-vs-name \u2192 \u0060session\u0060 (ambiguous param, matches code OR name OR UUID). Don\u0027t pass multiple session params at once \u2014 pick the one that matches user intent. **Chain with query_talent_crew_schedule**: when the user asks about bookings/holds for a specific session, FIRST call this tool \u2192 take response\u0027s \u0060id\u0060 and \u0060timeSlots\u0060 \u2192 pass to \u0060query_talent_crew_schedule(sessionId=\u003Cid\u003E, dateFrom=\u003Cmin start\u003E, dateTo=\u003Cmax end\u003E, ...)\u0060. **Custom Resource queries** (cater / catering / lunch / food / runner / driver / transport / PA / production assistant / makeup artist (one-off) / any role NOT in standard productionTeam): set \u0060includeCustomResources=true\u0060. Custom resources are free-form (label, name) pairs attached inline to a session via the FE \u0027CUSTOM RESOURCE\u0027 panel \u2192 free-form means studios type whatever they want (\u0027cater\u0027, \u0027Cater\u0027, \u0027catering\u0027, \u0027lunch\u0027, \u0027food service\u0027). The tool returns ALL custom resources on the page and Claude does the semantic match (no server-side filter \u2014 too many false-negatives on free-form text like \u0027Caster\u0027 vs \u0027cater\u0027). **Semantic match rule** (CRITICAL for custom resources): the response includes \u0060customResourceLabelsAvailable: string[]\u0060 \u2192 distinct labels seen on the page, plus \u0060customResources[{label,name}]\u0060 per session. Scan \u0060customResourceLabelsAvailable\u0060 for labels **semantically similar** to the user\u0027s word, then read the matching \u0060customResources\u0060 entries. DO NOT reply \u0027not found\u0027 until you\u0027ve checked every label. Examples: \u0027cater\u0027 \u2192 look for \u0027catering\u0027, \u0027lunch\u0027, \u0027meal\u0027, \u0027food service\u0027, \u0027snack runner\u0027; \u0027driver\u0027 \u2192 \u0027transport\u0027, \u0027shuttle\u0027, \u0027logistics\u0027; \u0027PA\u0027 \u2192 \u0027production assistant\u0027, \u0027runner\u0027, \u0027gopher\u0027. Tell the user which labels you considered (e.g. \u0027No exact \u0027cater\u0027 label, but \u0027catering\u0027 is set to John Smith \u2192 likely the same role.\u0027). **Custom resource has NO booking status** (no Confirmed/Hold) \u2192 it\u0027s session-inline data, not a resource booking. Don\u0027t mention status pills for these rows.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "sessionName",
+          "type": "string",
+          "required": false,
+          "description": "Session name \u2014 wildcard contains, case-insensitive (e.g. \u0027Nike Spring\u0027 matches \u0027Nike Spring Shoot 2026\u0027). Use when the user explicitly says the session NAME."
+        },
+        {
+          "name": "sessionCode",
+          "type": "string",
+          "required": false,
+          "description": "Session code \u2014 exact match (e.g. \u0027SES137123CF\u0027, case-insensitive). Use when the user explicitly says the session CODE. Response\u0027s \u0060id\u0060 is the session UUID needed by query_talent_crew_schedule."
+        },
+        {
+          "name": "session",
+          "type": "string",
+          "required": false,
+          "description": "Session identifier when the user said something like \u0027session X\u0027 WITHOUT specifying it\u0027s a name or code. Server matches X against EITHER sessionCode OR sessionName (wildcard). Don\u0027t use this if the user explicitly called it a code or a name \u2014 pass \u0060sessionCode\u0060 or \u0060sessionName\u0060 instead."
+        },
+        {
+          "name": "dateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Time slot start date from (ISO or epoch ms)"
+        },
+        {
+          "name": "dateTo",
+          "type": "string",
+          "required": false,
+          "description": "Time slot start date to (ISO or epoch ms)"
+        },
+        {
+          "name": "location",
+          "type": "string",
+          "required": false,
+          "description": "Location/set name or ID"
+        },
+        {
+          "name": "productionType",
+          "type": "string",
+          "required": false,
+          "description": "Production type name or ID"
+        },
+        {
+          "name": "teamMember",
+          "type": "string",
+          "required": false,
+          "description": "Team member name or user ID (any role \u2014 finds person in any team position)"
+        },
+        {
+          "name": "user",
+          "type": "string",
+          "required": false,
+          "description": "User name or user ID \u2014 finds person on the session\u0027s V2 ProductionTeams regardless of skill/role. Use this when the caller says \u0027user X\u0027 without specifying a role."
+        },
+        {
+          "name": "photographer",
+          "type": "string",
+          "required": false,
+          "description": "Photographer name or user ID"
+        },
+        {
+          "name": "stylist",
+          "type": "string",
+          "required": false,
+          "description": "Stylist name or user ID"
+        },
+        {
+          "name": "model",
+          "type": "string",
+          "required": false,
+          "description": "Model name or user ID"
+        },
+        {
+          "name": "artDirector",
+          "type": "string",
+          "required": false,
+          "description": "Art director name or user ID"
+        },
+        {
+          "name": "assistant",
+          "type": "string",
+          "required": false,
+          "description": "Assistant name or user ID"
+        },
+        {
+          "name": "videographer",
+          "type": "string",
+          "required": false,
+          "description": "Videographer name or user ID"
+        },
+        {
+          "name": "hairAndMakeup",
+          "type": "string",
+          "required": false,
+          "description": "Hair \u0026 makeup artist name or user ID"
+        },
+        {
+          "name": "jobCode",
+          "type": "string",
+          "required": false,
+          "description": "Job code on the session \u2014 exact match, case-insensitive (matches if any of the session\u0027s jobs has this code)"
+        },
+        {
+          "name": "jobName",
+          "type": "string",
+          "required": false,
+          "description": "Job name on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "job",
+          "type": "string",
+          "required": false,
+          "description": "Job identifier when the caller said \u0027job X\u0027 WITHOUT specifying code-vs-name \u2014 matches against jobCode OR jobName."
+        },
+        {
+          "name": "productCode",
+          "type": "string",
+          "required": false,
+          "description": "Product code on the session \u2014 exact match, case-insensitive (matches if any of the session\u0027s products has this code)"
+        },
+        {
+          "name": "productName",
+          "type": "string",
+          "required": false,
+          "description": "Product name on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "product",
+          "type": "string",
+          "required": false,
+          "description": "Product identifier when the caller said \u0027product X\u0027 WITHOUT specifying code-vs-name \u2014 matches against productCode OR productName."
+        },
+        {
+          "name": "brand",
+          "type": "string",
+          "required": false,
+          "description": "Product brand on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "required": false,
+          "description": "Product category on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "color",
+          "type": "string",
+          "required": false,
+          "description": "Product color on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "styleCode",
+          "type": "string",
+          "required": false,
+          "description": "Product style code on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "projectCode",
+          "type": "string",
+          "required": false,
+          "description": "Editorial project code on the session \u2014 exact match, case-insensitive (matches if any of the session\u0027s projects has this code)"
+        },
+        {
+          "name": "projectName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial project name on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "project",
+          "type": "string",
+          "required": false,
+          "description": "Editorial project identifier when the caller said \u0027project X\u0027 WITHOUT specifying code-vs-name \u2014 matches against projectCode OR projectName."
+        },
+        {
+          "name": "campaign",
+          "type": "string",
+          "required": false,
+          "description": "Editorial project campaign on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "deliverableCode",
+          "type": "string",
+          "required": false,
+          "description": "Editorial deliverable code on the session \u2014 exact match, case-insensitive (matches if any of the session\u0027s deliverables has this code)"
+        },
+        {
+          "name": "deliverableName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial deliverable name on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "deliverable",
+          "type": "string",
+          "required": false,
+          "description": "Editorial deliverable identifier when the caller said \u0027deliverable X\u0027 WITHOUT specifying code-vs-name \u2014 matches against deliverableCode OR deliverableName."
+        },
+        {
+          "name": "deliverableOutputName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial deliverable output name on the session \u2014 exact match, case-insensitive"
+        },
+        {
+          "name": "allCheckedIn",
+          "type": "bool?",
+          "required": false,
+          "description": "Only sessions with all items checked in"
+        },
+        {
+          "name": "hasAlerts",
+          "type": "bool?",
+          "required": false,
+          "description": "Only sessions with alerts"
+        },
+        {
+          "name": "photographyDone",
+          "type": "bool?",
+          "required": false,
+          "description": "Only sessions where photography is done"
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client ID"
+        },
+        {
+          "name": "groupByLocation",
+          "type": "bool",
+          "required": false,
+          "description": "Group by location \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByProductionType",
+          "type": "bool",
+          "required": false,
+          "description": "Group by production type \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByPeriod",
+          "type": "string",
+          "required": false,
+          "description": "Group by period: day, week, month \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. Use for any \u0027per workspace\u0027, \u0027per client\u0027, \u0027by workspace\u0027 question."
+        },
+        {
+          "name": "groupByTeamMember",
+          "type": "bool",
+          "required": false,
+          "description": "Group results by team member instead of by session. Returns \u0060teamMembers[]\u0060 \u2014 each entry has \u0060userId\u0060, \u0060userName\u0060, \u0060skillName\u0060, \u0060sessionCount\u0060, and \u0060sessions[]\u0060 (code, name, timeSlots). Use when the user asks WHO is working in a date range (e.g. \u0027who is working this week\u0027, \u0027which photographers have sessions next month\u0027, \u0027list all talent on sessions today\u0027). This is the primary tool for talent-on-session queries when the studio does not use the Resource Booking add-on. All other filters (dateFrom, dateTo, photographer, skill roles, location, etc.) still apply \u2014 this only changes the response shape from session-centric to person-centric."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (ignored in aggregation)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page (0-based, ignored in aggregation)"
+        },
+        {
+          "name": "includeCustomResources",
+          "type": "bool",
+          "required": false,
+          "description": "Include \u0060customResources: [{label, name}]\u0060 per session AND \u0060customResourceLabelsAvailable: string[]\u0060 (distinct labels seen on this page) in the response. Default false (saves 1 batch round-trip to /sessions/enrich). Pass true when the user prompt mentions a role NOT in the standard productionTeam list (Photographer/Stylist/Model/Art Director/Hair\u0026Makeup/Assistant/Videographer/DigitalProcessing) \u2014 e.g. cater, catering, lunch, food, runner, driver, transport, PA, production assistant. Custom resources have NO booking status \u2014 they\u0027re inline session data, not bookings."
+        }
+      ],
+      "exampleInput": "{ \u0022dateFrom\u0022: \u00222026-06-01\u0022, \u0022dateTo\u0022: \u00222026-06-30\u0022, \u0022location\u0022: \u0022Studio A\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 7, \u0022hits\u0022: [ { \u0022sessionId\u0022: \u0022p1...\u0022, \u0022sessionName\u0022: \u0022SS26 Day 1\u0022, \u0022date\u0022: \u00222026-06-12\u0022, \u0022location\u0022: \u0022Studio A\u0022 } ] }",
+      "knownLimitations": "Time slots are stored as epoch ms and returned as ISO 8601. Non-standard production-support roles are only included when includeCustomResources is set."
+    },
+    {
+      "name": "query_sample",
+      "title": "Query Sample",
+      "module": "Samples",
+      "description": "Search samples (physical product items) \u2014 track location, check-in/out status, and containers. The only tool that returns actual sample records. Use this to answer: where is a sample, is it checked in, which samples are at a location, which samples are overdue for return, which samples belong to a project, counts by location/status. Samples are linked to editorial projects \u2014 use editorialProjectIds to filter samples by project. Check-in status: WaitingForCheckingIn, CheckedIn, CheckedOut. Filter by sample code, barcode, product code, job, location, check-in status, workspace, container, check-in/out dates, editorialProjectIds. Use human-readable names for location (resolved to IDs automatically). When any groupBy* param is set, returns aggregation buckets instead of a list. For any \u0027per workspace\u0027 or \u0027per client\u0027 breakdown, use groupByWorkspace=true.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "sampleCode",
+          "type": "string",
+          "required": false,
+          "description": "Sample code (exact match)."
+        },
+        {
+          "name": "sampleName",
+          "type": "string",
+          "required": false,
+          "description": "Sample name (exact match)."
+        },
+        {
+          "name": "sampleCfBarcode",
+          "type": "string",
+          "required": false,
+          "description": "CF barcode of the sample (exact match). Primary identifier for physical tracking."
+        },
+        {
+          "name": "productCode",
+          "type": "string",
+          "required": false,
+          "description": "Product code \u2014 find samples belonging to a product."
+        },
+        {
+          "name": "jobCode",
+          "type": "string",
+          "required": false,
+          "description": "Job code \u2014 find samples for products in this job."
+        },
+        {
+          "name": "jobName",
+          "type": "string",
+          "required": false,
+          "description": "Job name \u2014 find samples for products in this job."
+        },
+        {
+          "name": "productState",
+          "type": "string",
+          "required": false,
+          "description": "Product state: \u0027Active\u0027 (in production) or \u0027Inactive\u0027 (ignored/excluded)."
+        },
+        {
+          "name": "checkInStatus",
+          "type": "string",
+          "required": false,
+          "description": "Check-in status: WaitingForCheckingIn, CheckedIn, CheckedOut."
+        },
+        {
+          "name": "location",
+          "type": "string",
+          "required": false,
+          "description": "Location/sub-location name or ID."
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client name or ID."
+        },
+        {
+          "name": "returnDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Sample return date from (epoch ms or ISO)."
+        },
+        {
+          "name": "returnDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Sample return date to (epoch ms or ISO)."
+        },
+        {
+          "name": "containerCode",
+          "type": "string",
+          "required": false,
+          "description": "Container/box name or ID where the sample is stored."
+        },
+        {
+          "name": "containerType",
+          "type": "string",
+          "required": false,
+          "description": "Container type: \u0027HangingRail\u0027 or \u0027Box\u0027."
+        },
+        {
+          "name": "checkedInDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest sample check-in date. ISO date or epoch ms."
+        },
+        {
+          "name": "checkedInDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest sample check-in date."
+        },
+        {
+          "name": "checkedOutDateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Earliest sample check-out date. ISO date or epoch ms."
+        },
+        {
+          "name": "checkedOutDateTo",
+          "type": "string",
+          "required": false,
+          "description": "Latest sample check-out date."
+        },
+        {
+          "name": "customPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Custom property name (resolved to GUID) or GUID directly."
+        },
+        {
+          "name": "customPropertyValue",
+          "type": "string",
+          "required": false,
+          "description": "Custom property value to match (exact)."
+        },
+        {
+          "name": "editorialProjectIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Editorial Project IDs \u2014 drill-down array from query_editorial_project."
+        },
+        {
+          "name": "groupByCheckInStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by check-in status \u2014 aggregation mode."
+        },
+        {
+          "name": "groupByLocation",
+          "type": "bool",
+          "required": false,
+          "description": "Group by location \u2014 aggregation mode."
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. MUST be set for \u0027per workspace/client\u0027 questions."
+        },
+        {
+          "name": "groupByContainerType",
+          "type": "bool",
+          "required": false,
+          "description": "Group by container type \u2014 aggregation mode."
+        },
+        {
+          "name": "groupByPeriod",
+          "type": "string",
+          "required": false,
+          "description": "Time-bucket aggregation: hour, day, week, or month. Pair with groupByPeriodField."
+        },
+        {
+          "name": "groupByPeriodField",
+          "type": "string",
+          "required": false,
+          "description": "Date field for time-bucket histogram: checkedIn (default) or checkedOut."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (ignored in aggregation)."
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page (0-based, ignored in aggregation)."
+        }
+      ],
+      "exampleInput": "{ \u0022checkInStatus\u0022: \u0022CheckedIn\u0022, \u0022location\u0022: \u0022Shelf B2\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 21, \u0022hits\u0022: [ { \u0022sampleId\u0022: \u0022s1...\u0022, \u0022sampleCode\u0022: \u0022SMP-3001\u0022, \u0022checkInStatus\u0022: \u0022CheckedIn\u0022, \u0022location\u0022: \u0022Shelf B2\u0022 } ] }",
+      "knownLimitations": "The only tool that returns physical sample records. Check-in status values: WaitingForCheckingIn, CheckedIn, CheckedOut."
+    },
+    {
+      "name": "query_talent_crew",
+      "title": "Query Talent \u0026 Crew",
+      "module": "Talent \u0026 Crew",
+      "description": "Search talent and resource users \u2014 both license users (internal team members) and resource users (freelancers, models, agencies). Use this to answer: who is on the team, who has a given skill, what agency a model belongs to, counts of talent by skill / employment type / status. User types: License (internal), Resource (external). Employment types: Permanent, Freelance. States: Enabled, Disabled, NotVerify, Deleted. Common skills: Photographer, Stylist, Model, Art Director, Hair \u0026 Makeup, Retoucher, Videographer, Producer, Assistant, Project Manager, Deliverable Owner, Digital Processing. Filter by name, job title, user type, employment type, skill, state, agency, short list, contact info, city, created date range. Pass \u0060talentCrewIds\u0060 (JSON array of talent crew IDs from query_talent_crew_schedule or other tools) to look up specific records directly instead of re-querying by skill. Use human-readable names for all filters (resolved to IDs automatically). Each record includes a \u0060deepLinkUrl\u0060 to the talent detail page in the web app. **CRITICAL \u2014 UI rendering ownership**: an inline widget handles record-list and aggregation responses, so your text must NOT duplicate them. Per response shape:   \u2022 \u0060hits\u0060 with \u22651 talent \u2192 widget renders compact-card / table. Text = ONE brief sentence (e.g. \u0027Found 6 talents in the Christmas 24 short list.\u0027).   \u2022 Aggregation (\u0060byAgency\u0060 / \u0060bySkill\u0060 / \u0060byStatus\u0060 / \u0060byUserType\u0060 / \u0060byEmploymentType\u0060) \u2192 widget renders bar-chart sections. Text = ONE brief sentence summarising top buckets (e.g. \u002715 agencies, top 3: ACME (12), aaa (9), 234234 (8).\u0027).   \u2022 \u0060hits\u0060 empty \u002B \u0060total \u003E 0\u0060 (count-only, pageSize=0) \u2192 widget HIDES (0 height). Text MUST state the count plainly (e.g. \u0027C\u00F3 **123** photographers \u0111ang active.\u0027).   \u2022 \u0060hits\u0060 empty \u002B \u0060total = 0\u0060 \u2192 widget HIDES. Text = brief negative reply (e.g. \u0027Kh\u00F4ng c\u00F3 crew member n\u00E0o match.\u0027). Do NOT write a markdown table, list, gallery, or any field-by-field summary. Do NOT embed \u0060![image](avatarUrl)\u0060 or \u0060[Show Image](url)\u0060. Do NOT include deep-link URLs in text \u2014 the widget already renders the name as a clickable anchor. Avatars are shown by default in compact-card and table views. Pass \u0060includeAvatar=false\u0060 only when the caller explicitly wants to skip avatar resolution (e.g. perf-sensitive bulk queries). Still no markdown images in your text \u2014 the widget owns the visual. **\u0022Talent\u0022 terminology** \u2014 \u0060skill=\u0022Talent\u0022\u0060 is a PSEUDO-SKILL meaning Models \u002B AI Models only (server-side OR-match). \u2705 TRIGGER on standalone words: \u0022talent\u0022, \u0022talents\u0022, \u0022a talent\u0022, \u0022the talents\u0022, \u0022find a talent\u0022, \u0022show me talents\u0022, \u0022model agency\u0022, or context implying Models specifically. Examples: \u0027Find a talent named Jane\u0027 \u2192 { name: \u0027Jane\u0027, skill: \u0027Talent\u0027 }; \u0027How many talents do we have?\u0027 \u2192 { skill: \u0027Talent\u0027, pageSize: 0 }. \u274C DO NOT TRIGGER on: \u0027Talent \u0026 Crew\u0027 / \u0027Talent and Crew\u0027 / \u0027talents and crew\u0027 \u2014 these are the FULL ENTITY NAME (License \u002B Resource = whole pool). They contain the word \u0022Talent\u0022 but mean the OPPOSITE \u2014 search broad pool, omit \u0060skill\u0060. Examples: \u0027Find Talent \u0026 Crew named Han\u0027 \u2192 { name: \u0027Han\u0027 } NO skill; \u0027How many Talent \u0026 Crew based in London\u0027 \u2192 { city: \u0027London\u0027 } NO skill. \u274C DO NOT TRIGGER for explicit roles (Photographers, Stylists, Producers, Hair \u0026 Makeup, Videographers, internal team) \u2014 pass the explicit skill name or omit the filter. When groupBy params are set, returns counts / aggregations instead of a list. Each hit includes a \u0060rates\u0060 array (rateId, name, amount, currency, duration, rateType, agencyFee, payrollFee, isDefault, description) **only if the caller has the \u0060Rates\u0060 screen permission**. Top-level \u0060ratesAccess\u0060 is \u0060granted\u0060 when rates are emitted and \u0060denied\u0060 when they are gated out \u2014 when \u0060denied\u0060, do not assume the talent has no rates configured, the field is simply hidden by permission. **Rates are sensitive financial data \u2014 the widget HIDES them by default.** Even when \u0060ratesAccess=granted\u0060 and the \u0060rates\u0060 array is populated, the widget does NOT render the rates block in any view (compact card, table drill-down) unless \u0060columns\u0060 explicitly includes \u0027rates\u0027. The schedule tool widget never renders rates. This is a data-minimization safeguard against accidental leaks during screen-shares and casual lookups. To surface rates in the widget, set \u0060columns: [\u0027rates\u0027]\u0060 (or include \u0027rates\u0027 alongside other columns). You can still reason about rates in your text reply \u2014 but only when the user explicitly asked. **STRICT RULE for the \u0060columns\u0060 parameter** \u2014 you MUST set it whenever the user names specific fields or uses narrowing words (\u0027just\u0027, \u0027only\u0027, \u0027only show\u0027, \u0027just show\u0027, \u0027ch\u1EC9\u0027, \u0027ch\u1EC9 hi\u1EC3n th\u1ECB\u0027, \u0027kh\u00C3\u00B4ng c\u1EA7n\u0027). Do NOT fall back to defaults in those cases. Mapping examples:  \u2022 \u0027List 10 photographers and **just** show their skills\u0027 \u2192 call with arguments: { skill: \u0027Photographer\u0027, pageSize: 10, columns: [\u0027skills\u0027] }   \u2022 \u00275 models with their **rate info only**\u0027 \u2192 { skill: \u0027Model\u0027, pageSize: 5, columns: [\u0027rates\u0027] }   \u2022 \u0027**Emails and phones** of all stylists\u0027 \u2192 { skill: \u0027Stylist\u0027, columns: [\u0027email\u0027,\u0027phone\u0027] }   \u2022 \u0027Which agency does each model belong to\u0027 \u2192 { skill: \u0027Model\u0027, columns: [\u0027agencies\u0027] }   \u2022 \u0027Talent based in London\u0027 \u2192 { city: \u0027London\u0027 }   \u2022 \u0027Talent in the Fashion Crew short list\u0027 \u2192 { shortListName: \u0027Fashion Crew\u0027 }   \u2022 \u0027Talent who are both Photographer AND Videographer\u0027 \u2192 { skill: \u0027Photographer|Videographer\u0027 }   \u2022 \u0027NotVerify accounts older than 30 days\u0027 \u2192 { state: \u0027NotVerify\u0027, createdTo: \u0027\u003Ctoday-30d ISO\u003E\u0027 }   \u2022 \u0027How many new talents joined in the last 3 months\u0027 \u2192 { createdFrom: \u0027\u003Ctoday-3m ISO\u003E\u0027, pageSize: 0 } (read total)   \u2022 \u0027List talents grouped by skill\u0027 (aggregation) \u2192 omit columns; the param has no effect on aggregation mode.   \u2022 Generic \u0027list/show me photographers\u0027 (no narrowing word) \u2192 omit columns; defaults to a broad set. Photo and Name are always rendered as anchors regardless of \u0060columns\u0060. Available column ids: jobTitle, type, employment, status, skills, agencies, email, phone, location, createdAt, pronouns, userCode, rates.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "talentCrewIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Talent crew IDs (JSON array) to look up specific records by ID \u2014 e.g. from query_talent_crew_schedule results. E.g. [\u0022id1\u0022,\u0022id2\u0022]. When provided, other filters are still applied on top."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "description": "Generic name (contains, case-insensitive). OR-matches firstName, lastName, displayName \u2014 use this for AMBIGUOUS prompts like \u0027find a talent named Jane\u0027 where the user did NOT specify which name field. Do not combine with firstName/lastName/displayName."
+        },
+        {
+          "name": "firstName",
+          "type": "string",
+          "required": false,
+          "description": "First name (contains, case-insensitive). Use ONLY when the prompt explicitly narrows to first name (e.g. \u0027whose first name is Jane\u0027). For ambiguous \u0027named Jane\u0027 prompts use the \u0060name\u0060 param instead."
+        },
+        {
+          "name": "lastName",
+          "type": "string",
+          "required": false,
+          "description": "Last name (contains, case-insensitive). Use ONLY when the prompt explicitly narrows to last name. For ambiguous \u0027named Jane\u0027 prompts use the \u0060name\u0060 param instead."
+        },
+        {
+          "name": "displayName",
+          "type": "string",
+          "required": false,
+          "description": "Display name (contains, case-insensitive). Use ONLY when the prompt explicitly references display name. For ambiguous \u0027named Jane\u0027 prompts use the \u0060name\u0060 param instead."
+        },
+        {
+          "name": "pronouns",
+          "type": "string",
+          "required": false,
+          "description": "Pronouns"
+        },
+        {
+          "name": "jobTitle",
+          "type": "string",
+          "required": false,
+          "description": "Job title (contains)"
+        },
+        {
+          "name": "userType",
+          "type": "string",
+          "required": false,
+          "description": "User type: License, Resource"
+        },
+        {
+          "name": "employmentType",
+          "type": "string",
+          "required": false,
+          "description": "Employment type: Permanent, Freelance"
+        },
+        {
+          "name": "userCode",
+          "type": "string",
+          "required": false,
+          "description": "User code (exact)"
+        },
+        {
+          "name": "skill",
+          "type": "string",
+          "required": false,
+          "description": "Skill name (e.g. Photographer, Model). **Comma-separated = OR** (e.g. \u0027Photographer,Videographer\u0027 returns talents with EITHER skill \u2014 the natural \u0027Photographers and Videographers\u0027 union). **Pipe-separated = AND** (e.g. \u0027Photographer|Videographer\u0027 returns only talents with BOTH skills \u2014 multi-talent intersect). Single value works as before. Pseudo-skill \u0027Talent\u0027 resolves to Model OR AI Model server-side. Each name resolved to skill ID via master data cache."
+        },
+        {
+          "name": "state",
+          "type": "string",
+          "required": false,
+          "description": "State: Enabled, Disabled, NotVerify, Deleted"
+        },
+        {
+          "name": "contactEmail",
+          "type": "string",
+          "required": false,
+          "description": "Contact email (contains)"
+        },
+        {
+          "name": "contactPhone",
+          "type": "string",
+          "required": false,
+          "description": "Contact phone (contains)"
+        },
+        {
+          "name": "agencyName",
+          "type": "string",
+          "required": false,
+          "description": "Agency name (nested filter on agencies)"
+        },
+        {
+          "name": "shortListName",
+          "type": "string",
+          "required": false,
+          "description": "Short list name \u2014 exact name of a Talent short list (Collection with FunctionType=Shortlist). Returns talents who are members of that list. E.g. \u0027Fashion Crew\u0027."
+        },
+        {
+          "name": "city",
+          "type": "string",
+          "required": false,
+          "description": "City (contains, case-insensitive)"
+        },
+        {
+          "name": "createdFrom",
+          "type": "string",
+          "required": false,
+          "description": "Created from (ISO date, inclusive). E.g. \u00272026-04-05\u0027 or \u00272026-04-05T00:00:00Z\u0027. Combine with \u0060createdTo\u0060 for a range, or use alone as a lower bound."
+        },
+        {
+          "name": "createdTo",
+          "type": "string",
+          "required": false,
+          "description": "Created to (ISO date, exclusive). Use to filter accounts older than a threshold \u2014 e.g. NotVerify users older than 30 days set \u0060createdTo\u0060 to \u003Ctoday-30d\u003E."
+        },
+        {
+          "name": "groupByUserType",
+          "type": "bool",
+          "required": false,
+          "description": "Group by user type \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByEmploymentType",
+          "type": "bool",
+          "required": false,
+          "description": "Group by employment type \u2014 aggregation mode"
+        },
+        {
+          "name": "groupBySkill",
+          "type": "bool",
+          "required": false,
+          "description": "Group by skill \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by status \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByAgency",
+          "type": "bool",
+          "required": false,
+          "description": "Group by agency \u2014 aggregation mode (nested)"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (ignored in aggregation)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page (0-based, ignored in aggregation)"
+        },
+        {
+          "name": "includeAvatar",
+          "type": "bool",
+          "required": false,
+          "description": "If true (default), eagerly resolve avatarUrl for each hit so the widget renders avatars in compact-card and table views. Pass false only to skip the extra Contact API call."
+        },
+        {
+          "name": "columns",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Optional. Pick which columns the widget surfaces (applies to BOTH table view and compact card). Choose minimal set based on user intent: [\u0027skills\u0027] for skill questions, [\u0027agencies\u0027] for agency questions, [\u0027email\u0027,\u0027phone\u0027] for contact questions. **RATES HANDLING \u2014 STRICT RULE**: pass \u0060[\u0027rates\u0027]\u0060 ONLY when the user EXPLICITLY mentions rates, cost, pricing, fees, budget, day rate, or asks to compare prices. Do NOT pass \u0060[\u0027rates\u0027]\u0060 for ambiguous prompts like \u0027show profile\u0027, \u0027who is X\u0027, \u0027tell me about [name]\u0027, or for any list/team query that doesn\u0027t reference money. Default response (no \u0060columns\u0060) MUST NOT surface rates anywhere \u2014 including compact card and detail panel. Available column ids: jobTitle, type, employment, status, skills, agencies, email, phone, location, createdAt, pronouns, userCode, rates. Photo and Name are always shown as anchors. If omitted, defaults to [jobTitle, type, status, skills, agencies] (rates excluded). Aggregation mode ignores \u0060columns\u0060."
+        },
+        {
+          "name": "view",
+          "type": "string",
+          "required": false,
+          "description": "View mode: \u0060widget\u0060 (default) renders the avatar table widget; \u0060data\u0060 returns the same records under \u0060data[]\u0060 with \u0060hits=[]\u0060 (widget auto-hides) and SKIPS avatar resolution. **Use \u0060view=data\u0060 ONLY when the result is being chained as input to another tool call (intermediate data extraction)**, NOT for user-facing answers. Example chain: extract talent IDs to feed into a follow-up query_talent_crew_schedule(talentCrewIds=[...]) call. Default \u0060widget\u0060 is correct for ALL user-facing answers."
+        }
+      ],
+      "exampleInput": "{ \u0022skill\u0022: \u0022Photographer\u0022, \u0022city\u0022: \u0022London\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 8, \u0022hits\u0022: [ { \u0022talentCrewId\u0022: \u0022t-101\u0022, \u0022displayName\u0022: \u0022Jane Doe\u0022, \u0022jobTitle\u0022: \u0022Photographer\u0022, \u0022userType\u0022: \u0022Resource\u0022, \u0022avatarUrl\u0022: \u0022https://cdn.../t-101.jpg\u0022 } ] }",
+      "knownLimitations": "Rates are gated by the Rates screen (\u0060ratesAccess: granted|denied\u0060). The pseudo-skill \u0027Talent\u0027 resolves to Model OR AI Model server-side."
+    },
+    {
+      "name": "query_talent_crew_schedule",
+      "title": "Query Talent \u0026 Crew Schedule",
+      "module": "Resourcing Calendar",
+      "description": "**MANDATORY TRIGGERS** \u2014 when user prompt contains ANY of: \u0027available\u0027, \u0027availability\u0027, \u0027schedule\u0027, \u0027booking\u0027, \u0027confirmed\u0027, \u0027on hold\u0027, \u00271st hold\u0027, \u00272nd hold\u0027, \u0027next week\u0027, \u0027this week\u0027, \u0027on May/June/...\u0027, \u0027free on\u0027, \u0027busy on\u0027, \u0027OOO\u0027, \u0027out of office\u0027, \u0027unavailable on\u0027, \u0027inactive\u0027, \u0027haven\u0027t been booked\u0027, \u0027not booked in N days\u0027, \u0027access cleanup\u0027, \u0027dormant\u0027, \u0027idle freelancers\u0027 \u2192 you MUST call this tool. Do NOT respond with markdown tables, lists, or hallucinate data. The widget will render the answer visually. **Inverse query** (find talents WITHOUT bookings) \u2192 use \u0060onlyInactive=true\u0060 paired with \u0060dateFrom/dateTo\u0060 for the inactivity window. Common phrasings: \u0027freelancers not booked in 60\u002B days\u0027 \u2192 \u0060onlyInactive=true, dateFrom=\u003C60d ago\u003E, dateTo=\u003Ctoday\u003E\u0060 (chain with \u0060query_talent_crew(employmentType=Freelancer, view=data)\u0060 first to scope pool to freelancers). **NEGATIVE TRIGGER \u2014 route to \u0060query_planning\u0060 instead** when the prompt names a free-form production SUPPORT role like cater, catering, lunch, food, runner, driver, PA, DIT, dog handler, medic, security, prop master, set decorator, etc. These are NOT skills (skills = Photographer/Stylist/Model/Art Director/Hair\u0026Makeup/Assistant/Videographer/DigitalProcessing). They are Custom Resource labels attached inline to planning sessions. **Do NOT pass them as \u0060skill=...\u0060 here \u2192 the master skill catalog will not match them and the tool will return 0**. Use \u0060query_planning(includeCustomResources=true)\u0060 instead. Query Talent \u0026 Crew scheduling data from the Resourcing Calendar \u2014 User Availability (Available/OutOfOffice/Unavailable set by the user) and Resource Bookings (1stHold/2ndHold/Confirmed/Unavailable set by manager). Use for: who is available next week, who is confirmed for a shoot date, stale holds, overbooking conflicts, per-record schedule, capacity overview. **This tool ALSO serves as a list view of talents matching the skill filter** \u2014 do NOT pre-call query_talent_crew when user prompt combines list\u002Bschedule intent (e.g. \u0027list all Models then their schedule next week\u0027). Pass \u0060skill\u0060 directly here for both the list and the schedule in ONE call. **Chain mode**: when the result is being passed as input to another tool (intermediate data extraction, NOT user-facing), set \u0060view=data\u0060 to suppress widget render and skip avatar resolution (saves ~150ms). Default \u0060view=widget\u0060 is correct for ALL user-facing answers. Requires dateFrom \u002B dateTo. Scope is OPTIONAL. **Do NOT chain via query_talent_crew to pre-resolve IDs by skill.** Pass \u0060skill\u0060 directly here \u2014 the tool resolves talents internally. When you also pass \u0060availabilityStatus\u0060 or \u0060bookingStatus\u0060, the tool runs **status-first**: scans the whole studio crew pool (cap 500), filters by status, then post-filters by skill \u2014 this catches talents that a skill-first scope (cap 50) would miss. Use cases for unscoped queries: \u0027how many crew are unavailable on May 8?\u0027 (set pageSize=0 for count-only), \u0027who is Out of Office next week?\u0027. **Name-scoped queries \u2014 mandatory chain.** When the user names a SPECIFIC talent (proper name: \u0027AloHa NN\u0027, \u0027John Photographer\u0027, \u0027show schedule for Tien\u0027): FIRST call \u0060query_talent_crew(name=..., view=data)\u0060 to resolve name \u2192 ID(s), then pass those as \u0060talentCrewIds\u0060 here. Do NOT call this tool unscoped expecting to find the named talent in the result list \u2014 that wastes a round trip and dumps the whole crew on the user. **Session-scoped queries \u2014 chain order is mandatory.** When the user mentions a session: FIRST call \u0060query_planning\u0060 to resolve the session \u2014 pick the right session param: \u0060sessionCode\u0060 if user said it\u0027s a code, \u0060sessionName\u0060 if a name, \u0060session\u0060 if ambiguous. Then use the response\u0027s \u0060id\u0060 (UUID) as \u0060sessionId\u0060 here, and \u0060timeSlots\u0060 to derive \u0060dateFrom\u0060/\u0060dateTo\u0060. Do NOT call this tool first with a raw code/name \u2014 it requires a UUID. **Do NOT drop \u0060sessionId\u0060 as a fallback** when a session-scoped query returns 0. Zero IS the answer \u2014 it means the session has no records matching the filters. Report 0 to the user (e.g. \u0027no 1st/2nd Hold bookings for that session \u2014 the crew are Confirmed instead\u0027). To find out what status the session crew DO have, drop the \u0060bookingStatus\u0060 filter while keeping \u0060sessionId\u0060 \u2014 never the other way around. For session team composition (\u0027who is on session X\u0027) use query_planning instead. sessionId here filters bookings linked to a specific session (1st Hold / Confirmed per shoot). Availability statuses (User Availability set by the user): Available, OutOfOffice, Unavailable. Booking statuses (Resource Booking set by manager): typically Option, Contacted, Confirmed, 1st Hold (FirstHold), 2nd Hold (SecondHold), Released, Cancelled, Unavailable \u2014 exact list depends on studio config (see _debug.cachedBookingStatusNames). Pass the canonical name (case-insensitive) \u2014 server resolves to dynamic statusId. **Multi-status filter \u2014 \u0060bookingStatuses\u0060 / \u0060availabilityStatuses\u0060**: pass a JSON array of names (e.g. \u0060bookingStatuses=[\u0022Confirmed\u0022,\u0022FirstHold\u0022,\u0022SecondHold\u0022]\u0060) when the intent covers multiple statuses. Records matching ANY listed status pass. Use the plural form whenever the user phrasing implies a set, not a single canonical status. **Singular vs multi \u2192 decide by user word, not by intent**. RULE: if user prompt contains an explicit canonical status word (\u0027confirmed\u0027, \u00271st hold\u0027, \u0027first hold\u0027, \u00272nd hold\u0027, \u0027second hold\u0027, \u0027option\u0027, \u0027contacted\u0027, \u0027released\u0027, \u0027cancelled\u0027) \u2192 use SINGULAR \u0060bookingStatus=\u003Cthat word\u003E\u0060. Examples: \u0027who is **confirmed** today\u0027 \u2192 \u0060bookingStatus=Confirmed\u0060. \u0027show me **1st holds** for May 14\u0027 \u2192 \u0060bookingStatus=FirstHold\u0060. \u0027anyone **on hold** today\u0027 (vague \u2014 1st or 2nd) \u2192 \u0060bookingStatuses=[\u0022FirstHold\u0022,\u0022SecondHold\u0022]\u0060. Only use the multi-status form when the user prompt is VAGUE about status: \u0027who is **working/on-floor/on the books/scheduled/booked** today\u0027 \u2192 active bookings \u2192 \u0060bookingStatuses=[\u0022Confirmed\u0022,\u0022FirstHold\u0022,\u0022SecondHold\u0022]\u0060. **Heuristic**: if the user typed a status word verbatim, that\u0027s the filter \u2192 singular. If they typed a generic \u0027working/scheduled\u0027 verb, multi. Don\u0027t mix. **Booking-vs-Availability AND-gate (LH-50337 follow-up)**: when ANY booking-status filter is set, the tool now narrows availability records to talents that survived the booking filter (and vice versa). So \u0060bookingStatuses=[...]\u0060 will NOT leak availability-only rows for talents without a matching booking. Translation: filtering \u0027Confirmed today\u0027 returns only talents who actually have a Confirmed booking on that day, even though their availability records overlap. When groupBy params set, returns bucket counts instead of list. **Rendering rule**: each record carries a \u0060deepLinkUrl\u0060. When presenting results in text, ALWAYS wrap \u0060displayName\u0060 as a clickable markdown link: \u0060[displayName](deepLinkUrl)\u0060. Never print plain names. If \u0060displayName\u0060 is empty, fall back to talentCrewId or userCode (still wrapped). **UI rendering**: paired widget renders avatar table with status pills \u002B inline date ranges \u002B clickable names (Availability / Booking / On-set Role columns auto-shown when relevant data present). Per response shape:   \u2022 \u0060hits\u0060 with \u22651 talent \u2192 widget renders compact-card / table. Text = ONE brief sentence summary PLUS optionally ONE useful insight you spot in the data (e.g. \u0027Found 6 confirmed photographers for May 8 \u2014 note: oanh eu has overlapping bookings May 7-15.\u0027). Do not list each row in text \u2014 widget shows the data.   \u2022 Aggregation (\u0060byAvailabilityStatus\u0060 / \u0060byBookingStatus\u0060) \u2192 widget renders bar chart. Text = ONE brief sentence summarising buckets.   \u2022 \u0060hits\u0060 empty \u002B \u0060total \u003E 0\u0060 (count-only, pageSize=0) \u2192 widget HIDES. Text MUST state the count plainly.   \u2022 \u0060hits\u0060 empty \u002B \u0060total = 0\u0060 \u2192 widget HIDES. **IMPORTANT fallback**: before replying \u0027no one is booked\u0027, call \u0060query_planning(dateFrom=\u003Csame\u003E, dateTo=\u003Csame\u003E, groupByTeamMember=true)\u0060 to check if talent are assigned on sessions without bookings. If \u0060query_planning\u0060 returns teamMembers, present those results to the user (e.g. \u0027No bookings found, but these talent are assigned on sessions this week:\u0027). Only reply \u0027no one is planned\u0027 if BOTH tools return empty. **Conflict API unavailability**: if \u0060_debug.conflictApiAvailable === false\u0060, the booking conflict service is down for this query. ALL hits will have \u0060hasConflict=false\u0060 regardless of actual state. The widget renders a footer note, but you SHOULD also append a brief warning to your text reply (e.g. \u0027Note: conflict warnings are temporarily unavailable \u2014 verify holds manually\u0027). **INACTIVE BOOKINGS \u2014 STRICT RULE**: by default the tool excludes \u0060Cancelled\u0060 and \u0060Released\u0060 bookings from results (active-schedule hygiene). If \u0060_debug.inactiveCount.total \u003E 0\u0060 in the response, the widget rendered fewer rows than exist server-side. Mention this in the text reply (e.g. \u0027X cancelled / Y released bookings hidden \u2014 let me know if you want to see them.\u0027). Pass \u0060includeInactiveBookings=true\u0060 ONLY when the user EXPLICITLY mentions cancelled, released, inactive, or \u0027all bookings\u0027 (e.g. \u0027show all bookings including cancelled\u0027, \u0027were any of Tien\u0027s holds released?\u0027). Do NOT pass it for generic \u0027schedule for X\u0027 or \u0027who\u0027s available\u0027 queries. **Rates are NEVER shown via this tool.** Schedule queries are about availability and bookings, not pricing. The widget for this tool does not render rates in any view (single, list, or drill-down). If the user asks about rates after a schedule query, chain to \u0060query_talent_crew(talentCrewIds=[\u003Cfrom schedule result\u003E], columns=[\u0027rates\u0027])\u0060 instead of re-calling the schedule tool. Do NOT write a markdown table, do NOT chain to get_talent_crew_preview, do NOT fabricate avatar URLs in text. Do NOT include deep-link URLs in text \u2014 the widget renders the name as a clickable anchor.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "talentCrewIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Talent crew IDs (JSON array) from query_talent_crew. E.g. [\u0022id1\u0022,\u0022id2\u0022]. Max 50."
+        },
+        {
+          "name": "talentCrewId",
+          "type": "string",
+          "required": false,
+          "description": "Single talent crew ID \u2014 for per-record schedule view."
+        },
+        {
+          "name": "skill",
+          "type": "string",
+          "required": false,
+          "description": "Skill name to scope talent pool e.g. Photographer. Resolved via talentcrew ES. Max 50 results."
+        },
+        {
+          "name": "dateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Start date ISO e.g. 2026-06-01 (required)."
+        },
+        {
+          "name": "dateTo",
+          "type": "string",
+          "required": false,
+          "description": "End date ISO e.g. 2026-06-07 (required)."
+        },
+        {
+          "name": "availabilityStatus",
+          "type": "string",
+          "required": false,
+          "description": "Filter User Availability status: Available, OutOfOffice, Unavailable."
+        },
+        {
+          "name": "availabilityStatuses",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Multi-status User Availability filter \u2014 JSON array of canonical names, e.g. [\u0022Available\u0022,\u0022OutOfOffice\u0022]. Records matching ANY listed status pass. Takes precedence over \u0060availabilityStatus\u0060 when both supplied."
+        },
+        {
+          "name": "bookingStatus",
+          "type": "string",
+          "required": false,
+          "description": "Filter Resource Booking status \u2014 case-insensitive. Common values: Option, Contacted, Confirmed, FirstHold (or \u00271st Hold\u0027), SecondHold (or \u00272nd Hold\u0027), Released, Cancelled, Unavailable. Studio-specific list available in _debug.cachedBookingStatusNames. NOTE: by default Cancelled and Released are hidden (data hygiene); pass them explicitly here to see only those, or pass \u0060includeInactiveBookings=true\u0060 to see them alongside active bookings."
+        },
+        {
+          "name": "bookingStatuses",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Multi-status Resource Booking filter \u2014 JSON array of canonical names, e.g. [\u0022Confirmed\u0022,\u0022FirstHold\u0022,\u0022SecondHold\u0022] for active bookings. Records matching ANY listed status pass. Takes precedence over \u0060bookingStatus\u0060 when both supplied. **Recommended over \u0060bookingStatus\u0060 for \u0027who is working today / on-floor / scheduled\u0027 queries** \u2014 pass [\u0022Confirmed\u0022,\u0022FirstHold\u0022,\u0022SecondHold\u0022] to capture all real holds in one call instead of inferring \u0060Confirmed\u0060 only."
+        },
+        {
+          "name": "includeInactiveBookings",
+          "type": "bool",
+          "required": false,
+          "description": "Include Cancelled and Released bookings in results. Default false (these statuses clutter the active-schedule view). Pass true ONLY when user EXPLICITLY mentions cancelled, released, inactive, or \u0027all bookings\u0027. If \u0060bookingStatus\u0060 is set explicitly (e.g. to \u0027Cancelled\u0027), that takes precedence and this flag becomes irrelevant."
+        },
+        {
+          "name": "onlyInactive",
+          "type": "bool",
+          "required": false,
+          "description": "**Inverse mode** \u2014 return ONLY talents in the pool that have ZERO bookings overlapping [dateFrom..dateTo]. Use for \u0027who hasn\u0027t been booked recently\u0027 / \u0027inactive freelancers\u0027 / \u0027access cleanup\u0027 queries (e.g. \u0027which freelancers haven\u0027t been booked in 60\u002B days\u0027). The pool is determined by the usual sources (talentCrewIds, sessionId, or the full studio crew). When set, the tool clears all booking/availability records before rendering, forces phantom emission, and bypasses status filters (bookingStatus*/availabilityStatus* become noise). Pair with \u0060dateFrom=\u003C60d ago\u003E, dateTo=\u003Ctoday\u003E\u0060 for the canonical use case. Skill / employmentType narrowing: chain via \u0060query_talent_crew(employmentType=Freelancer, view=data)\u0060 first to get IDs, then pass as \u0060talentCrewIds\u0060 here. Default false \u2014 normal mode returns talents WITH records."
+        },
+        {
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "description": "Filter bookings linked to a specific session \u2014 must be the session UUID. If the user gave a session code, name, or ambiguous identifier, you MUST first call \u0060query_planning\u0060 (use \u0060sessionCode\u0060 for explicit codes, \u0060sessionName\u0060 for explicit names, \u0060session\u0060 for ambiguous) to resolve it; pass the returned \u0060id\u0060 here, and use \u0060timeSlots\u0060 to set dateFrom \u002B dateTo. Passing a non-UUID returns an error."
+        },
+        {
+          "name": "bookingCreatedBefore",
+          "type": "string",
+          "required": false,
+          "description": "ISO date \u2014 return only bookings created before this date (surface stale holds)."
+        },
+        {
+          "name": "groupByAvailabilityStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Aggregation: group by User Availability status and return counts."
+        },
+        {
+          "name": "groupByBookingStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Aggregation: group by Resource Booking status and return counts."
+        },
+        {
+          "name": "hasConflict",
+          "type": "bool",
+          "required": false,
+          "description": "Health: return only talents with active overbooking conflicts (conflictStatusId 105/106/107)."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results in list mode (ignored in aggregation). Set to 0 for COUNT-only mode \u2014 response keeps \u0060totalAvailabilities\u0060 \u002B \u0060totalBookings\u0060 (full counts after status/session filtering) but omits the item arrays. Use this when the user asks \u0027how many ...\u0027 without needing per-record details."
+        },
+        {
+          "name": "view",
+          "type": "string",
+          "required": false,
+          "description": "View mode: \u0060widget\u0060 (default) renders the avatar table widget; \u0060data\u0060 returns the same records under \u0060data[]\u0060 with \u0060hits=[]\u0060 (widget auto-hides) and SKIPS avatar resolution. **Use \u0060view=data\u0060 ONLY when the result is being chained as input to another tool call (intermediate data extraction)**, NOT for user-facing answers. Example chain: extract talent IDs to feed into a follow-up query_asset(talentCrewId=...) call. Default \u0060widget\u0060 is correct for ALL user-facing answers."
+        }
+      ],
+      "exampleInput": "{ \u0022dateFrom\u0022: \u00222026-06-10\u0022, \u0022dateTo\u0022: \u00222026-06-20\u0022, \u0022bookingStatus\u0022: \u0022Confirmed\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 5, \u0022hits\u0022: [ { \u0022talentCrewId\u0022: \u0022t-101\u0022, \u0022displayName\u0022: \u0022Jane Doe\u0022, \u0022availabilityStatus\u0022: \u0022Available\u0022, \u0022bookingStatus\u0022: \u0022Confirmed\u0022, \u0022onSetRole\u0022: \u0022Photographer\u0022, \u0022hasConflict\u0022: false } ] }",
+      "knownLimitations": "Availability \u002B bookings grouped by talent. Status is filtered in-memory (the planning backend has no status filter); skill is applied as a post-filter."
+    },
+    {
+      "name": "query_task",
+      "title": "Query Task",
+      "module": "Workflow",
+      "description": "Search tasks (individual workflow steps). Status: New, Todo, InProgress, Rejected, QCRejected, Failed, Bypassed, Done. Use names for step, production type, assignee, vendor, workspace. Can filter by product/job/workspace and includes product, job, assignee info in results. When groupBy params set, returns counts/aggregations instead of list. For any \u0027per workspace\u0027 or \u0027per client\u0027 breakdown, use groupByWorkspace=true.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "taskId",
+          "type": "string",
+          "required": false,
+          "description": "Task ID (exact match)"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "required": false,
+          "description": "Step status name"
+        },
+        {
+          "name": "step",
+          "type": "string",
+          "required": false,
+          "description": "Step name: Photography, InternalPostProduction, FinalSelection, etc."
+        },
+        {
+          "name": "productionType",
+          "type": "string",
+          "required": false,
+          "description": "Production type name or ID"
+        },
+        {
+          "name": "assignee",
+          "type": "string",
+          "required": false,
+          "description": "Assignee name or user ID"
+        },
+        {
+          "name": "postProductionVendor",
+          "type": "string",
+          "required": false,
+          "description": "Post-production vendor name or ID"
+        },
+        {
+          "name": "jobCode",
+          "type": "string",
+          "required": false,
+          "description": "Job code"
+        },
+        {
+          "name": "jobName",
+          "type": "string",
+          "required": false,
+          "description": "Job name"
+        },
+        {
+          "name": "productCode",
+          "type": "string",
+          "required": false,
+          "description": "Product code (exact)"
+        },
+        {
+          "name": "productName",
+          "type": "string",
+          "required": false,
+          "description": "Product name (exact)"
+        },
+        {
+          "name": "product",
+          "type": "string",
+          "required": false,
+          "description": "Search product by code or name (OR)"
+        },
+        {
+          "name": "dateFrom",
+          "type": "string",
+          "required": false,
+          "description": "Finished date from (ISO)"
+        },
+        {
+          "name": "dateTo",
+          "type": "string",
+          "required": false,
+          "description": "Finished date to (ISO)"
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client name or ID"
+        },
+        {
+          "name": "startedFrom",
+          "type": "string",
+          "required": false,
+          "description": "Started date from (ISO)"
+        },
+        {
+          "name": "startedTo",
+          "type": "string",
+          "required": false,
+          "description": "Started date to (ISO)"
+        },
+        {
+          "name": "groupByStep",
+          "type": "bool",
+          "required": false,
+          "description": "Group by step \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by status \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByAssignee",
+          "type": "bool",
+          "required": false,
+          "description": "Group by assignee \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByVendor",
+          "type": "bool",
+          "required": false,
+          "description": "Group by vendor \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByProductionType",
+          "type": "bool",
+          "required": false,
+          "description": "Group by production type \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByPeriod",
+          "type": "string",
+          "required": false,
+          "description": "Group by period: hour, day, week, month \u2014 aggregation mode"
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client \u2014 aggregation mode. Use for any \u0027per workspace\u0027, \u0027per client\u0027, \u0027by workspace\u0027 question."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (ignored in aggregation)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page (0-based, ignored in aggregation)"
+        }
+      ],
+      "exampleInput": "{ \u0022status\u0022: \u0022InProgress\u0022, \u0022step\u0022: \u0022InternalPostProduction\u0022, \u0022assignee\u0022: \u0022John Smith\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 11, \u0022hits\u0022: [ { \u0022taskId\u0022: \u0022wk1...\u0022, \u0022step\u0022: \u0022InternalPostProduction\u0022, \u0022status\u0022: \u0022InProgress\u0022, \u0022assignee\u0022: \u0022John Smith\u0022 } ] }",
+      "knownLimitations": "One workflow step per row. Status values: New, Todo, InProgress, Rejected, QCRejected, Failed, Bypassed, Done."
+    },
+    {
+      "name": "query_workspace",
+      "title": "Query Workspace",
+      "module": "Workspaces",
+      "description": "List workspaces (clients) in the studio with their calendar \u0026 timezone settings. Returns: id, name, isDefault, isEnabled, timezoneDisplayName, startDayOfWeek, firstWeekOfYear. **Use cases**: (1) Enumerate workspace names/IDs before grouping or filtering other entities by workspace. (2) Get a workspace\u0027s timezone and calendar settings. Pass \u0027keyword\u0027 for server-side partial name search; omit to get all workspaces. Use workspace IDs from the result to pass as \u0027workspace\u0027 filter to other query tools (query_ecomm_production, query_ecomm_job, query_ecomm_product_request, etc.).",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "keyword",
+          "type": "string",
+          "required": false,
+          "description": "Search workspace by name (partial match, case-insensitive). Omit to list all."
+        }
+      ],
+      "exampleInput": "{ \u0022keyword\u0022: \u0022acme\u0022 }",
+      "exampleOutput": "{ \u0022total\u0022: 2, \u0022hits\u0022: [ { \u0022id\u0022: \u00228a...\u0022, \u0022name\u0022: \u0022Acme Studio\u0022, \u0022isDefault\u0022: true, \u0022isEnabled\u0022: true, \u0022timezoneDisplayName\u0022: \u0022Europe/London\u0022, \u0022startDayOfWeek\u0022: \u0022Monday\u0022 } ] }",
+      "knownLimitations": "Returns workspace/client configuration only. Use the returned \u0060id\u0060s as the \u0060workspace\u0060 filter on the other query tools."
+    },
+    {
+      "name": "send_feedback",
+      "title": "Send Feedback",
+      "module": "Platform",
+      "description": "Send feedback to the Creative Force team. Types: result_feedback (rate a result), unsolved_question (couldn\u0027t get an answer), feature_request (want new capability).",
+      "readOnly": false,
+      "idempotent": false,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "type",
+          "type": "string",
+          "required": true,
+          "description": "Feedback type: result_feedback, unsolved_question, or feature_request"
+        },
+        {
+          "name": "message",
+          "type": "string",
+          "required": true,
+          "description": "Your comment, question, or request"
+        },
+        {
+          "name": "rating",
+          "type": "string",
+          "required": false,
+          "description": "Rating (for result_feedback): correct, incorrect, or partial"
+        },
+        {
+          "name": "relatedToolName",
+          "type": "string",
+          "required": false,
+          "description": "Which tool produced the result"
+        },
+        {
+          "name": "relatedToolInput",
+          "type": "string",
+          "required": false,
+          "description": "Parameters used in the related tool call"
+        },
+        {
+          "name": "relatedToolOutput",
+          "type": "string",
+          "required": false,
+          "description": "Summary of what the tool returned"
+        }
+      ],
+      "exampleInput": "{ \u0022type\u0022: \u0022result_feedback\u0022, \u0022rating\u0022: \u0022correct\u0022, \u0022message\u0022: \u0022Job list was accurate\u0022, \u0022relatedToolName\u0022: \u0022query_ecomm_job\u0022 }",
+      "exampleOutput": "{ \u0022status\u0022: \u0022received\u0022, \u0022type\u0022: \u0022result_feedback\u0022 }",
+      "knownLimitations": "The only write tool (not read-only). Persistence to a database is not yet implemented; feedback is logged and forwarded to Slack (best-effort)."
+    }
+  ]
+}
