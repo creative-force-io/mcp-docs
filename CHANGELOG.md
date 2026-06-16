@@ -16,9 +16,3 @@ public release.
 - Tool reference covering all **16** tools, generated from the server source
   (published via the documentation generator).
 - Use-case and prompt guide, and the privacy and data-handling page.
-
-<!--
-Section ownership: the tool reference (tool-reference.md / tools.json) is produced by the
-LH-51219 generator; use-cases.md and privacy.md are authored under their own stories.
-Release dates are added when the public release date is set.
--->

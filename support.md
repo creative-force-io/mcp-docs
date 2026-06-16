@@ -4,10 +4,11 @@
 
 - **Documentation:** start with the [setup guide](setup.md), the
   [tool reference](tool-reference.md), and the [use-case guide](use-cases.md).
-- **Existing Creative Force customers:** contact your usual Creative Force support channel or
-  account manager.
-  <!-- TODO: confirm the canonical Creative Force support URL / email before publishing. -->
-- **General enquiries:** <!-- TODO: confirm public support contact address. -->
+- **Existing Creative Force customers:** reach out through your usual Creative Force support
+  channel or account manager.
+- **Everyone else:** open an issue at
+  <https://github.com/creative-force-io/mcp-docs/issues>, or contact Creative Force via
+  <https://creativeforce.io>.
 
 ## Report a problem with the MCP integration
 
@@ -24,8 +25,9 @@ You can also send feedback directly from any connected client — just ask the a
 ## Marketplace / listing review
 
 For questions about the Anthropic Claude integrations directory or the Model Context Protocol
-registry listing:
-<!-- TODO: confirm marketplace-review contact address. -->
+registry listing, open an issue at
+<https://github.com/creative-force-io/mcp-docs/issues> or contact Creative Force via
+<https://creativeforce.io>.
 
 ## Security
 
