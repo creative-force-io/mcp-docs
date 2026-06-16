@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.creativeforce/mcp",
+  "description": "Read-only MCP access to Creative Force photo-production data (jobs, assets, talent, editorial).",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/creative-force-io/mcp-docs",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.creativeforce.io/mcp"
+    }
+  ]
+}

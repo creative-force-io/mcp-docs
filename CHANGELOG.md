@@ -1,0 +1,24 @@
+# Changelog
+
+All notable changes to the Creative Force MCP documentation are recorded here. The format is
+based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the documentation follows
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+Initial public documentation for the Creative Force MCP server. To be tagged **v1.0.0** at the
+public release.
+
+### Added
+- README, setup guide, and support page.
+- `SECURITY.md` responsible-disclosure policy and security posture.
+- `server.json` Model Context Protocol registry manifest.
+- Tool reference covering all **16** tools, generated from the server source
+  (published via the documentation generator).
+- Use-case and prompt guide, and the privacy and data-handling page.
+
+<!--
+Section ownership: the tool reference (tool-reference.md / tools.json) is produced by the
+LH-51219 generator; use-cases.md and privacy.md are authored under their own stories.
+Release dates are added when the public release date is set.
+-->
