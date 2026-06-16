@@ -3,7 +3,6 @@
 > **Review status:** This page describes how the Creative Force MCP server accesses and handles
 > data, based on the server's actual behaviour. It must be reviewed and approved by a Creative
 > Force data/privacy stakeholder before publication.
-> <!-- TODO: record the named approver here. -->
 
 ## Overview
 
@@ -67,20 +66,15 @@ about each tool call:
 This information is used for operational monitoring, troubleshooting, and product improvement, and
 is handled under Creative Force's main privacy policy — which describes retention periods, data
 location, and the full list of sub-processors.
-<!--
-Internal note (NOT for publication): analytics = Segment; monitoring = Elastic APM; hosting = AWS.
-Confirm the public framing, retention periods, and hosting region with the privacy owner.
--->
 
 ## Data retention and location
 
 Retention periods and the data-hosting region are governed by Creative Force's main privacy policy.
-<!-- TODO: privacy owner to confirm retention periods + hosting region, or link the specific section. -->
 
 ## Your rights and contact
 
 Requests regarding your personal data are handled in line with Creative Force's main privacy policy:
-[Creative Force privacy policy](#) <!-- TODO: main Creative Force privacy policy URL -->.
+[Creative Force privacy policy](https://creativeforce.io).
 
 To report a security or privacy concern about the MCP server specifically, see
 [SECURITY.md](SECURITY.md).
@@ -88,4 +82,4 @@ To report a security or privacy concern about the MCP server specifically, see
 ---
 
 <sub>Part of the Creative Force MCP documentation. This page reflects the server's behaviour at the
-time of writing and is approved by a Creative Force data/privacy stakeholder before publication.</sub>
+time of writing.</sub>
