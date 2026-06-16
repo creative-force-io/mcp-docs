@@ -5,7 +5,8 @@
 If you discover a security or privacy vulnerability in the Creative Force MCP server or its
 documentation, please report it privately. **Do not open a public GitHub issue.**
 
-- Email: <!-- TODO: confirm security contact, e.g. security@creativeforce.io -->
+- Use GitHub's **private vulnerability reporting** on this repository (the **Security** tab →
+  *Report a vulnerability*), or contact Creative Force via <https://creativeforce.io>.
 - Please include a description, reproduction steps, and the potential impact.
 
 We will acknowledge your report, investigate, and keep you informed of the resolution.

@@ -665,8 +665,8 @@
           "description": "Page (0-based, ignored in aggregation)"
         }
       ],
-      "exampleInput": "{ \u0022category\u0022: \u0022Footwear\u0022, \u0022status\u0022: \u0022In Production\u0022, \u0022pageSize\u0022: 10 }",
-      "exampleOutput": "{ \u0022total\u0022: 34, \u0022hits\u0022: [ { \u0022productId\u0022: \u002200010664-...\u0022, \u0022productCode\u0022: \u0022SKU-9001\u0022, \u0022productName\u0022: \u0022Runner Low\u0022, \u0022category\u0022: \u0022Footwear\u0022, \u0022status\u0022: \u0022In Production\u0022 } ] }",
+      "exampleInput": "{ \u0022category\u0022: \u0022Footwear\u0022, \u0022status\u0022: \u0022InProgress\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 34, \u0022hits\u0022: [ { \u0022productId\u0022: \u002200010664-...\u0022, \u0022productCode\u0022: \u0022SKU-9001\u0022, \u0022productName\u0022: \u0022Runner Low\u0022, \u0022category\u0022: \u0022Footwear\u0022, \u0022status\u0022: \u0022InProgress\u0022 } ] }",
       "knownLimitations": "Searches the product catalog \u2014 not physical samples (use query_sample) and not work-unit progress (use query_ecomm_production)."
     },
     {
@@ -1783,8 +1783,8 @@
           "description": "0-based page index for list mode (ignored in aggregation). Default 0."
         }
       ],
-      "exampleInput": "{ \u0022projectStatus\u0022: \u0022Active\u0022, \u0022pageSize\u0022: 10 }",
-      "exampleOutput": "{ \u0022total\u0022: 6, \u0022hits\u0022: [ { \u0022projectId\u0022: \u00229d83efa3-...\u0022, \u0022projectCode\u0022: \u0022ED-2026-01\u0022, \u0022projectName\u0022: \u0022Back-to-school 2026\u0022, \u0022projectStatus\u0022: \u0022Active\u0022 } ] }",
+      "exampleInput": "{ \u0022projectStatus\u0022: \u0022InProgress\u0022, \u0022pageSize\u0022: 10 }",
+      "exampleOutput": "{ \u0022total\u0022: 6, \u0022hits\u0022: [ { \u0022projectId\u0022: \u00229d83efa3-...\u0022, \u0022projectCode\u0022: \u0022ED-2026-01\u0022, \u0022projectName\u0022: \u0022Back-to-school 2026\u0022, \u0022projectStatus\u0022: \u0022InProgress\u0022 } ] }",
       "knownLimitations": "Campaign-level container only \u2014 for per-output rows use query_editorial_deliverable."
     },
     {
@@ -2807,7 +2807,7 @@
       ],
       "exampleInput": "{ \u0022type\u0022: \u0022result_feedback\u0022, \u0022rating\u0022: \u0022correct\u0022, \u0022message\u0022: \u0022Job list was accurate\u0022, \u0022relatedToolName\u0022: \u0022query_ecomm_job\u0022 }",
       "exampleOutput": "{ \u0022status\u0022: \u0022received\u0022, \u0022type\u0022: \u0022result_feedback\u0022 }",
-      "knownLimitations": "The only write tool (not read-only). Persistence to a database is not yet implemented; feedback is logged and forwarded to Slack (best-effort)."
+      "knownLimitations": "The only tool that writes anything \u2014 it sends your feedback to the Creative Force team and writes nothing to your studio\u0027s data."
     }
   ]
 }
