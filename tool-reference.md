@@ -275,13 +275,13 @@ Search products in the catalog. Filter by code, name, job, category, brand, colo
 **Example input**
 
 ```json
-{ "category": "Footwear", "status": "In Production", "pageSize": 10 }
+{ "category": "Footwear", "status": "InProgress", "pageSize": 10 }
 ```
 
 **Example output**
 
 ```json
-{ "total": 34, "hits": [ { "productId": "00010664-...", "productCode": "SKU-9001", "productName": "Runner Low", "category": "Footwear", "status": "In Production" } ] }
+{ "total": 34, "hits": [ { "productId": "00010664-...", "productCode": "SKU-9001", "productName": "Runner Low", "category": "Footwear", "status": "InProgress" } ] }
 ```
 
 **Known limitations**
@@ -596,13 +596,13 @@ Search Editorial Projects — campaign/initiative-level container in the Editori
 **Example input**
 
 ```json
-{ "projectStatus": "Active", "pageSize": 10 }
+{ "projectStatus": "InProgress", "pageSize": 10 }
 ```
 
 **Example output**
 
 ```json
-{ "total": 6, "hits": [ { "projectId": "9d83efa3-...", "projectCode": "ED-2026-01", "projectName": "Back-to-school 2026", "projectStatus": "Active" } ] }
+{ "total": 6, "hits": [ { "projectId": "9d83efa3-...", "projectCode": "ED-2026-01", "projectName": "Back-to-school 2026", "projectStatus": "InProgress" } ] }
 ```
 
 **Known limitations**
@@ -1003,7 +1003,7 @@ Send feedback to the Creative Force team. Types: result_feedback (rate a result)
 
 **Known limitations**
 
-The only write tool (not read-only). Persistence to a database is not yet implemented; feedback is logged and forwarded to Slack (best-effort).
+The only tool that writes anything — it sends your feedback to the Creative Force team and writes nothing to your studio's data.
 
 ---
 
