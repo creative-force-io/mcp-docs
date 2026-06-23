@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "label": "tools",
-  "message": "16 tools",
+  "message": "17 tools",
   "color": "blue",
-  "toolCount": 16,
+  "toolCount": 17,
   "tools": [
     {
       "name": "get_asset_preview",
@@ -309,7 +309,7 @@
       "name": "query_ecomm_job",
       "title": "Query E-Comm Job",
       "module": "Jobs",
-      "description": "Search production jobs — containers that group products for production. Use this to answer: what jobs exist, job status, deadline, how many jobs by status. Filter by code or name (use 'job' param for OR search), status, workspace, deadline range. Pass jobIds to look up specific jobs by ID (e.g. from detail page context). Supports custom property filters via customPropertyName + customPropertyValue. When groupBy params set, returns counts/aggregations instead of list.",
+      "description": "Search production jobs — containers that group products for production. Use this to answer: what jobs exist, job status, deadline, how many jobs by status. Filter by code or name (use 'job' param for OR search), status, workspace, deadline range. Pass jobIds to look up specific jobs by ID (e.g. from detail page context). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each job's `customProperties` lists only properties that have a value SET. A property name being absent from a job does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for jobs, call query_property(entityType='job') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_job result alone. When groupBy params set, returns counts/aggregations instead of list. TEXT FILTERS — these params accept inline operators (jobCode, jobName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -330,13 +330,13 @@
           "name": "jobCode",
           "type": "string",
           "required": false,
-          "description": "Job code (exact)"
+          "description": "Job code filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "jobName",
           "type": "string",
           "required": false,
-          "description": "Job name (exact)"
+          "description": "Job name filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "jobStatusName",
@@ -369,16 +369,16 @@
           "description": "Deadline to (epoch ms or ISO)"
         },
         {
+          "name": "customPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
+        },
+        {
           "name": "customPropertyName",
           "type": "string",
           "required": false,
-          "description": "Custom property name (resolved to GUID) or GUID directly"
-        },
-        {
-          "name": "customPropertyValue",
-          "type": "string",
-          "required": false,
-          "description": "Custom property value to match (exact)"
+          "description": "Custom property name (resolved to GUID) or GUID directly. Used with groupByCustomProperty for aggregation."
         },
         {
           "name": "groupByStatus",
@@ -391,6 +391,12 @@
           "type": "bool",
           "required": false,
           "description": "Group by workspace/client — aggregation mode. Use for any 'per workspace', 'per client', 'by workspace' question."
+        },
+        {
+          "name": "groupByCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of customPropertyName — aggregation mode. Requires customPropertyName to be set."
         },
         {
           "name": "pageSize",
@@ -413,7 +419,7 @@
       "name": "query_ecomm_product_request",
       "title": "Query E-Comm Product Request",
       "module": "Product Hub",
-      "description": "Search products in the catalog. Filter by code, name, job, category, brand, color, style code, vendor material code, status, workspace, product state (Active/Inactive), sample check-in status, sample code, sample location, sample check-in date, pool first-check-in date, product created date, container code, product tagging, custom property. Status: Backlog, Todo, InProgress, Done. Use product param to search both productCode and productName (OR). Pass productIds to look up specific products by ID (e.g. from detail page context). When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results.",
+      "description": "Search products in the catalog. Filter by code, name, job, category, brand, color, style code, vendor material code, status, workspace, product state (Active/Inactive), sample check-in status, sample code, sample location, sample check-in date, pool first-check-in date, product created date, container code, product tagging, custom property. Status: Backlog, Todo, InProgress, Done. Products come in two types: Product (the default) and Wardrobe. Normal searches only match Product items; use productType='Wardrobe' or productType='all' to reach wardrobe records. Use product param to search both productCode and productName (OR). Pass productIds to look up specific products by ID (e.g. from detail page context). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each product's `customProperties` lists only properties that have a value SET. A property name being absent from a product does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for products, call query_property(entityType='product') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_product_request result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. TEXT FILTERS — these params accept inline operators (productCode, productName, category, brand, color, styleCode, vendorMaterialCode): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -428,13 +434,13 @@
           "name": "productCode",
           "type": "string",
           "required": false,
-          "description": "Product code (exact)"
+          "description": "Product code filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "productName",
           "type": "string",
           "required": false,
-          "description": "Product name (exact)"
+          "description": "Product name filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "product",
@@ -464,31 +470,31 @@
           "name": "category",
           "type": "string",
           "required": false,
-          "description": "Category"
+          "description": "Category filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "brand",
           "type": "string",
           "required": false,
-          "description": "Brand"
+          "description": "Brand filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "color",
           "type": "string",
           "required": false,
-          "description": "Color"
+          "description": "Color filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "styleCode",
           "type": "string",
           "required": false,
-          "description": "Style code"
+          "description": "Style code filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "vendorMaterialCode",
           "type": "string",
           "required": false,
-          "description": "Vendor material code"
+          "description": "Vendor material code filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "status",
@@ -509,16 +515,16 @@
           "description": "Workspace/client name or ID"
         },
         {
+          "name": "customPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
+        },
+        {
           "name": "customPropertyName",
           "type": "string",
           "required": false,
-          "description": "Custom property name (resolved to GUID) or GUID directly"
-        },
-        {
-          "name": "customPropertyValue",
-          "type": "string",
-          "required": false,
-          "description": "Custom property value to match (exact)"
+          "description": "Custom property name (resolved to GUID) or GUID directly. Used with groupByCustomProperty for aggregation."
         },
         {
           "name": "editorialProjectIds",
@@ -531,6 +537,12 @@
           "type": "string",
           "required": false,
           "description": "Product state: 'Active' (in production) or 'Inactive' (ignored/excluded)."
+        },
+        {
+          "name": "productType",
+          "type": "string",
+          "required": false,
+          "description": "Product type: 'Product' (default) or 'Wardrobe'. Defaults to 'Product' when omitted — normal product searches (e.g. by name/code) only match Product items. If a search returns nothing under the default, the item may exist as a Wardrobe record: tell the user it wasn't found among products and offer to re-search wardrobe, or retry with productType='Wardrobe'. Pass 'all' to include both types."
         },
         {
           "name": "sampleCheckInStatus",
@@ -673,7 +685,7 @@
       "name": "query_ecomm_production",
       "title": "Query E-Comm Production",
       "module": "Production",
-      "description": "Search productions (work units) — the central entity tracking a product through the workflow. Use this to answer: what step is a production on, who's working on it, how many are done/in-progress, production counts by photographer/vendor/location/type, and turnaround times. Status: New, Todo, InProgress, Done. Step names: Photography, InternalPostProduction, FinalSelection, etc. Filter by job, product, sample, production type, vendor team, post-production vendor, photographer, stylist, model, art director, videographer, digital-processing user, location, workspace. **Job lookup param choice — strict per user phrasing:** caller says 'job code JOB-123' → `jobCode`; 'job named Spring Campaign' → `jobName`; 'job X' without saying code-vs-name → `job` (ambiguous, matches code OR name). Same pattern for product (`productCode`/`productName`/`product`). **Codes are EXACT (case-sensitive); names are case-insensitive.** **Sample lookup**: `sample` is ambiguous — matches sample UUID OR sampleCode (exact, case-sensitive) OR cfBarcode (exact, case-sensitive) OR sampleName (case-insensitive). Filter by planning session: `session` (ambiguous session UUID, code, or name partial — matches against planningSessionId OR planningSession.sessionCode OR planningSession.sessionName). Drill-down: pass jobIds/productIds/planningSessionIds from upstream queries. Use human-readable names for all filters (resolved to IDs automatically). Returns: current step & status, production type, products, job, samples (codes/names/cfBarcodes/sizes/total/checkedIn), team on set (all 8 roles), vendors, location, style guide, outfit (incl. styling item codes), planning session (id/name/code/start/end), timing. When groupBy params set, returns counts/aggregations instead of list.",
+      "description": "Search productions (work units) — the central entity tracking a product through the workflow. Use this to answer: what step is a production on, who's working on it, how many are done/in-progress, production counts by photographer/vendor/location/type, and turnaround times. Status: New, Todo, InProgress, Done. Step names: Photography, InternalPostProduction, FinalSelection, etc. Filter by job, product, sample, production type, vendor team, post-production vendor, photographer, stylist, model, art director, videographer, digital-processing user, location, workspace. **Job lookup param choice — strict per user phrasing:** caller says 'job code JOB-123' → `jobCode`; 'job named Spring Campaign' → `jobName`; 'job X' without saying code-vs-name → `job` (ambiguous, matches code OR name). Same pattern for product (`productCode`/`productName`/`product`). **Codes are EXACT (case-sensitive); names are case-insensitive.** **Sample lookup**: `sample` is ambiguous — matches sample UUID OR sampleCode (exact, case-sensitive) OR cfBarcode (exact, case-sensitive) OR sampleName (case-insensitive). Filter by planning session: `session` (ambiguous session UUID, code, or name partial — matches against planningSessionId OR planningSession.sessionCode OR planningSession.sessionName). Drill-down: pass jobIds/productIds/planningSessionIds from upstream queries. Use human-readable names for all filters (resolved to IDs automatically). Returns: current step & status, production type, products, job, samples (codes/names/cfBarcodes/sizes/total/checkedIn), team on set (all 8 roles), vendors, location, style guide, outfit (incl. styling item codes), planning session (id/name/code/start/end), timing. CUSTOM PROPERTIES: a production surfaces custom properties from three entities — `jobCustomProperties`, `products[].customProperties`, `samples` — and each lists only properties that have a value SET. A property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('job', 'product', or 'sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_production result alone. When groupBy params set, returns counts/aggregations instead of list.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -919,6 +931,42 @@
           "description": "Group by workspace/client — aggregation mode. Use for any 'per workspace', 'per client', 'by workspace' question."
         },
         {
+          "name": "groupByJobCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of a job custom property — aggregation mode. Requires jobCustomPropertyName to be set."
+        },
+        {
+          "name": "jobCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Job custom property name (resolved to GUID) or GUID directly. Used with groupByJobCustomProperty for aggregation."
+        },
+        {
+          "name": "groupByProductCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of a product custom property — aggregation mode. Requires productCustomPropertyName to be set."
+        },
+        {
+          "name": "productCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Product custom property name (resolved to GUID) or GUID directly. Used with groupByProductCustomProperty for aggregation."
+        },
+        {
+          "name": "groupBySampleCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of a sample custom property — aggregation mode. Requires sampleCustomPropertyName to be set."
+        },
+        {
+          "name": "sampleCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Sample custom property name (resolved to GUID) or GUID directly. Used with groupBySampleCustomProperty for aggregation."
+        },
+        {
           "name": "pageSize",
           "type": "int",
           "required": false,
@@ -939,7 +987,7 @@
       "name": "query_editorial_deliverable",
       "title": "Query Editorial Deliverable",
       "module": "Editorial",
-      "description": "Search Editorial Deliverables — the per-output unit inside an Editorial Project (each Deliverable is one delivery row, e.g. 'AEM Deliverable 1', 'D 20230627 3'). Does NOT return sample records — to list or find specific samples, use query_sample. Use to answer: which deliverables exist for a project/campaign, what step a deliverable is at, who owns it, what's overdue, how many at each step, deliverable counts by status/project/workspace/period. Filter by code, name, output-name, owner (full name), project (code/name/id), workspace, current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status (Backlog/Todo/InProgress/Done/Failed/Rejected), deliverable status, due-date range, content readiness flags (boolean only), asset-workflow status, finalization status, preset, custom property. Pass deliverableIds to look up specific deliverables by ID (e.g. from detail page context). When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results.",
+      "description": "Search Editorial Deliverables — the per-output unit inside an Editorial Project (each Deliverable is one delivery row, e.g. 'AEM Deliverable 1', 'D 20230627 3'). Does NOT return sample records — to list or find specific samples, use query_sample. Use to answer: which deliverables exist for a project/campaign, what step a deliverable is at, who owns it, what's overdue, how many at each step, deliverable counts by status/project/workspace/period. Filter by code, name, output-name, owner (full name), project (code/name/id), workspace, current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status (Backlog/Todo/InProgress/Done/Failed/Rejected), deliverable status, due-date range, content readiness flags (boolean only), asset-workflow status, finalization status, preset, custom property. Pass deliverableIds to look up specific deliverables by ID (e.g. from detail page context). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a range — works for both Date and Number properties; for Number pass plain numeric strings, e.g. {name, from:\"1\", to:\"10\"}). For parent-project custom property filters, use projectCustomPropertyFilters (same JSON format, applied via has_parent join). CUSTOM PROPERTIES: each deliverable's `customProperties` lists only properties that have a value SET. A property name being absent from a deliverable does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property(entityType='editorial_deliverable') (or entityType='editorial_project' for parent-project properties) to get the full list of properties defined for this studio; never conclude a property is undefined from a query_editorial_deliverable result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. TEXT FILTERS — these params accept inline operators (deliverableCode, deliverableName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -954,13 +1002,13 @@
           "name": "deliverableCode",
           "type": "string",
           "required": false,
-          "description": "Editorial Deliverable code, e.g. 'ED151009CF'. Exact match."
+          "description": "Editorial Deliverable code, e.g. 'ED151009CF'. Text filter — supports inline operators, see TEXT FILTERS in the tool description."
         },
         {
           "name": "deliverableName",
           "type": "string",
           "required": false,
-          "description": "Editorial Deliverable name (free-text label set by user, e.g. 'AEM Deliverable 2'). Exact match."
+          "description": "Editorial Deliverable name (free-text label set by user, e.g. 'AEM Deliverable 2'). Text filter — supports inline operators, see TEXT FILTERS in the tool description."
         },
         {
           "name": "deliverableOutputName",
@@ -1089,16 +1137,10 @@
           "description": "Parent project's Project Manager full name (or GUID). No 'me'/currentUser resolver — caller must pass the explicit name."
         },
         {
-          "name": "projectCustomPropertyName",
+          "name": "projectCustomPropertyFilters",
           "type": "string",
           "required": false,
-          "description": "Parent project custom property name (customer-defined field on the EditorialProject, e.g. 'season') or its GUID. Pair with projectCustomPropertyValue. Distinct from deliverableCustomPropertyName, which lives on the Deliverable doc itself."
-        },
-        {
-          "name": "projectCustomPropertyValue",
-          "type": "string",
-          "required": false,
-          "description": "Value to match for projectCustomPropertyName. Required when projectCustomPropertyName is set. Exact match, lowercased."
+          "description": "Custom property filters applied to the parent Editorial Project via has_parent join. JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
         },
         {
           "name": "productsAdded",
@@ -1167,16 +1209,16 @@
           "description": "Editorial Preset name (or GUID) attached to the deliverable. Resolved to presetId via masterDataCache.GetEditorialPresetsAsync."
         },
         {
+          "name": "customPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
+        },
+        {
           "name": "deliverableCustomPropertyName",
           "type": "string",
           "required": false,
-          "description": "Editorial Deliverable custom property name (customer-defined field, e.g. 'collection', 'season') or its GUID. Pair with deliverableCustomPropertyValue to filter, or with groupByCustomProperty=true to aggregate."
-        },
-        {
-          "name": "deliverableCustomPropertyValue",
-          "type": "string",
-          "required": false,
-          "description": "Value to match for deliverableCustomPropertyName. Required when deliverableCustomPropertyName is set in filter mode. Exact match, lowercased."
+          "description": "Deliverable custom property name (resolved to GUID) or GUID directly. Used with groupByCustomProperty for aggregation."
         },
         {
           "name": "groupByCurrentStep",
@@ -1259,7 +1301,7 @@
       "name": "query_editorial_production",
       "title": "Query Editorial Production",
       "module": "Editorial",
-      "description": "Search Editorial Productions (also called Editorial work units) — the central WorkUnit-doc row that tracks an Editorial Deliverable's content through the workflow (contentCreationTypeId=2). Use to answer: which work units exist for a project/deliverable, what step a production is at, who's shooting it, how many at each status/step, throughput by week, work unit counts by project/workspace/photographer. Filter by project (name/code/due-date/custom-property), deliverable (name/code/due-date/custom-property), product code, sample (code/name/custom-property), workflow type ('Asset Workflow' / 'Finalization'), workflow status ('To Do'/'In Progress'/'Done'), current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status ('Backlog'/'To Do'/'Rejected'/'In Progress'/'Failed'/'Done'), photographer/videographer/stylist/hair-and-makeup/model/art-director/assistant (Editorial team-on-set), External Post Vendor, External Post QC / Internal Post / Internal Post QC / Post Review assignees, workspace, media type (Image/Video — feature-gated), round of review, asset-delivery-finished date range, Selection/Post-Review collection statuses. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. Editorial only — for E-comm production rows use query_ecomm_production. For the parent project itself use query_editorial_project; for deliverable-level filtering use query_editorial_deliverable.",
+      "description": "Search Editorial Productions (also called Editorial work units) — the central WorkUnit-doc row that tracks an Editorial Deliverable's content through the workflow (contentCreationTypeId=2). Use to answer: which work units exist for a project/deliverable, what step a production is at, who's shooting it, how many at each status/step, throughput by week, work unit counts by project/workspace/photographer. Filter by project (name/code/due-date/custom-property), deliverable (name/code/due-date/custom-property), product code, sample (code/name/custom-property), workflow type ('Asset Workflow' / 'Finalization'), workflow status ('To Do'/'In Progress'/'Done'), current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status ('Backlog'/'To Do'/'Rejected'/'In Progress'/'Failed'/'Done'), photographer/videographer/stylist/hair-and-makeup/model/art-director/assistant (Editorial team-on-set), External Post Vendor, External Post QC / Internal Post / Internal Post QC / Post Review assignees, workspace, media type (Image/Video — feature-gated), round of review, asset-delivery-finished date range, Selection/Post-Review collection statuses. Supports custom property filters via projectCustomPropertyFilters, deliverableCustomPropertyFilters, sampleCustomPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: a production surfaces custom properties from several entities (project / deliverable / sample / session), and each lists only properties that have a value SET; a property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('editorial_project', 'editorial_deliverable', 'sample', or 'session') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_editorial_production result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. Editorial only — for E-comm production rows use query_ecomm_production. For the parent project itself use query_editorial_project; for deliverable-level filtering use query_editorial_deliverable.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -1295,16 +1337,10 @@
           "description": "Latest project deadline. ISO date or epoch ms. Inclusive (`lte`)."
         },
         {
-          "name": "projectCustomPropertyName",
+          "name": "projectCustomPropertyFilters",
           "type": "string",
           "required": false,
-          "description": "Editorial Project custom property name (customer-defined field on the parent project, e.g. 'season', 'region') or its GUID. Pair with projectCustomPropertyValue. Resolved via masterDataCache.GetEditorialProjectCustomPropertiesAsync (objectType=100). Distinct from deliverableCustomPropertyName, which lives on the Deliverable denormalization."
-        },
-        {
-          "name": "projectCustomPropertyValue",
-          "type": "string",
-          "required": false,
-          "description": "Value to match for projectCustomPropertyName. Required when projectCustomPropertyName is set in filter mode. Exact match, lowercased."
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
         },
         {
           "name": "deliverableName",
@@ -1337,16 +1373,10 @@
           "description": "Latest deliverable deadline. ISO date or epoch ms. Inclusive (`lte`)."
         },
         {
-          "name": "deliverableCustomPropertyName",
+          "name": "deliverableCustomPropertyFilters",
           "type": "string",
           "required": false,
-          "description": "Editorial Deliverable custom property name (customer-defined field on the deliverable, e.g. 'channel', 'collection') or its GUID. Pair with deliverableCustomPropertyValue. Resolved via masterDataCache.GetEditorialDeliverableCustomPropertiesAsync (objectType=101)."
-        },
-        {
-          "name": "deliverableCustomPropertyValue",
-          "type": "string",
-          "required": false,
-          "description": "Value to match for deliverableCustomPropertyName. Required when deliverableCustomPropertyName is set in filter mode. Exact match, lowercased."
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
         },
         {
           "name": "productCode",
@@ -1505,16 +1535,10 @@
           "description": "Sample name on the work unit (exact match, lowercased)."
         },
         {
-          "name": "sampleCustomPropertyName",
+          "name": "sampleCustomPropertyFilters",
           "type": "string",
           "required": false,
-          "description": "Sample custom property name (e.g. 'fabric', 'colorVariant') or GUID. Pair with sampleCustomPropertyValue. Resolved via masterDataCache.GetSampleCustomPropertiesAsync (objectType=3)."
-        },
-        {
-          "name": "sampleCustomPropertyValue",
-          "type": "string",
-          "required": false,
-          "description": "Value to match for sampleCustomPropertyName. Required when sampleCustomPropertyName is set in filter mode. Exact match, lowercased."
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
         },
         {
           "name": "mediaType",
@@ -1595,6 +1619,42 @@
           "description": "Group by photographer — aggregation mode. Counts by photographer full name (batch-resolved)."
         },
         {
+          "name": "projectCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Project custom property name (resolved to GUID) or GUID. Used with groupByProjectCustomProperty for aggregation."
+        },
+        {
+          "name": "groupByProjectCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of projectCustomPropertyName — aggregation mode. Requires projectCustomPropertyName."
+        },
+        {
+          "name": "deliverableCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Deliverable custom property name (resolved to GUID) or GUID. Used with groupByDeliverableCustomProperty for aggregation."
+        },
+        {
+          "name": "groupByDeliverableCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of deliverableCustomPropertyName — aggregation mode. Requires deliverableCustomPropertyName."
+        },
+        {
+          "name": "sampleCustomPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Sample custom property name (resolved to GUID) or GUID. Used with groupBySampleCustomProperty for aggregation."
+        },
+        {
+          "name": "groupBySampleCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of sampleCustomPropertyName — aggregation mode. Requires sampleCustomPropertyName."
+        },
+        {
           "name": "groupByPeriod",
           "type": "string",
           "required": false,
@@ -1627,7 +1687,7 @@
       "name": "query_editorial_project",
       "title": "Query Editorial Project",
       "module": "Editorial",
-      "description": "Search Editorial Projects — campaign/initiative-level container in the Editorial module (e.g. 'Back-to-school 2026'). Use to answer: which projects exist, project status, due date, who manages it, project counts by status/workspace/PM, how many projects per workspace/client. Filter by code, name, campaign, status, project manager, workspace, due/created date, deliverables count, custom property. Pass projectIds to look up specific projects by ID (e.g. from detail page context). When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results.",
+      "description": "Search Editorial Projects — campaign/initiative-level container in the Editorial module (e.g. 'Back-to-school 2026'). Use to answer: which projects exist, project status, due date, who manages it, project counts by status/workspace/PM, how many projects per workspace/client. Filter by code, name, campaign, status, project manager, workspace, due/created date, deliverables count, custom property. Pass projectIds to look up specific projects by ID (e.g. from detail page context). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each project's `customProperties` lists only properties that have a value SET. A property name being absent from a project does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for projects, call query_property(entityType='editorial_project') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_editorial_project result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. TEXT FILTERS — these params accept inline operators (projectCode, projectName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -1642,13 +1702,13 @@
           "name": "projectCode",
           "type": "string",
           "required": false,
-          "description": "Editorial Project code, e.g. 'EPJ101577CF'. Exact match."
+          "description": "Editorial Project code, e.g. 'EPJ101577CF'. Text filter — supports inline operators, see TEXT FILTERS in the tool description."
         },
         {
           "name": "projectName",
           "type": "string",
           "required": false,
-          "description": "Editorial Project name (campaign/initiative name set by user). Exact match."
+          "description": "Editorial Project name (campaign/initiative name set by user). Text filter — supports inline operators, see TEXT FILTERS in the tool description."
         },
         {
           "name": "projectCampaign",
@@ -1699,16 +1759,16 @@
           "description": "Workspace/client display name (or GUID) — the customer that owns the project."
         },
         {
+          "name": "customPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
+        },
+        {
           "name": "projectCustomPropertyName",
           "type": "string",
           "required": false,
-          "description": "Editorial Project custom property name (customer-defined field, e.g. 'season', 'collection') or its GUID. Pair with projectCustomPropertyValue to filter, or with groupByCustomProperty=true to aggregate."
-        },
-        {
-          "name": "projectCustomPropertyValue",
-          "type": "string",
-          "required": false,
-          "description": "Value to match for projectCustomPropertyName. Required when projectCustomPropertyName is set for filter mode. Exact match, lowercased."
+          "description": "Project custom property name (resolved to GUID) or GUID directly. Used with groupByCustomProperty for aggregation."
         },
         {
           "name": "projectCreatedDateFrom",
@@ -1791,7 +1851,7 @@
       "name": "query_planning",
       "title": "Query Planning",
       "module": "Planning",
-      "description": "**Custom Resource trigger** → if user prompt names a production support role NOT in the standard productionTeam (Photographer/Stylist/Model/Art Director/Hair&Makeup/Assistant/Videographer/DigitalProcessing) → call this tool with `includeCustomResources=true`. Common triggers: 'cater', 'lunch', 'runner', 'driver', 'PA', 'DIT', 'dog handler', 'medic' (and any similar free-form role). Custom Resource labels are FREE-FORM text studios type themselves → semantic-match them yourself from `customResourceLabelsAvailable[]` + `customResources[]` in the response. **Tool-first, ask-later**: call the tool, then if `customResourceLabelsAvailable=[]` ask user; otherwise semantic-match from availableLabels. **Trailing-junk / cut-off tolerance**: if user prompt has trailing backslash (`\\`), ellipsis (`...`), question marks (`??`), or appears truncated mid-word, IGNORE the noise and treat the readable trigger word as the query. Do NOT respond with 'your message looks cut off' — call the tool with the cleaned query. Examples: 'Who is today's Cater' → query for cater. 'Lunch...' → query for lunch. 'DIT??' → query for DIT. **Likely-misread tolerance**: if a trigger word could be misread as a proper noun (e.g. 'Cater' → 'Carter', 'DIT' → a person's initials), DEFAULT to the production-role interpretation (this tool is in a production planning context, not a general-knowledge chat). Don't suggest sports/celebrity readings of trigger words. **Default 'today' to ISO date**: when user says 'today', 'hôm nay', 'this morning', etc., automatically set `dateFrom`=`dateTo`=current date in `YYYY-MM-DD` (server timezone UTC). Same for 'tomorrow' (+1 day), 'yesterday' (-1 day), 'this week' (Mon-Sun current week). Don't ask the user to specify the date when they used a relative phrase. Search planning sessions — scheduled production shoots with team, time slots, and progress. Use this to answer: what's planned, when (ISO 8601 UTC), where, who's on set, sample check-in status, photography progress, alerts. **Who-is-working queries**: when user asks 'who is working this week', 'which talent has sessions today', 'list photographers on sessions next month' → set `groupByTeamMember=true` with `dateFrom`/`dateTo`. Response flips to person-centric: each entry shows the team member with their sessions. This is the primary way to answer talent-on-session questions when the studio does not use the Resource Booking add-on. Filter by team member (any role) or specific role (photographer, stylist, model, art director, assistant, videographer, hair & makeup). Also filter by sessionCode (e.g. 'SES137123CF'), sessionName (partial), location, production type, check-in/alert/photography status, date range. Filter by associated job (jobCode/jobName, or `job` ambiguous = code OR name) and product attributes (productCode/productName, or `product` ambiguous = code OR name, plus brand, category, color, styleCode) — exact match, case-insensitive, matches if ANY of the session's jobs/products satisfies the filter. Editorial workflow: filter by associated project (projectCode/projectName, or `project` ambiguous = code OR name, plus campaign) and deliverable (deliverableCode/deliverableName, or `deliverable` ambiguous = code OR name, plus deliverableOutputName) — exact match, case-insensitive, matches if ANY of the session's projects/deliverables satisfies the filter. Use `user` to find a session where a given user is on the production team regardless of skill/role (V2 ProductionTeams). Returns: session `id` (UUID), sessionName, sessionCode, time slots (ISO 8601 UTC), full production team (resolved names), check-in status, photography progress, job codes, product codes. When groupBy params set, returns counts/aggregations instead of list. **Session lookup param choice — strict per user phrasing:**   • User says 'session code SES137123CF' / 'code SES…' → `sessionCode` only.   • User says 'session named Nike Spring' / 'the Spring shoot' → `sessionName` only.   • User says 'session SES137123CF' / 'session Nike Spring' WITHOUT specifying code-vs-name → `session` (ambiguous param, matches code OR name OR UUID). Don't pass multiple session params at once — pick the one that matches user intent. **Chain with query_talent_crew_schedule**: when the user asks about bookings/holds for a specific session, FIRST call this tool → take response's `id` and `timeSlots` → pass to `query_talent_crew_schedule(sessionId=<id>, dateFrom=<min start>, dateTo=<max end>, ...)`. **Custom Resource queries** (cater / catering / lunch / food / runner / driver / transport / PA / production assistant / makeup artist (one-off) / any role NOT in standard productionTeam): set `includeCustomResources=true`. Custom resources are free-form (label, name) pairs attached inline to a session via the FE 'CUSTOM RESOURCE' panel → free-form means studios type whatever they want ('cater', 'Cater', 'catering', 'lunch', 'food service'). The tool returns ALL custom resources on the page and Claude does the semantic match (no server-side filter — too many false-negatives on free-form text like 'Caster' vs 'cater'). **Semantic match rule** (CRITICAL for custom resources): the response includes `customResourceLabelsAvailable: string[]` → distinct labels seen on the page, plus `customResources[{label,name}]` per session. Scan `customResourceLabelsAvailable` for labels **semantically similar** to the user's word, then read the matching `customResources` entries. DO NOT reply 'not found' until you've checked every label. Examples: 'cater' → look for 'catering', 'lunch', 'meal', 'food service', 'snack runner'; 'driver' → 'transport', 'shuttle', 'logistics'; 'PA' → 'production assistant', 'runner', 'gopher'. Tell the user which labels you considered (e.g. 'No exact 'cater' label, but 'catering' is set to John Smith → likely the same role.'). **Custom resource has NO booking status** (no Confirmed/Hold) → it's session-inline data, not a resource booking. Don't mention status pills for these rows.",
+      "description": "**Custom Resource trigger** → if user prompt names a production support role NOT in the standard productionTeam (Photographer/Stylist/Model/Art Director/Hair&Makeup/Assistant/Videographer/DigitalProcessing) → call this tool with `includeCustomResources=true`. Common triggers: 'cater', 'lunch', 'runner', 'driver', 'PA', 'DIT', 'dog handler', 'medic' (and any similar free-form role). Custom Resource labels are FREE-FORM text studios type themselves → semantic-match them yourself from `customResourceLabelsAvailable[]` + `customResources[]` in the response. **Tool-first, ask-later**: call the tool, then if `customResourceLabelsAvailable=[]` ask user; otherwise semantic-match from availableLabels. **Trailing-junk / cut-off tolerance**: if user prompt has trailing backslash (`\\`), ellipsis (`...`), question marks (`??`), or appears truncated mid-word, IGNORE the noise and treat the readable trigger word as the query. Do NOT respond with 'your message looks cut off' — call the tool with the cleaned query. Examples: 'Who is today's Cater' → query for cater. 'Lunch...' → query for lunch. 'DIT??' → query for DIT. **Likely-misread tolerance**: if a trigger word could be misread as a proper noun (e.g. 'Cater' → 'Carter', 'DIT' → a person's initials), DEFAULT to the production-role interpretation (this tool is in a production planning context, not a general-knowledge chat). Don't suggest sports/celebrity readings of trigger words. **Default 'today' to ISO date**: when user says 'today', 'hôm nay', 'this morning', etc., automatically set `dateFrom`=`dateTo`=current date in `YYYY-MM-DD` (server timezone UTC). Same for 'tomorrow' (+1 day), 'yesterday' (-1 day), 'this week' (Mon-Sun current week). Don't ask the user to specify the date when they used a relative phrase. Search planning sessions — scheduled production shoots with team, time slots, and progress. Use this to answer: what's planned, when (ISO 8601 UTC), where, who's on set, sample check-in status, photography progress, alerts. **Who-is-working queries**: when user asks 'who is working this week', 'which talent has sessions today', 'list photographers on sessions next month' → set `groupByTeamMember=true` with `dateFrom`/`dateTo`. Response flips to person-centric: each entry shows the team member with their sessions. This is the primary way to answer talent-on-session questions when the studio does not use the Resource Booking add-on. Filter by team member (any role) or specific role (photographer, stylist, model, art director, assistant, videographer, hair & makeup). Also filter by sessionCode (e.g. 'SES137123CF'), sessionName (partial), sessionDescription (exact), location, production type, check-in/alert/photography status, date range. Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each session's `customProperties` lists only properties that have a value SET. A property name being absent from a session does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for sessions, call query_property(entityType='session') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_planning result alone. Filter by associated job (jobCode/jobName, or `job` ambiguous = code OR name) and product attributes (productCode/productName, or `product` ambiguous = code OR name, plus brand, category, color, styleCode) — exact match, case-insensitive, matches if ANY of the session's jobs/products satisfies the filter. Editorial workflow: filter by associated project (projectCode/projectName, or `project` ambiguous = code OR name, plus campaign) and deliverable (deliverableCode/deliverableName, or `deliverable` ambiguous = code OR name, plus deliverableOutputName) — exact match, case-insensitive, matches if ANY of the session's projects/deliverables satisfies the filter. Use `user` to find a session where a given user is on the production team regardless of skill/role (V2 ProductionTeams). Returns: session `id` (UUID), sessionName, sessionCode, time slots (ISO 8601 UTC), full production team (resolved names), check-in status, photography progress, job codes, product codes. When groupBy params set, returns counts/aggregations instead of list. **Session lookup param choice — strict per user phrasing:**   • User says 'session code SES137123CF' / 'code SES…' → `sessionCode` only.   • User says 'session named Nike Spring' / 'the Spring shoot' → `sessionName` only.   • User says 'session SES137123CF' / 'session Nike Spring' WITHOUT specifying code-vs-name → `session` (ambiguous param, matches code OR name OR UUID). Don't pass multiple session params at once — pick the one that matches user intent. **Chain with query_talent_crew_schedule**: when the user asks about bookings/holds for a specific session, FIRST call this tool → take response's `id` and `timeSlots` → pass to `query_talent_crew_schedule(sessionId=<id>, dateFrom=<min start>, dateTo=<max end>, ...)`. **Custom Resource queries** (cater / catering / lunch / food / runner / driver / transport / PA / production assistant / makeup artist (one-off) / any role NOT in standard productionTeam): set `includeCustomResources=true`. Custom resources are free-form (label, name) pairs attached inline to a session via the FE 'CUSTOM RESOURCE' panel → free-form means studios type whatever they want ('cater', 'Cater', 'catering', 'lunch', 'food service'). The tool returns ALL custom resources on the page and Claude does the semantic match (no server-side filter — too many false-negatives on free-form text like 'Caster' vs 'cater'). **Semantic match rule** (CRITICAL for custom resources): the response includes `customResourceLabelsAvailable: string[]` → distinct labels seen on the page, plus `customResources[{label,name}]` per session. Scan `customResourceLabelsAvailable` for labels **semantically similar** to the user's word, then read the matching `customResources` entries. DO NOT reply 'not found' until you've checked every label. Examples: 'cater' → look for 'catering', 'lunch', 'meal', 'food service', 'snack runner'; 'driver' → 'transport', 'shuttle', 'logistics'; 'PA' → 'production assistant', 'runner', 'gopher'. Tell the user which labels you considered (e.g. 'No exact 'cater' label, but 'catering' is set to John Smith → likely the same role.'). **Custom resource has NO booking status** (no Confirmed/Hold) → it's session-inline data, not a resource booking. Don't mention status pills for these rows. TEXT FILTERS — these params accept inline operators (sessionDescription): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -1813,6 +1873,12 @@
           "type": "string",
           "required": false,
           "description": "Session identifier when the user said something like 'session X' WITHOUT specifying it's a name or code. Server matches X against EITHER sessionCode OR sessionName (wildcard). Don't use this if the user explicitly called it a code or a name — pass `sessionCode` or `sessionName` instead."
+        },
+        {
+          "name": "sessionDescription",
+          "type": "string",
+          "required": false,
+          "description": "Session description filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "dateFrom",
@@ -2067,6 +2133,24 @@
           "description": "Page (0-based, ignored in aggregation)"
         },
         {
+          "name": "customPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
+        },
+        {
+          "name": "customPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Custom property name (resolved to GUID) or GUID directly. Used with groupByCustomProperty for aggregation."
+        },
+        {
+          "name": "groupByCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of customPropertyName — aggregation mode. Requires customPropertyName to be set."
+        },
+        {
           "name": "includeCustomResources",
           "type": "bool",
           "required": false,
@@ -2078,10 +2162,30 @@
       "knownLimitations": "Time slots are stored as epoch ms and returned as ISO 8601. Non-standard production-support roles are only included when includeCustomResources is set."
     },
     {
+      "name": "query_property",
+      "title": "Query Property",
+      "module": "Properties",
+      "description": "List property definitions for a given entity type in this studio. Returns all properties (both custom and reserved system properties). Each property includes name, internalName, isEditable (true = custom property defined by the studio and can be modified; false = reserved system property that cannot be changed), valueType (Free text, List of options, Date, Date time, Number), and syncMode. COUNTING: when the user asks how many properties match any criteria (a given valueType, syncMode, isEditable flag, or any combination), do NOT count the list by hand — write and run code that filters the returned `properties` array and reports its length. Manual tallying is unreliable.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "entityType",
+          "type": "string",
+          "required": false,
+          "description": "Entity type to list properties for. One of: product, job, sample, outfit, session, editorial_project, editorial_deliverable, talent_crew."
+        }
+      ],
+      "exampleInput": "{ \"entityType\": \"product\" }",
+      "exampleOutput": "{ \"entityType\": \"product\", \"objectTypeId\": 2, \"total\": 12, \"properties\": [ { \"id\": \"a1b2c3\", \"name\": \"Season\", \"internalName\": \"season\", \"isEditable\": true, \"valueType\": \"List of options\", \"syncMode\": \"Inherited\" } ] }",
+      "knownLimitations": "Lists property *definitions* (the schema) for one entity type — not the property values on individual records. entityType must be one of: product, job, sample, outfit, session, editorial_project, editorial_deliverable, talent_crew. To count properties by valueType/syncMode/isEditable, filter the returned `properties` array programmatically rather than tallying by hand."
+    },
+    {
       "name": "query_sample",
       "title": "Query Sample",
       "module": "Samples",
-      "description": "Search samples (physical product items) — track location, check-in/out status, and containers. The only tool that returns actual sample records. Use this to answer: where is a sample, is it checked in, which samples are at a location, which samples are overdue for return, which samples belong to a project, counts by location/status. Samples are linked to editorial projects — use editorialProjectIds to filter samples by project. Check-in status: WaitingForCheckingIn, CheckedIn, CheckedOut. Filter by sample code, barcode, product code, job, location, check-in status, workspace, container, check-in/out dates, editorialProjectIds. Use human-readable names for location (resolved to IDs automatically). When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true.",
+      "description": "Search samples (physical product items) — track location, check-in/out status, and containers. The only tool that returns actual sample records. Use this to answer: where is a sample, is it checked in, which samples are at a location, which samples are overdue for return, which samples belong to a project, counts by location/status. Samples are linked to editorial projects — use editorialProjectIds to filter samples by project. Check-in status: WaitingForCheckingIn, CheckedIn, CheckedOut. Filter by sample code, barcode, product code, size, job, location, check-in status, workspace, container, container type, product type, label recognition, check-in/out dates, editorialProjectIds. Use human-readable names for location (resolved to IDs automatically). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each sample's `customProperties` lists only properties that have a value SET. A property name being absent from a sample does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for samples, call query_property(entityType='sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_sample result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true. TEXT FILTERS — these params accept inline operators (sampleCode, sampleName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -2090,13 +2194,13 @@
           "name": "sampleCode",
           "type": "string",
           "required": false,
-          "description": "Sample code (exact match)."
+          "description": "Sample code filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "sampleName",
           "type": "string",
           "required": false,
-          "description": "Sample name (exact match)."
+          "description": "Sample name filter (text — supports inline operators, see TEXT FILTERS in the tool description)."
         },
         {
           "name": "sampleCfBarcode",
@@ -2109,6 +2213,12 @@
           "type": "string",
           "required": false,
           "description": "Product code — find samples belonging to a product."
+        },
+        {
+          "name": "size",
+          "type": "string",
+          "required": false,
+          "description": "Sample size (exact match, e.g. 'M', 'L', '42')."
         },
         {
           "name": "jobCode",
@@ -2171,6 +2281,18 @@
           "description": "Container type: 'HangingRail' or 'Box'."
         },
         {
+          "name": "productType",
+          "type": "string",
+          "required": false,
+          "description": "Product type: 'Product' or 'Wardrobe'. When omitted, includes both (All)."
+        },
+        {
+          "name": "labelRecognition",
+          "type": "string",
+          "required": false,
+          "description": "Label recognition: 'Detected' (sample label was found) or 'NotDetected' (no label found). Maps to isLabelDetected."
+        },
+        {
           "name": "checkedInDateFrom",
           "type": "string",
           "required": false,
@@ -2195,16 +2317,16 @@
           "description": "Latest sample check-out date."
         },
         {
+          "name": "customPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
+        },
+        {
           "name": "customPropertyName",
           "type": "string",
           "required": false,
-          "description": "Custom property name (resolved to GUID) or GUID directly."
-        },
-        {
-          "name": "customPropertyValue",
-          "type": "string",
-          "required": false,
-          "description": "Custom property value to match (exact)."
+          "description": "Custom property name (resolved to GUID) or GUID directly. Used with groupByCustomProperty for aggregation."
         },
         {
           "name": "editorialProjectIds",
@@ -2235,6 +2357,12 @@
           "type": "bool",
           "required": false,
           "description": "Group by container type — aggregation mode."
+        },
+        {
+          "name": "groupByCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of customPropertyName — aggregation mode. Requires customPropertyName to be set."
         },
         {
           "name": "groupByPeriod",
@@ -2269,7 +2397,7 @@
       "name": "query_talent_crew",
       "title": "Query Talent & Crew",
       "module": "Talent & Crew",
-      "description": "Search talent and resource users — both license users (internal team members) and resource users (freelancers, models, agencies). Use this to answer: who is on the team, who has a given skill, what agency a model belongs to, counts of talent by skill / employment type / status. User types: License (internal), Resource (external). Employment types: Permanent, Freelance. States: Enabled, Disabled, NotVerify, Deleted. Common skills: Photographer, Stylist, Model, Art Director, Hair & Makeup, Retoucher, Videographer, Producer, Assistant, Project Manager, Deliverable Owner, Digital Processing. Filter by name, job title, user type, employment type, skill, state, agency, short list, contact info, city, created date range. Pass `talentCrewIds` (JSON array of talent crew IDs from query_talent_crew_schedule or other tools) to look up specific records directly instead of re-querying by skill. Use human-readable names for all filters (resolved to IDs automatically). Each record includes a `deepLinkUrl` to the talent detail page in the web app. **CRITICAL — UI rendering ownership**: an inline widget handles record-list and aggregation responses, so your text must NOT duplicate them. Per response shape:   • `hits` with ≥1 talent → widget renders compact-card / table. Text = ONE brief sentence (e.g. 'Found 6 talents in the Christmas 24 short list.').   • Aggregation (`byAgency` / `bySkill` / `byStatus` / `byUserType` / `byEmploymentType`) → widget renders bar-chart sections. Text = ONE brief sentence summarising top buckets (e.g. '15 agencies, top 3: ACME (12), aaa (9), 234234 (8).').   • `hits` empty + `total > 0` (count-only, pageSize=0) → widget HIDES (0 height). Text MUST state the count plainly (e.g. 'Có **123** photographers đang active.').   • `hits` empty + `total = 0` → widget HIDES. Text = brief negative reply (e.g. 'Không có crew member nào match.'). Do NOT write a markdown table, list, gallery, or any field-by-field summary. Do NOT embed `![image](avatarUrl)` or `[Show Image](url)`. Do NOT include deep-link URLs in text — the widget already renders the name as a clickable anchor. Avatars are shown by default in compact-card and table views. Pass `includeAvatar=false` only when the caller explicitly wants to skip avatar resolution (e.g. perf-sensitive bulk queries). Still no markdown images in your text — the widget owns the visual. **\"Talent\" terminology** — `skill=\"Talent\"` is a PSEUDO-SKILL meaning Models + AI Models only (server-side OR-match). ✅ TRIGGER on standalone words: \"talent\", \"talents\", \"a talent\", \"the talents\", \"find a talent\", \"show me talents\", \"model agency\", or context implying Models specifically. Examples: 'Find a talent named Jane' → { name: 'Jane', skill: 'Talent' }; 'How many talents do we have?' → { skill: 'Talent', pageSize: 0 }. ❌ DO NOT TRIGGER on: 'Talent & Crew' / 'Talent and Crew' / 'talents and crew' — these are the FULL ENTITY NAME (License + Resource = whole pool). They contain the word \"Talent\" but mean the OPPOSITE — search broad pool, omit `skill`. Examples: 'Find Talent & Crew named Han' → { name: 'Han' } NO skill; 'How many Talent & Crew based in London' → { city: 'London' } NO skill. ❌ DO NOT TRIGGER for explicit roles (Photographers, Stylists, Producers, Hair & Makeup, Videographers, internal team) — pass the explicit skill name or omit the filter. When groupBy params are set, returns counts / aggregations instead of a list. Each hit includes a `rates` array (rateId, name, amount, currency, duration, rateType, agencyFee, payrollFee, isDefault, description) **only if the caller has the `Rates` screen permission**. Top-level `ratesAccess` is `granted` when rates are emitted and `denied` when they are gated out — when `denied`, do not assume the talent has no rates configured, the field is simply hidden by permission. **Rates are sensitive financial data — the widget HIDES them by default.** Even when `ratesAccess=granted` and the `rates` array is populated, the widget does NOT render the rates block in any view (compact card, table drill-down) unless `columns` explicitly includes 'rates'. The schedule tool widget never renders rates. This is a data-minimization safeguard against accidental leaks during screen-shares and casual lookups. To surface rates in the widget, set `columns: ['rates']` (or include 'rates' alongside other columns). You can still reason about rates in your text reply — but only when the user explicitly asked. **STRICT RULE for the `columns` parameter** — you MUST set it whenever the user names specific fields or uses narrowing words ('just', 'only', 'only show', 'just show', 'chỉ', 'chỉ hiển thị', 'khÃ´ng cần'). Do NOT fall back to defaults in those cases. Mapping examples:  • 'List 10 photographers and **just** show their skills' → call with arguments: { skill: 'Photographer', pageSize: 10, columns: ['skills'] }   • '5 models with their **rate info only**' → { skill: 'Model', pageSize: 5, columns: ['rates'] }   • '**Emails and phones** of all stylists' → { skill: 'Stylist', columns: ['email','phone'] }   • 'Which agency does each model belong to' → { skill: 'Model', columns: ['agencies'] }   • 'Talent based in London' → { city: 'London' }   • 'Talent in the Fashion Crew short list' → { shortListName: 'Fashion Crew' }   • 'Talent who are both Photographer AND Videographer' → { skill: 'Photographer|Videographer' }   • 'NotVerify accounts older than 30 days' → { state: 'NotVerify', createdTo: '<today-30d ISO>' }   • 'How many new talents joined in the last 3 months' → { createdFrom: '<today-3m ISO>', pageSize: 0 } (read total)   • 'List talents grouped by skill' (aggregation) → omit columns; the param has no effect on aggregation mode.   • Generic 'list/show me photographers' (no narrowing word) → omit columns; defaults to a broad set. Photo and Name are always rendered as anchors regardless of `columns`. Available column ids: jobTitle, type, employment, status, skills, agencies, email, phone, location, createdAt, pronouns, userCode, rates.",
+      "description": "Search talent and resource users — both license users (internal team members) and resource users (freelancers, models, agencies). Use this to answer: who is on the team, who has a given skill, what agency a model belongs to, counts of talent by skill / employment type / status. User types: License (internal), Resource (external). Employment types: Permanent, Freelance. States: Enabled, Disabled, NotVerify, Deleted. Common skills: Photographer, Stylist, Model, Art Director, Hair & Makeup, Retoucher, Videographer, Producer, Assistant, Project Manager, Deliverable Owner, Digital Processing. Filter by name, job title, user type, employment type, skill, state, agency, short list, contact info, city, created date range. Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each record's `customProperties` lists only properties that have a value SET. A property name being absent from a record does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for talent/crew, call query_property(entityType='talent_crew') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_talent_crew result alone. Pass `talentCrewIds` (JSON array of talent crew IDs from query_talent_crew_schedule or other tools) to look up specific records directly instead of re-querying by skill. Use human-readable names for all filters (resolved to IDs automatically). Each record includes a `deepLinkUrl` to the talent detail page in the web app. **CRITICAL — UI rendering ownership**: an inline widget handles record-list and aggregation responses, so your text must NOT duplicate them. Per response shape:   • `hits` with ≥1 talent → widget renders compact-card / table. Text = ONE brief sentence (e.g. 'Found 6 talents in the Christmas 24 short list.').   • Aggregation (`byAgency` / `bySkill` / `byStatus` / `byUserType` / `byEmploymentType`) → widget renders bar-chart sections. Text = ONE brief sentence summarising top buckets (e.g. '15 agencies, top 3: ACME (12), aaa (9), 234234 (8).').   • `hits` empty + `total > 0` (count-only, pageSize=0) → widget HIDES (0 height). Text MUST state the count plainly (e.g. 'Có **123** photographers đang active.').   • `hits` empty + `total = 0` → widget HIDES. Text = brief negative reply (e.g. 'Không có crew member nào match.'). Do NOT write a markdown table, list, gallery, or any field-by-field summary. Do NOT embed `![image](avatarUrl)` or `[Show Image](url)`. Do NOT include deep-link URLs in text — the widget already renders the name as a clickable anchor. Avatars are shown by default in compact-card and table views. Pass `includeAvatar=false` only when the caller explicitly wants to skip avatar resolution (e.g. perf-sensitive bulk queries). Still no markdown images in your text — the widget owns the visual. **\"Talent\" terminology** — `skill=\"Talent\"` is a PSEUDO-SKILL meaning Models + AI Models only (server-side OR-match). ✅ TRIGGER on standalone words: \"talent\", \"talents\", \"a talent\", \"the talents\", \"find a talent\", \"show me talents\", \"model agency\", or context implying Models specifically. Examples: 'Find a talent named Jane' → { name: 'Jane', skill: 'Talent' }; 'How many talents do we have?' → { skill: 'Talent', pageSize: 0 }. ❌ DO NOT TRIGGER on: 'Talent & Crew' / 'Talent and Crew' / 'talents and crew' — these are the FULL ENTITY NAME (License + Resource = whole pool). They contain the word \"Talent\" but mean the OPPOSITE — search broad pool, omit `skill`. Examples: 'Find Talent & Crew named Han' → { name: 'Han' } NO skill; 'How many Talent & Crew based in London' → { city: 'London' } NO skill. ❌ DO NOT TRIGGER for explicit roles (Photographers, Stylists, Producers, Hair & Makeup, Videographers, internal team) — pass the explicit skill name or omit the filter. When groupBy params are set, returns counts / aggregations instead of a list. Each hit includes a `rates` array (rateId, name, amount, currency, duration, rateType, agencyFee, payrollFee, isDefault, description) **only if the caller has the `Rates` screen permission**. Top-level `ratesAccess` is `granted` when rates are emitted and `denied` when they are gated out — when `denied`, do not assume the talent has no rates configured, the field is simply hidden by permission. **Rates are sensitive financial data — the widget HIDES them by default.** Even when `ratesAccess=granted` and the `rates` array is populated, the widget does NOT render the rates block in any view (compact card, table drill-down) unless `columns` explicitly includes 'rates'. The schedule tool widget never renders rates. This is a data-minimization safeguard against accidental leaks during screen-shares and casual lookups. To surface rates in the widget, set `columns: ['rates']` (or include 'rates' alongside other columns). You can still reason about rates in your text reply — but only when the user explicitly asked. **STRICT RULE for the `columns` parameter** — you MUST set it whenever the user names specific fields or uses narrowing words ('just', 'only', 'only show', 'just show', 'chỉ', 'chỉ hiển thị', 'khÃ´ng cần'). Do NOT fall back to defaults in those cases. Mapping examples:  • 'List 10 photographers and **just** show their skills' → call with arguments: { skill: 'Photographer', pageSize: 10, columns: ['skills'] }   • '5 models with their **rate info only**' → { skill: 'Model', pageSize: 5, columns: ['rates'] }   • '**Emails and phones** of all stylists' → { skill: 'Stylist', columns: ['email','phone'] }   • 'Which agency does each model belong to' → { skill: 'Model', columns: ['agencies'] }   • 'Talent based in London' → { city: 'London' }   • 'Talent in the Fashion Crew short list' → { shortListName: 'Fashion Crew' }   • 'Talent who are both Photographer AND Videographer' → { skill: 'Photographer|Videographer' }   • 'NotVerify accounts older than 30 days' → { state: 'NotVerify', createdTo: '<today-30d ISO>' }   • 'How many new talents joined in the last 3 months' → { createdFrom: '<today-3m ISO>', pageSize: 0 } (read total)   • 'List talents grouped by skill' (aggregation) → omit columns; the param has no effect on aggregation mode.   • Generic 'list/show me photographers' (no narrowing word) → omit columns; defaults to a broad set. Photo and Name are always rendered as anchors regardless of `columns`. Available column ids: jobTitle, type, employment, status, skills, agencies, email, phone, location, createdAt, pronouns, userCode, rates.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -2417,6 +2545,24 @@
           "type": "bool",
           "required": false,
           "description": "Group by agency — aggregation mode (nested)"
+        },
+        {
+          "name": "customPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}]"
+        },
+        {
+          "name": "customPropertyName",
+          "type": "string",
+          "required": false,
+          "description": "Custom property name (resolved to GUID) or GUID directly. Used with groupByCustomProperty for aggregation."
+        },
+        {
+          "name": "groupByCustomProperty",
+          "type": "bool",
+          "required": false,
+          "description": "Group by the value of customPropertyName — aggregation mode. Requires customPropertyName to be set."
         },
         {
           "name": "pageSize",
