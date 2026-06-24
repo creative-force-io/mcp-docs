@@ -28,7 +28,7 @@ The server exposes **16 tools** across the Creative Force data model:
 |------|--------------------|
 | Jobs | Production jobs — code, name, status, deadline |
 | Production | Work units (the central production entity) — status, step, vendor, team |
-| Product Hub | Product catalog — code, name, category, brand, colour, style |
+| Products | Product catalog — code, name, category, brand, colour, style |
 | Workflow | Workflow steps/tasks — status, step, assignee, vendor |
 | Assets | Asset metadata + inline image previews |
 | Samples | Physical samples — check-in status, location, return date |
