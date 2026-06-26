@@ -16,3 +16,5 @@ public release.
 - Tool reference covering all **16** tools, generated from the server source
   (published via the documentation generator).
 - Use-case and prompt guide, and the privacy and data-handling page.
+- Permissions page explaining how MCP tool access is granted per user role (the two
+  permissions, the MCP SERVER tab groups and options, and the tool → data-area map).
