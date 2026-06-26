@@ -13,10 +13,10 @@ To use any tool, a role needs **both**:
 1. **An MCP SERVER permission** — the tool's **group** is allowed (or the tool itself is turned on
    under **Custom**), on the **MCP SERVER** tab.
 2. **A Creative Force area permission** — the role can already access the data the tool reads
-   (for example **Assets**, **Products**, **Samples**), set in that area's own section of the role.
+   (for example **Assets Hub**, **Products**, **Samples**), set in that area's own section of the role.
 
 Both are required. Turning a tool on under MCP SERVER is **not enough on its own** — if the role
-cannot see Assets in Creative Force, the Assets tools stay hidden even when the MCP tool is allowed.
+cannot see the **Assets Hub** in Creative Force, the Assets tools stay hidden even when the MCP tool is allowed.
 The MCP layer never widens what a user can already access; it only decides which tools are exposed
 to the assistant.
 
