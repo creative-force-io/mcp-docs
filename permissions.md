@@ -50,13 +50,13 @@ the data it reads.
 | Tool | MCP SERVER group | Creative Force area permission |
 |------|------------------|--------------------------------|
 | `query_ecomm_job` | Read-only | Jobs |
-| `query_ecomm_production` | Read-only | Production |
-| `query_task` | Read-only | Production |
-| `query_ecomm_product_request` | Read-only | Product Hub |
-| `query_asset` | Read-only | Assets |
-| `get_asset_preview` | Read-only | Assets |
+| `query_ecomm_production` | Read-only | E-comm Production |
+| `query_task` | Read-only | E-comm Production |
+| `query_ecomm_product_request` | Read-only | Products |
+| `query_asset` | Read-only | Resources Assets |
+| `get_asset_preview` | Read-only | Resources Assets |
 | `query_sample` | Read-only | Samples |
-| `query_planning` | Read-only | Planning |
+| `query_planning` | Read-only | Planning View |
 | `query_workflow` | Read-only | Workflow |
 | `get_workflow_detail` | Read-only | Workflow |
 | `query_styleguide` | Read-only | Style Guides |
@@ -65,22 +65,22 @@ the data it reads.
 | `get_talent_crew_preview` | Read-only | Talent &amp; Crew |
 | `query_talent_crew_schedule` | Read-only | Resourcing Calendar |
 | `query_editorial_project` | Read-only | Editorial Projects |
-| `query_editorial_production` | Read-only | Editorial Production |
+| `query_editorial_production` | Read-only | Editorial Productions |
 | `query_editorial_deliverable` | Read-only | Editorial Deliverables |
-| `query_event_log` | Read-only | Event Log |
-| `query_workspace` | Read-only | Clients (Workspaces) |
-| `query_containers` | Read-only | Studio Settings → Containers |
-| `query_data_sources` | Read-only | Studio Settings → Data Sources |
-| `query_locations` | Read-only | Studio Settings → Locations &amp; Sets |
-| `query_post_production_vendors` | Read-only | Studio Settings → Post-Production Vendors |
-| `query_presets` | Read-only | Studio Settings → Presets |
-| `query_print_configurations` | Read-only | Studio Settings → Print Configurations |
-| `query_product_vendors` | Read-only | Studio Settings → Product Vendors |
-| `query_production_types` | Read-only | Studio Settings → Production Types |
+| `query_event_log` | Read-only | Event Log Access |
+| `query_workspace` | Read-only | Clients |
+| `query_containers` | Read-only | Container |
+| `query_data_sources` | Read-only | Data Source |
+| `query_locations` | Read-only | Locations &amp; Sets |
+| `query_post_production_vendors` | Read-only | Post Production Vendors |
+| `query_presets` | Read-only | Preset |
+| `query_print_configurations` | Read-only | Print Configurations |
+| `query_product_vendors` | Read-only | Product Vendors |
+| `query_production_types` | Read-only | Production Types |
 | `query_team_on_set_skills` | Read-only | *(no extra area)* |
-| `create_planning_session` | Write/Delete | Planning *(write)* |
-| `update_planning_session` | Write/Delete | Planning *(write)* |
-| `delete_planning_session` | Write/Delete | Planning *(write)* |
+| `create_planning_session` | Write/Delete | Planning View *(write)* |
+| `update_planning_session` | Write/Delete | Planning View *(write)* |
+| `delete_planning_session` | Write/Delete | Planning View *(write)* |
 
 Notes:
 
