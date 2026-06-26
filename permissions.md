@@ -44,47 +44,47 @@ silently grants it everywhere. The setting is per role; the server applies it on
 ## What each tool needs
 
 Each row lists the **two** permissions required to use that tool: its **MCP SERVER** group (allow
-the group, or turn the tool on under **Custom**) **and** the **Creative Force area permission** for
-the data it reads.
+the group, or turn the tool on under **Custom**) **and** the **Creative Force permission** the role
+must also have. The permission is named exactly as it appears in the role popup, under its section.
 
-| Tool | MCP SERVER group | Creative Force area permission |
-|------|------------------|--------------------------------|
-| `query_ecomm_job` | Read-only | Jobs |
-| `query_ecomm_production` | Read-only | E-comm Production |
-| `query_task` | Read-only | E-comm Production |
-| `query_ecomm_product_request` | Read-only | Products |
-| `query_asset` | Read-only | Resources Assets |
-| `get_asset_preview` | Read-only | Resources Assets |
-| `query_sample` | Read-only | Samples |
-| `query_planning` | Read-only | Planning View |
-| `query_workflow` | Read-only | Workflow |
-| `get_workflow_detail` | Read-only | Workflow |
-| `query_styleguide` | Read-only | Style Guides |
-| `get_styleguide_detail` | Read-only | Style Guides |
-| `query_talent_crew` | Read-only | Talent &amp; Crew |
-| `get_talent_crew_preview` | Read-only | Talent &amp; Crew |
-| `query_talent_crew_schedule` | Read-only | Resourcing Calendar |
-| `query_editorial_project` | Read-only | Editorial Projects |
-| `query_editorial_production` | Read-only | Editorial Productions |
-| `query_editorial_deliverable` | Read-only | Editorial Deliverables |
-| `query_event_log` | Read-only | Event Log Access |
-| `query_workspace` | Read-only | Clients |
-| `query_containers` | Read-only | Container |
-| `query_data_sources` | Read-only | Data Source |
-| `query_locations` | Read-only | Locations &amp; Sets |
-| `query_post_production_vendors` | Read-only | Post Production Vendors |
-| `query_presets` | Read-only | Preset |
-| `query_print_configurations` | Read-only | Print Configurations |
-| `query_product_vendors` | Read-only | Product Vendors |
-| `query_production_types` | Read-only | Production Types |
-| `query_team_on_set_skills` | Read-only | *(no extra area)* |
-| `create_planning_session` | Write/Delete | Planning View *(write)* |
-| `update_planning_session` | Write/Delete | Planning View *(write)* |
-| `delete_planning_session` | Write/Delete | Planning View *(write)* |
+| Tool | MCP SERVER group | Permission section | Permission |
+|------|------------------|--------------------|------------|
+| `query_ecomm_job` | Read-only | E-Comm | Jobs |
+| `query_ecomm_production` | Read-only | E-Comm | Production |
+| `query_task` | Read-only | E-Comm | Production |
+| `query_ecomm_product_request` | Read-only | E-Comm | Products |
+| `query_asset` | Read-only | Assets | Assets Hub |
+| `get_asset_preview` | Read-only | Assets | Assets Hub |
+| `query_sample` | Read-only | Samples | Samples |
+| `query_planning` | Read-only | Planning | Calendar |
+| `query_talent_crew` | Read-only | Planning | Talent &amp; Crew |
+| `get_talent_crew_preview` | Read-only | Planning | Talent &amp; Crew |
+| `query_talent_crew_schedule` | Read-only | Planning | Resourcing |
+| `query_editorial_project` | Read-only | Editorial | Editorial projects |
+| `query_editorial_production` | Read-only | Editorial | Production |
+| `query_editorial_deliverable` | Read-only | Editorial | Editorial deliverables |
+| `query_workflow` | Read-only | Studio Settings | Workflow |
+| `get_workflow_detail` | Read-only | Studio Settings | Workflow |
+| `query_styleguide` | Read-only | Studio Settings | Style Guides |
+| `get_styleguide_detail` | Read-only | Studio Settings | Style Guides |
+| `query_event_log` | Read-only | Studio Settings | Event Log |
+| `query_workspace` | Read-only | Studio Settings | Clients |
+| `query_containers` | Read-only | Studio Settings | Containers |
+| `query_data_sources` | Read-only | Studio Settings | Data Sources |
+| `query_locations` | Read-only | Studio Settings | Locations &amp; Sets |
+| `query_post_production_vendors` | Read-only | Studio Settings | Post-Production Vendors |
+| `query_presets` | Read-only | Studio Settings | Presets Settings |
+| `query_print_configurations` | Read-only | Studio Settings | Print Settings |
+| `query_product_vendors` | Read-only | Studio Settings | Product vendors |
+| `query_production_types` | Read-only | Studio Settings | Production Types |
+| `query_team_on_set_skills` | Read-only | — | *(no extra permission)* |
+| `create_planning_session` | Write/Delete | Planning | Calendar *(Edit)* |
+| `update_planning_session` | Write/Delete | Planning | Calendar *(Edit)* |
+| `delete_planning_session` | Write/Delete | Planning | Calendar *(Edit)* |
 
 Notes:
 
-- The **Studio Settings** tools share one MCP SERVER entry, but each still needs **its own** area
+- The **Studio Settings** tools share one MCP SERVER entry, but each still needs **its own**
   permission (Containers, Data Sources, and so on) for that tool to appear.
 - The **Write/Delete** tools are present only where write tools are enabled; on a standard
   read-only deployment that group is empty. They also need their Creative Force area at **write**
