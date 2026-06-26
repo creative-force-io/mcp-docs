@@ -43,30 +43,42 @@ silently grants it everywhere. The setting is per role; the server applies it on
 
 ## What each tool needs
 
-Each row lists the **two** permissions required to use that tool: its **MCP SERVER** group (allow
-the group, or turn the tool on under **Custom**) **and** the **Creative Force permission** the role
-must also have. The permission is named exactly as it appears in the role popup, under its section.
+Each tool needs **two** separate permissions, both named exactly as they appear in the role popup:
 
-| Tool | MCP SERVER group | Permission section | Permission |
-|------|------------------|--------------------|------------|
-| `query_ecomm_job` | Read-only | E-Comm | Jobs |
-| `query_ecomm_production` | Read-only | E-Comm | Production |
-| `query_task` | Read-only | E-Comm | Production |
-| `query_ecomm_product_request` | Read-only | E-Comm | Products |
-| `query_asset` | Read-only | Assets | Assets Hub |
-| `get_asset_preview` | Read-only | Assets | Assets Hub |
-| `query_sample` | Read-only | Samples | Samples |
-| `query_planning` | Read-only | Planning | Calendar |
-| `query_talent_crew` | Read-only | Planning | Talent &amp; Crew |
-| `get_talent_crew_preview` | Read-only | Planning | Talent &amp; Crew |
-| `query_talent_crew_schedule` | Read-only | Planning | Resourcing |
-| `query_editorial_project` | Read-only | Editorial | Editorial projects |
-| `query_editorial_production` | Read-only | Editorial | Production |
-| `query_editorial_deliverable` | Read-only | Editorial | Editorial deliverables |
-| `query_workspace` | Read-only | Studio Settings | Clients |
+1. its **MCP SERVER** permission — the tool's own row on the **MCP SERVER** tab (e.g. *Query
+   Asset*); and
+2. a **Creative Force permission** — the data area the tool reads (section → permission).
+
+Every current tool is in the **Read-only** group, so allowing that group (any "Allow All…" option)
+grants all the MCP SERVER permissions below at once — or grant each one individually under
+**Custom**. The Creative Force permission must be set in addition, in its own section of the role.
+
+| Tool | MCP SERVER permission | Creative Force permission (section → permission) |
+|------|-----------------------|--------------------------------------------------|
+| `query_asset` | Query Asset | Assets → Assets Hub |
+| `get_asset_preview` | Query Asset | Assets → Assets Hub |
+| `query_ecomm_job` | Query E-Comm Job | E-Comm → Jobs |
+| `query_ecomm_production` | Query E-Comm Production | E-Comm → Production |
+| `query_task` | Query Task | E-Comm → Production |
+| `query_ecomm_product_request` | Query E-Comm Product Request | E-Comm → Products |
+| `query_sample` | Query Sample | Samples → Samples |
+| `query_planning` | Query Planning | Planning → Calendar |
+| `query_talent_crew` | Query Talent &amp; Resource | Planning → Talent &amp; Crew |
+| `get_talent_crew_preview` | Query Talent &amp; Resource | Planning → Talent &amp; Crew |
+| `query_talent_crew_schedule` | Query Talent &amp; Resource | Planning → Resourcing |
+| `query_editorial_project` | Query Editorial Project | Editorial → Editorial projects |
+| `query_editorial_production` | Query Editorial Production | Editorial → Production |
+| `query_editorial_deliverable` | Query Editorial Deliverable | Editorial → Editorial deliverables |
+| `query_workspace` | Query Workspace | Studio Settings → Clients |
+
+So a role using `query_asset`, for example, needs **both** *Query Asset* (MCP SERVER) **and**
+*Assets Hub* (Assets) — granting one without the other leaves the tool unavailable.
 
 Notes:
 
+- A single MCP SERVER permission can cover several tools — e.g. *Query Asset* gates both
+  `query_asset` and `get_asset_preview`, and *Query Talent &amp; Resource* gates all three talent
+  tools. Each still needs its own Creative Force permission.
 - Every tool today is **read-only**, so the **Write/Delete** group is currently empty. It is in
   place for future tools that change data; those will need their Creative Force permission at
   **Edit** level, not just View.
