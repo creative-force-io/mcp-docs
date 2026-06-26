@@ -63,32 +63,13 @@ must also have. The permission is named exactly as it appears in the role popup,
 | `query_editorial_project` | Read-only | Editorial | Editorial projects |
 | `query_editorial_production` | Read-only | Editorial | Production |
 | `query_editorial_deliverable` | Read-only | Editorial | Editorial deliverables |
-| `query_workflow` | Read-only | Studio Settings | Workflow |
-| `get_workflow_detail` | Read-only | Studio Settings | Workflow |
-| `query_styleguide` | Read-only | Studio Settings | Style Guides |
-| `get_styleguide_detail` | Read-only | Studio Settings | Style Guides |
-| `query_event_log` | Read-only | Studio Settings | Event Log |
 | `query_workspace` | Read-only | Studio Settings | Clients |
-| `query_containers` | Read-only | Studio Settings | Containers |
-| `query_data_sources` | Read-only | Studio Settings | Data Sources |
-| `query_locations` | Read-only | Studio Settings | Locations &amp; Sets |
-| `query_post_production_vendors` | Read-only | Studio Settings | Post-Production Vendors |
-| `query_presets` | Read-only | Studio Settings | Presets Settings |
-| `query_print_configurations` | Read-only | Studio Settings | Print Settings |
-| `query_product_vendors` | Read-only | Studio Settings | Product vendors |
-| `query_production_types` | Read-only | Studio Settings | Production Types |
-| `query_team_on_set_skills` | Read-only | — | *(no extra permission)* |
-| `create_planning_session` | Write/Delete | Planning | Calendar *(Edit)* |
-| `update_planning_session` | Write/Delete | Planning | Calendar *(Edit)* |
-| `delete_planning_session` | Write/Delete | Planning | Calendar *(Edit)* |
 
 Notes:
 
-- The **Studio Settings** tools share one MCP SERVER entry, but each still needs **its own**
-  permission (Containers, Data Sources, and so on) for that tool to appear.
-- The **Write/Delete** tools are present only where write tools are enabled; on a standard
-  read-only deployment that group is empty. They also need their Creative Force area at **write**
-  level, not just read.
+- Every tool today is **read-only**, so the **Write/Delete** group is currently empty. It is in
+  place for future tools that change data; those will need their Creative Force permission at
+  **Edit** level, not just View.
 - This list is generated from the server's source and grows as tools are added. The complete,
   always-current tool list — with parameters and examples — is in
   **[tool-reference.md](tool-reference.md)**.
