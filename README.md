@@ -53,8 +53,9 @@ The complete, always-current tool list — every parameter, type, and example �
 1. **[Setup guide →](setup.md)** — connect Claude or Gamma and run your first query.
 2. **[Tool reference →](tool-reference.md)** — every tool and parameter.
 3. **[Use cases and prompts →](use-cases.md)** — realistic example prompts.
-4. **[Privacy and data handling →](privacy.md)** — what the server reads and does not store.
-5. **[Support →](support.md)** — how to get help.
+4. **[Permissions →](permissions.md)** — how tool access is granted per user role.
+5. **[Privacy and data handling →](privacy.md)** — what the server reads and does not store.
+6. **[Support →](support.md)** — how to get help.
 
 ## Server endpoint
 
