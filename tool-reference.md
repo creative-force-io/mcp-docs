@@ -11,8 +11,8 @@
 | Jobs | [`query_ecomm_job`](#tool-query_ecomm_job) |
 | Planning | [`query_planning`](#tool-query_planning) |
 | Platform | [`send_feedback`](#tool-send_feedback) |
-| Product Hub | [`query_ecomm_product_request`](#tool-query_ecomm_product_request) |
 | Production | [`query_ecomm_production`](#tool-query_ecomm_production) |
+| Products | [`query_ecomm_product_request`](#tool-query_ecomm_product_request) |
 | Properties | [`query_property`](#tool-query_property) |
 | Resourcing Calendar | [`query_talent_crew_schedule`](#tool-query_talent_crew_schedule) |
 | Samples | [`query_sample`](#tool-query_sample) |
@@ -220,7 +220,7 @@ Returns job containers only — not the products inside them (use query_ecomm_pr
 
 Search products in the catalog. Filter by code, name, job, category, brand, color, style code, vendor material code, status, workspace, product state (Active/Inactive), sample check-in status, sample code, sample location, sample check-in date, pool first-check-in date, product created date, container code, product tagging, custom property. Status: Backlog, Todo, InProgress, Done. Products come in two types: Product (the default) and Wardrobe. Normal searches only match Product items; use productType='Wardrobe' or productType='all' to reach wardrobe records. Use product param to search both productCode and productName (OR). Pass productIds to look up specific products by ID (e.g. from detail page context). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each product's `customProperties` lists only properties that have a value SET. A property name being absent from a product does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for products, call query_property(entityType='product') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_product_request result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. TEXT FILTERS — these params accept inline operators (productCode, productName, category, brand, color, styleCode, vendorMaterialCode): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.
 
-- **CF module:** Product Hub
+- **CF module:** Products
 - **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
 
 **Parameters**
