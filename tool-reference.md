@@ -2,12 +2,13 @@
 
 # Creative Force MCP — Tool Reference
 
-> **17 tools** · Auth: OAuth 2.1
+> **31 tools** · Auth: OAuth 2.1
 
 | Module | Tools |
 |--------|-------|
 | Assets | [`get_asset_preview`](#tool-get_asset_preview), [`query_asset`](#tool-query_asset) |
 | Editorial | [`query_editorial_deliverable`](#tool-query_editorial_deliverable), [`query_editorial_production`](#tool-query_editorial_production), [`query_editorial_project`](#tool-query_editorial_project) |
+| Event Log | [`query_event_log`](#tool-query_event_log) |
 | Jobs | [`query_ecomm_job`](#tool-query_ecomm_job) |
 | Planning | [`query_planning`](#tool-query_planning) |
 | Platform | [`send_feedback`](#tool-send_feedback) |
@@ -16,8 +17,10 @@
 | Properties | [`query_property`](#tool-query_property) |
 | Resourcing Calendar | [`query_talent_crew_schedule`](#tool-query_talent_crew_schedule) |
 | Samples | [`query_sample`](#tool-query_sample) |
+| Studio Settings | [`query_containers`](#tool-query_containers), [`query_data_sources`](#tool-query_data_sources), [`query_locations`](#tool-query_locations), [`query_post_production_vendors`](#tool-query_post_production_vendors), [`query_presets`](#tool-query_presets), [`query_print_configurations`](#tool-query_print_configurations), [`query_product_vendors`](#tool-query_product_vendors), [`query_production_types`](#tool-query_production_types), [`query_team_on_set_skills`](#tool-query_team_on_set_skills) |
+| Style Guides | [`get_styleguide_detail`](#tool-get_styleguide_detail), [`query_styleguide`](#tool-query_styleguide) |
 | Talent & Crew | [`get_talent_crew_preview`](#tool-get_talent_crew_preview), [`query_talent_crew`](#tool-query_talent_crew) |
-| Workflow | [`query_task`](#tool-query_task) |
+| Workflow | [`get_workflow_detail`](#tool-get_workflow_detail), [`query_task`](#tool-query_task), [`query_workflow`](#tool-query_workflow) |
 | Workspaces | [`query_workspace`](#tool-query_workspace) |
 
 ---
@@ -54,6 +57,45 @@ Hard cap of 200 asset IDs per call (extras are dropped and `truncated: true` is 
 
 ---
 
+<a id="tool-get_styleguide_detail"></a>
+## `get_styleguide_detail` — Get Style Guide Detail
+
+Get the full content of a single style guide by id or by name, organized the way the Style Guide screen is (a General section + one entry per production type, split into tabs). Pass 'styleGuideId' (GUID, e.g. from query_styleguide) OR 'name' (resolved to an id via search; exact match preferred, ambiguous names return candidates). Returns a header (name, internalName, workspace, isEnabled/isInvalid, versionNumber, settingType, hasNewerVersion, created/updated, deepLinkUrl), a 'general' block { description, coverImage (image metadata only), colorMatching (color-reference rules, only when enabled — incl. colorAccurateStep for approach 'Use Selection from Production Type' and perProductionTypeAccurateSteps for the first-production-type approach), categoryTriggers (assigned product-category names), other (nonSelectAssetsOutputName), properties (style-guide custom props as [{name,value}]) }, and 'productionTypes': [{ name, workflow (the workflow this type's work runs through — its name; use it to chain into get_workflow_detail), kind ('visual' or 'text'), isEnabled, description (production-type-level brief), referenceImages (PT-level reference files, metadata only), variantMapping, heroPosition (name of the hero position), and tabs }]. Each tab is OMITTED when it has no data, so a type only shows the tabs it actually configures. Tab visibility also MIRRORS the Style Guide screen: a tab is only returned when the production type's assigned workflow actually contains the matching step — Capture needs a capture step, External/Internal Post their post steps, Copywriting/Localization a copywriting step, Delivery an asset-delivery step wired to a connection the workspace owns (Delivery additionally requires the Advanced Style Guides plan feature or pre-existing saved routing; Localization the Localization plan feature). So a tab the user cannot see on the screen is not surfaced here. (This step-based gating is only applied when the assigned workflow is resolvable; if it isn't, tabs fall back to being shown whenever they carry data.) Visual types use: 'capture' { assignedWorkflow (the bound workflow name), description, files (PT reference files, image metadata only), positions: [{ name, isHero, isOptional, isPhotoReview, type, mediaType, isColorReference, isEnforceAlts, minShotsAlts, shots { minShots, maxShots }, description, exampleImages (position cover) / referenceImages (position attachments) (image METADATA only — fileName, size, mediaType, previewUrl; never the binary; a bare { fileId } is returned when the asset service has no metadata for it), condition (decoded position rules), properties (position custom props) }] }, 'presetsAndNaming' { positions: [{ position, preset (the selected preset name), namePattern (output naming), specs: [{ variantNumber, variantCode, isEnabled, namePattern, spec (the variant's real spec — dimensions/format/dpi/color-space/crop/… ) }] }] }, 'internalPost' { retouchingBrief { description, files, goodExamples, badExamples }, videoBrief { description, files } } (per production type; image metadata only), 'trigger' { type (when this production type's work is triggered — e.g. 'On product creation' or 'When a step of a specific production type is done'), sources: [{ sourceProductionType, steps, passThroughAssets, positionsToPassThrough (the generative 'Positions to Pass Through' — [{ position, tag }]) }] }, 'externalPost' { steps (per-step external-post flags), positions: [{ position, mappings: [{ step, flow, vendor, folderPattern (FTP), pixelzTemplate / pixelzFallbackTemplate / gatewayTemplate / brightRiverTemplate (the main template), variantTemplates: [{ variant (variantCode), template, fallbackTemplate }] (the per-variant template-of-variants mapping) }] }] }, 'delivery' { connections (the delivery connections the assigned workflow delivers to — the matrix columns, when resolvable), rows: [{ position, variant (which output — 'main' or 'variant N'; absent for a whole-position row), deliveredToAll (true = delivered to every connection), deliveredConnections, excludedConnections }] }, and 'properties' (production-type custom props). When DESCRIBING delivery, summarize exception-style, NOT row-by-row: name the connection(s), then — since most outputs are delivered everywhere — state the default (e.g. 'all N outputs delivered to all connections') and list ONLY the outputs that deviate (an output with excludedConnections, or a partial deliveredConnections). Never enumerate every output when they are all deliveredToAll. If 'connections' is absent, say the specific connection list isn't available (the production type has no resolvable assigned workflow) and describe delivery by deliveredToAll/excludedConnections only. Text/copywriting types use: 'copywriting' { configuration (config name), layouts (the configuration's layout/screen NAMES in display order — the copywriter's data-entry form is split into these named screens), fields (the configured fields, ordered — each has { name, type (Single Line Text / Text Area / Care Instructions / Color / Hidden Field / Predefined List / Material Composition / Custom Content Widget), layout ({ name (which layout/screen the field sits on — matches an entry in `layouts`), row, column (its place on the 12-column grid; row top→bottom, column left→right); ABSENT when the field is not placed on any layout), deliveryName (the API delivery key), required (the configuration default 'Required'/'Optional'), minLength, maxLength (character/selection limits), autoTranslation (text fields), conditionalDelivery (hidden fields) } plus the type-specific settings that apply: Text Area → richText, deliveryFormat (HTML/Markdown), textFormat (enabled rich-text toggles); Predefined List → displayType (Dropdown/Multiple choice selection/Tagging), options (the choice names); Color → colors [{ name, value (hex) }]; Care Instructions → symbols [{ category, variations (enabled symbol names) }]; Material Composition → materialComposition { components, materials, disclaimers }; Single Line/Text Area/Hidden → prefill (the rendered data-merge default). Text fields may also carry guidelines { preferredWords, forbiddenWords, neverUseEmojis, conventions[{ term, correct, dontWrite }] } and Text Area may carry ai { enabled, instruction, referenceExample }. Any field may carry condition (decoded conditional-visibility rules). Only the blocks that apply to the field's type / that are configured are present), fieldSettings (per-field overrides — visibility/required/conditionalDelivery/skipTranslation — only fields that differ from the configuration default) }, 'localization' { locale, bundleByStyle }, 'presetsAndNaming' { fileOutputName }, 'delivery' { connections, rows: [{ field, deliveredToAll, deliveredConnections, excludedConnections }] } (a per-field × delivery-connection matrix — same shape as visual delivery), 'trigger' { type, sourceProductionTypes, conjunction, step }, and 'properties' (text PT custom props). When DESCRIBING a copywriting production type, GROUP the fields by their layout: present one section per name in `layouts` (in that order), listing the fields whose `layout.name` matches — ordered by layout.row then layout.column (the on-screen reading order). Put any field with no `layout` in a final 'Not placed on a layout' section. This mirrors how the copywriter actually sees the form. Pass 'productType' (a production type name e.g. 'On-Model', or a numeric shootingTypeId) to narrow the result to just that production type. **Use cases**: (1) Explain what a style guide covers — which production types it defines and, per type, the capture brief, naming, trigger rules, or copywriting config. (2) Inspect a type's positions (hero / optional / photo-review), shot rules, and reference/example images. (3) Read the description / styling rules, the asset naming, or the copywriting field configuration. By default the latest published version is returned; pass 'includeDraft=true' to prefer the draft, or 'versionId' to fetch a specific version. Pass 'raw=true' to also return the untouched styleGuide object (copywriting, properties, positions detail) for deep inspection. By default the response is human-readable: each production type shows its resolved 'name' (not the numeric shootingTypeId) and raw ids (record id, version ids) are omitted. Pass 'includeIds=true' ONLY when the user explicitly asks for raw ids/version ids (record id, versionId, latestVersionId, draftVersionId, numeric shootingTypeId, per-type workflowDefinitionId/workflowDefinitionVersionId, positionId, preset specId, image fileId).
+
+- **CF module:** Style Guides
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `styleGuideId` | string | no | Style guide id (GUID) to fetch, e.g. from query_styleguide. Provide this OR 'name'. A non-GUID value passed here is treated as a name. |
+| `name` | string | no | Style guide name to look up instead of an id. Exact (case-insensitive) match preferred; partial search otherwise. Provide this OR 'styleGuideId'. |
+| `workspace` | string | no | Workspace/client name or ID to disambiguate when resolving by name. Optional. |
+| `includeDraft` | bool | no | Prefer the draft version over the latest published. Default false. |
+| `versionId` | string | no | Fetch a specific style guide version id. Omit to resolve via the style guide's overview. |
+| `raw` | bool | no | Return the full untouched styleGuide object as well. Default false (curated summary only). |
+| `productType` | string | no | Narrow the result to a single production type (shooting type) — pass its name (e.g. 'On-Model') or numeric shootingTypeId. Omit to return all production types. Only the matching productionTypes[] entry is returned; the header is unchanged. |
+| `includeIds` | bool | no | Include raw ids (record id, versionId, latestVersionId, draftVersionId, numeric shootingTypeId, positionId, image fileId, preset specId) and numeric type/mediaTypeId. Default false — human-readable names only. Set true only when the user explicitly asks for ids. |
+
+**Example input**
+
+```json
+{ "name": "Spring 2026 Apparel", "productType": "On-Model" }
+```
+
+**Example output**
+
+```json
+{ "name": "Spring 2026 Apparel", "workspace": "Acme", "settingType": "Published", "general": { "description": "...", "colorMatching": { "required": true, "approach": "Use Selection from Production Type", "colorAccurateStep": "Photography" }, "other": { "nonSelectAssetsOutputName": "_non-select-%product_code" }, "categoryTriggers": ["Dresses"] }, "productionTypes": [ { "name": "On-Model", "workflow": "Apparel Std", "kind": "visual", "capture": { "assignedWorkflow": "Apparel Std", "description": "...", "positions": [ { "name": "Front", "isHero": true, "shots": { "minShots": 1, "maxShots": 3 } } ] }, "presetsAndNaming": { "positions": [ { "position": "Front", "preset": "Web Std", "specs": [ { "variantCode": "M", "spec": { "width": 2000 } } ] } ] }, "internalPost": { "retouchingBrief": { "description": "..." } } } ] }
+```
+
+**Known limitations**
+
+Fetch ONE style guide by id or name (use query_styleguide to find the id); resolves the latest published version by default (includeDraft=true for the draft). Names are human-readable — pass includeIds=true for raw ids, raw=true for the untouched payload. A per-PT tab is omitted when it has no data. Visual PTs surface capture (assignedWorkflow/description/files/positions), presetsAndNaming (preset + per-variant spec detail), externalPost (incl. per-variant template mappings), internalPost, delivery, properties; text PTs surface copywriting, localization, presetsAndNaming (fileOutputName), delivery matrix, trigger, properties; generative trigger surfaces passThroughAssets + positionsToPassThrough. Positions, copywriting config, presets, and asset metadata are best-effort enrichments (may be absent on backend failure). Asset images are metadata-only (fileName/size/previewUrl) — never the binary; a bare { fileId } is returned when metadata can't be resolved. The Delivery matrix is returned as text/JSON only (the widget does not render it); per-PT workflow (and the delivery connection columns derived from it) resolves via the workflow binding carried on the PTSG payload — absent only when the PT truly has no assigned workflow. The widget shows the assigned workflow, the Internal Post briefs (incl. good/bad example galleries), and a visible file name on every file.
+
+---
+
 <a id="tool-get_talent_crew_preview"></a>
 ## `get_talent_crew_preview` — Get Talent & Crew Preview
 
@@ -86,6 +128,45 @@ Visual-only avatar gallery. Do NOT chain after query_talent_crew or query_talent
 
 ---
 
+<a id="tool-get_workflow_detail"></a>
+## `get_workflow_detail` — Get Workflow Detail
+
+Get the full definition of a single workflow (production pipeline template) by id or by name. Pass 'workflowId' (GUID, e.g. from query_workflow) OR 'name' (resolved to an id via search; exact match preferred, ambiguous names return candidates). Returns the workflow header (name, workspace, type, enabled/default flags, version info) plus its ordered steps and the branching transitions between them: each step has { name, stepName, stepCategoryId, stepOrder, detail (per-step config), transitions: [{ name, nextNodeId, isDefault }] }. **Use cases**: (1) Explain how a workflow is configured — which steps it has, in what order, and how it branches (e.g. QC pass/reject). (2) Inspect a specific step's settings. (3) Check the Kelvin-reset cutoff (generalSetting). By default the latest published version is shown; pass 'includeDraft=true' to prefer the unpublished draft, or 'versionId' to fetch a specific version. If the published version has no steps but an unpublished draft exists, the draft is shown automatically — 'settingType' reports whether 'Published' or 'Draft' steps were returned. Pass 'raw=true' to also return the untouched versionSettings (every node detail, transition trigger types, derived workflows) for deep inspection. By default the response is human-readable: ids/enums are converted to text and raw ids are omitted — steps show 'stepName' and each transition shows 'to' (the target step name) instead of node ids, and the Kelvin-reset cutoff is shown as 'kelvinResetCutoffStep' (a step name). Step-config enums are also named: 'workflowTypeName' (content type), Final-Selection 'finalSelectionOption', Photo-Review 'reviewScope', derived-workflow 'triggerOn', and connector 'subFunctionType'. Pass 'includeIds=true' ONLY when the user explicitly asks for raw ids/version ids (record id, version ids, node ids, numeric stepId/stepCategoryId/workflowTypeId, raw generalSetting).
+
+- **CF module:** Workflow
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `workflowId` | string | no | Workflow definition id (GUID) to fetch, e.g. from query_workflow. Provide this OR 'name'. A non-GUID value passed here is treated as a name. |
+| `name` | string | no | Workflow name to look up instead of an id. Exact (case-insensitive) match preferred; partial search otherwise. Provide this OR 'workflowId'. |
+| `workspace` | string | no | Workspace/client name or ID to disambiguate when resolving by name. Optional. |
+| `includeDraft` | bool | no | Prefer the unpublished draft version over the latest published. Default false. (Even when false, the draft is shown automatically if the published version has no steps.) |
+| `versionId` | string | no | Fetch a specific workflow version id. Omit to use the published version (or the draft per 'includeDraft'). |
+| `raw` | bool | no | Return the full untouched versionSettings as well. Default false (curated summary only). |
+| `includeIds` | bool | no | Include raw ids and numeric enums (record id, version ids, node ids, stepId/stepCategoryId/workflowTypeId, raw generalSetting). Default false — returns human-readable names only. Set true only when the user explicitly asks for ids. |
+| `showDiagram` | bool | no | Render the workflow as a visual flow diagram. Default false. Set true ONLY when the user explicitly asks to SEE the workflow visually — e.g. 'show me the diagram/flow chart/visual', 'draw the workflow', 'visualize'. When false the steps are returned as plain data and no diagram is drawn. |
+
+**Example input**
+
+```json
+{ "name": "Apparel Std" }
+```
+
+**Example output**
+
+```json
+{ "name": "Apparel Std", "workspace": "Acme", "isEnabled": true, "settingType": "Published", "startStep": "Capture", "steps": [ { "name": "Capture", "stepOrder": 1, "transitions": [ { "name": "Approve", "to": "Internal Post", "isDefault": true } ] } ] }
+```
+
+**Known limitations**
+
+Fetch ONE workflow definition by id or name (use query_workflow to find the id); resolves the published version by default, auto-falling back to the draft when the published version is empty (includeDraft=true to force the draft). Human-readable by default — includeIds=true for raw ids/enums, raw=true for the untouched versionSettings, showDiagram=true only when the user explicitly wants the visual flow chart. If WorkflowManagementUrl points at internal-backend it may return empty — the public gateway is required. workflowTypeName enrichment currently resolves empty (only workflowTypeId is emitted).
+
+---
+
 <a id="tool-query_asset"></a>
 ## `query_asset` — Query Asset
 
@@ -107,7 +188,7 @@ List or count/aggregate digital asset metadata (id, name, step, dates) — does 
 | `productName` | string | no | Product name (exact) |
 | `product` | string | no | Search product by code or name (OR) |
 | `productionType` | string | no | Production type name (e.g. Flatlay, On-Model) or ID |
-| `step` | string | no | Step name: Photography, InternalPostProduction, AssetDelivery, etc. |
+| `step` | string | no | Step name: Capture (a.k.a. Photography), InternalPostProduction, AssetDelivery, etc. |
 | `dateFrom` | string | no | Task finished date from (ISO) |
 | `dateTo` | string | no | Task finished date to (ISO) |
 | `workspace` | string | no | Workspace/client name or ID |
@@ -148,18 +229,92 @@ List or count/aggregate digital asset metadata (id, name, step, dates) — does 
 **Example input**
 
 ```json
-{ "step": "Photography", "starRating": 5, "dateFrom": "2026-06-01", "pageSize": 10 }
+{ "step": "Capture", "starRating": 5, "dateFrom": "2026-06-01", "pageSize": 10 }
 ```
 
 **Example output**
 
 ```json
-{ "total": 87, "hits": [ { "assetId": "a1b2...", "name": "shot_001.jpg", "step": "Photography", "starRating": 5 } ] }
+{ "total": 87, "hits": [ { "assetId": "a1b2...", "name": "shot_001.jpg", "step": "Capture", "starRating": 5 } ] }
 ```
 
 **Known limitations**
 
 Returns metadata only — no image URLs. To display images, pass these assetIds to get_asset_preview. When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list.
+
+---
+
+<a id="tool-query_containers"></a>
+## `query_containers` — Query Containers
+
+List containers configured in the studio. Containers group multiple samples together for bulk actions — moving a container relocates all its samples. Types: Rail (clothing rails), Box (clothing boxes). Each container is assigned to a location/sub-location. Supports pagination, keyword search, and filters by type, location, or enabled status.
+
+- **CF module:** Studio Settings
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `keyword` | string | no | Text search by container code or barcode. |
+| `pageSize` | int | no | Items per page (default 50). |
+| `page` | int | no | Page number, 1-based (default 1). |
+| `isEnabled` | bool? | no | Filter by enabled/disabled status. |
+| `containerType` | string | no | Filter by container type. Values: rail, box. |
+| `location` | string | no | Filter by location name or ID. |
+| `subLocation` | string | no | Filter by sub-location name or ID (narrows location filter). |
+
+**Example input**
+
+```json
+{ "containerType": "rail", "location": "Warehouse A", "isEnabled": true, "pageSize": 10 }
+```
+
+**Example output**
+
+```json
+{ "total": 6, "items": [ { "containerCode": "RAIL-001", "id": "c1a2...", "barcode": "CF00123", "containerType": "Rail", "location": "Warehouse A", "subLocation": "Aisle 3", "isDisabled": false } ] }
+```
+
+**Known limitations**
+
+Containers group samples for bulk actions (moving a container relocates all its samples) — this lists container config, not the samples inside (use query_sample). Types are Rail and Box only. `location`/`subLocation` filters and the returned location names are resolved from the Sample-service location tree. Returns `isDisabled` (not `isEnabled`) per item.
+
+---
+
+<a id="tool-query_data_sources"></a>
+## `query_data_sources` — Query Data Sources
+
+List data source connections configured in the studio. Data sources monitor external storage locations (FTP, Amazon S3, Google Cloud, Shopify, Airtable, etc.) for new product data and automatically scan and import it into Creative Force. Each data source shows its connection method, sync status, and how many workspaces use it. Supports pagination, keyword search, and filters by connection method or workspace.
+
+- **CF module:** Studio Settings
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `keyword` | string | no | Text search by data source name. |
+| `pageSize` | int | no | Items per page (default 50). |
+| `page` | int | no | Page number, 1-based (default 1). |
+| `method` | string | no | Filter by connection method/type name or ID. Values: FTP, Google Cloud, Amazon S3, Feed URL, Gateway API, Brandquad, Akeneo, Airtable, Shopify. |
+| `workspace` | string | no | Filter by workspace/client name or ID. |
+
+**Example input**
+
+```json
+{ "method": "Shopify", "workspace": "Acme Studio", "pageSize": 10 }
+```
+
+**Example output**
+
+```json
+{ "total": 3, "items": [ { "name": "Shopify Feed", "id": "ds1...", "method": "Shopify", "isActive": true, "numberOfUsingClients": 2, "lastCheckStatus": "Success", "lastCheckDate": "2026-07-06T08:00:00Z", "lastSyncStatus": "Success", "lastSyncDate": "2026-07-06T08:05:00Z" } ] }
+```
+
+**Known limitations**
+
+Data sources monitor external storage (FTP, Amazon S3, Google Cloud, Shopify, Airtable, etc.) and auto-import product data. Lists the connection config + sync status only — not the imported products themselves (use query_ecomm_product_request). `method` accepts a connection-method name or id; `workspace` a name or id.
 
 ---
 
@@ -296,7 +451,7 @@ Searches the product catalog — not physical samples (use query_sample) and not
 <a id="tool-query_ecomm_production"></a>
 ## `query_ecomm_production` — Query E-Comm Production
 
-Search productions (work units) — the central entity tracking a product through the workflow. Use this to answer: what step is a production on, who's working on it, how many are done/in-progress, production counts by photographer/vendor/location/type, and turnaround times. Status: New, Todo, InProgress, Done. Step names: Photography, InternalPostProduction, FinalSelection, etc. Filter by job, product, sample, production type, vendor team, post-production vendor, photographer, stylist, model, art director, videographer, digital-processing user, location, workspace. **Job lookup param choice — strict per user phrasing:** caller says 'job code JOB-123' → `jobCode`; 'job named Spring Campaign' → `jobName`; 'job X' without saying code-vs-name → `job` (ambiguous, matches code OR name). Same pattern for product (`productCode`/`productName`/`product`). **Codes are EXACT (case-sensitive); names are case-insensitive.** **Sample lookup**: `sample` is ambiguous — matches sample UUID OR sampleCode (exact, case-sensitive) OR cfBarcode (exact, case-sensitive) OR sampleName (case-insensitive). Filter by planning session: `session` (ambiguous session UUID, code, or name partial — matches against planningSessionId OR planningSession.sessionCode OR planningSession.sessionName). Drill-down: pass jobIds/productIds/planningSessionIds from upstream queries. Use human-readable names for all filters (resolved to IDs automatically). Returns: current step & status, production type, products, job, samples (codes/names/cfBarcodes/sizes/total/checkedIn), team on set (all 8 roles), vendors, location, style guide, outfit (incl. styling item codes), planning session (id/name/code/start/end), timing. CUSTOM PROPERTIES: a production surfaces custom properties from three entities — `jobCustomProperties`, `products[].customProperties`, `samples` — and each lists only properties that have a value SET. A property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('job', 'product', or 'sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_production result alone. When groupBy params set, returns counts/aggregations instead of list.
+Search productions (work units) — the central entity tracking a product through the workflow. Use this to answer: what step is a production on, who's working on it, how many are done/in-progress, production counts by photographer/vendor/location/type, and turnaround times. Status: New, Todo, InProgress, Done. Step names: Capture (a.k.a. Photography), InternalPostProduction, FinalSelection, etc. Filter by job, product, sample, production type, vendor team, post-production vendor, photographer, stylist, model, art director, videographer, digital-processing user, location, workspace. **Job lookup param choice — strict per user phrasing:** caller says 'job code JOB-123' → `jobCode`; 'job named Spring Campaign' → `jobName`; 'job X' without saying code-vs-name → `job` (ambiguous, matches code OR name). Same pattern for product (`productCode`/`productName`/`product`). **Codes are EXACT (case-sensitive); names are case-insensitive.** **Sample lookup**: `sample` is ambiguous — matches sample UUID OR sampleCode (exact, case-sensitive) OR cfBarcode (exact, case-sensitive) OR sampleName (case-insensitive). Filter by planning session: `session` (ambiguous session UUID, code, or name partial — matches against planningSessionId OR planningSession.sessionCode OR planningSession.sessionName). Drill-down: pass jobIds/productIds/planningSessionIds from upstream queries. Use human-readable names for all filters (resolved to IDs automatically). Returns: current step & status, production type, products, job, samples (codes/names/cfBarcodes/sizes/total/checkedIn), team on set (all 8 roles), vendors, location, style guide, outfit (incl. styling item codes), planning session (id/name/code/start/end), timing. CUSTOM PROPERTIES: a production surfaces custom properties from three entities — `jobCustomProperties`, `products[].customProperties`, `samples` — and each lists only properties that have a value SET. A property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('job', 'product', or 'sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_production result alone. When groupBy params set, returns counts/aggregations instead of list.
 
 - **CF module:** Production
 - **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
@@ -362,13 +517,13 @@ Search productions (work units) — the central entity tracking a product throug
 **Example input**
 
 ```json
-{ "step": "Photography", "status": "InProgress", "photographer": "John Smith", "pageSize": 10 }
+{ "step": "Capture", "status": "InProgress", "photographer": "John Smith", "pageSize": 10 }
 ```
 
 **Example output**
 
 ```json
-{ "total": 18, "hits": [ { "workUnitId": "c1...", "productCode": "SKU-9001", "step": "Photography", "status": "InProgress", "photographer": "John Smith" } ] }
+{ "total": 18, "hits": [ { "workUnitId": "c1...", "productCode": "SKU-9001", "step": "Capture", "status": "InProgress", "photographer": "John Smith" } ] }
 ```
 
 **Known limitations**
@@ -398,7 +553,7 @@ Search Editorial Deliverables — the per-output unit inside an Editorial Projec
 | `deliverableOutputName` | string | no | Output name attached to the deliverable (the customer-facing/publishing label, distinct from internal deliverable name — e.g. 'D 20230627 3'). Exact match. |
 | `deliverableStatus` | string | no | Deliverable lifecycle status: Backlog, Todo, InProgress, Done. |
 | `deliverableStatusId` | int? | no | Deliverable status as raw integer ID (1000 Backlog, 2000 Todo, 3000 InProgress, 9000 Done). Prefer deliverableStatus (name). Takes precedence over deliverableStatus when both supplied. |
-| `currentStep` | string | no | Workflow step the deliverable is currently at. Canonical EnumStep names: Photography (a.k.a. Capture), FinalSelection, ExternalPostProduction (a.k.a. External Post), ExternalPostProductionQc, InternalPostProduction (a.k.a. Internal Post), InternalPostProductionQc, PostReview, AssetDelivery. Resolved via StepNames.FromName. |
+| `currentStep` | string | no | Workflow step the deliverable is currently at. Canonical EnumStep names: Capture (a.k.a. Photography), FinalSelection, ExternalPostProduction (a.k.a. External Post), ExternalPostProductionQc, InternalPostProduction (a.k.a. Internal Post), InternalPostProductionQc, PostReview, AssetDelivery. Resolved via StepNames.FromName. |
 | `currentStepId` | int? | no | Workflow step as raw integer stepId. Prefer currentStep (name). Takes precedence over currentStep when both supplied. |
 | `currentStepStatus` | string | no | Status WITHIN the current step: Backlog, Todo, InProgress, Done, Failed (7000), Rejected (5000), QCRejected (5100), Bypassed (8000). |
 | `currentStepStatusId` | int? | no | Step status as raw integer ID (1000 Backlog / 2000 Todo / 3000 InProgress / 9000 Done / 7000 Failed / 5000 Rejected / 5100 QCRejected / 8000 Bypassed). Prefer currentStepStatus (name). Takes precedence over currentStepStatus when both supplied. |
@@ -496,7 +651,7 @@ Search Editorial Productions (also called Editorial work units) — the central 
 | `workflowTypeId` | int? | no | Editorial workflow type as raw integer ID (1 = Asset Workflow, 2 = Finalization). Prefer workflowType (name). Takes precedence over workflowType when both supplied. |
 | `status` | string | no | Editorial Production (work unit) lifecycle status: 'To Do' (2000), 'In Progress' (3000), 'Done' (9000). |
 | `statusId` | int? | no | Work unit status as raw integer (2000 = To Do, 3000 = In Progress, 9000 = Done). Prefer status (name). Takes precedence when both supplied. |
-| `currentStep` | string | no | Workflow step the work unit is currently at. Canonical EnumStep names: Photography (a.k.a. Capture), FinalSelection, ExternalPostProduction (a.k.a. External Post), ExternalPostProductionQc, InternalPostProduction (a.k.a. Internal Post), InternalPostProductionQc, PostReview, AssetDelivery. Resolved via StepNames.FromName. |
+| `currentStep` | string | no | Workflow step the work unit is currently at. Canonical EnumStep names: Capture (a.k.a. Photography), FinalSelection, ExternalPostProduction (a.k.a. External Post), ExternalPostProductionQc, InternalPostProduction (a.k.a. Internal Post), InternalPostProductionQc, PostReview, AssetDelivery. Resolved via StepNames.FromName. |
 | `currentStepId` | int? | no | Workflow step as raw integer stepId. Prefer currentStep (name). Takes precedence when both supplied. |
 | `currentStepStatus` | string | no | Status WITHIN the current step. Editorial Production filter exposes: 'Backlog' (1000), 'To Do' (2000), 'Rejected' (5000), 'In Progress' (3000), 'Failed' (7000), 'Done' (9000). Use this for 'blockers' / 'rejected work' queries. |
 | `currentStepStatusId` | int? | no | Step status as raw integer (1000 Backlog / 2000 To Do / 3000 In Progress / 5000 Rejected / 7000 Failed / 9000 Done). Prefer currentStepStatus (name). |
@@ -622,6 +777,94 @@ Campaign-level container only — for per-output rows use query_editorial_delive
 
 ---
 
+<a id="tool-query_event_log"></a>
+## `query_event_log` — Query Event Log
+
+Retrieve the Event Log — the historical events of ONE specific item, so you can understand what happened to it, when, and by whom. Mirrors the Event Log panel in the CF web app (Gamma): an audit trail of an item's past activities and changes. This tool is ALWAYS scoped to a single item: you MUST identify the entity first (there is no workspace-wide event search). Use it to answer: 'what changed on product X recently?', 'show check-in/out history for sample Y', 'who updated this product and when?', 'history of this workflow / style guide / editorial project / deliverable'. entityType is required ('product', 'sample', 'workflow', 'styleguide', 'editorialProject' or 'editorialDeliverable'). For product, pass the product code as `entity`. For sample, pass the sample's GUID (id) as `entity` plus the product code. For workflow, styleguide, editorialProject and editorialDeliverable, pass the entity's GUID (id) as `entity`. Filters (all optional): event type name(s), user, date range, free-text keyword, and — product only — step and job code; sample only — location. DATE WINDOW: there are THREE cases. (1) User gives no time frame → leave lastMonths, dateFrom and dateTo ALL empty; the tool applies the same default Gamma uses ('Last 3 months'). (2) User asks for the last N months ('last 4 months', 'past 6 months') → pass `lastMonths`=N and leave dateFrom/dateTo empty; the tool computes it EXACTLY as Gamma's 'Last N months' filter. (3) User names an ABSOLUTE period with concrete dates/months ('in May', 'since 2026-05-01') → pass dateFrom/dateTo. CRITICAL: never hand-compute a 'last N months' range into dateFrom/dateTo (e.g. 'today minus N months' / 'the last 90 days') — Gamma's calculation is calendar-aligned with an N-1 offset in the user's timezone, so a naive subtraction will NOT match the app. Only lastMonths (or the empty default) matches. The exact range actually searched is returned as `dateWindowSearched` (already in the user's timezone) — cite THAT when telling the user which period you checked, and do not recompute it. If the user truly wants the item's entire history, pass entityCreatedDate (the item's creation date) instead of a wide dateFrom — that is the safe, bounded way to cover full history. IMPORTANT: when the default 3-month window is used and 0 events come back, that does NOT mean the item has no history — older events are simply outside the window. The response says so (dateWindowNote); in that case, re-query with entityCreatedDate (or an explicit range) and tell the user you initially only checked the last 3 months. EVENT TYPE: pass human-readable event name(s) (e.g. 'Checked-in', 'Properties updated'); they are resolved to the catalog. Omit to return all events. Each record has: dateTime (ISO), user (may be empty for automated/system events), event, eventGroup, and a free-text `details` description (there is no structured before/after state). Results are newest-first; supports paging (page/pageSize). NOTE: there are no events before October 2022. Treat this only as the earliest possible data — do NOT use it as a dateFrom to fetch all history (use entityCreatedDate for that).
+
+- **CF module:** Event Log
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+<details>
+<summary>Show all 15 parameters</summary>
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `entityType` | string | **yes** | Entity type whose event log to read: 'product', 'sample', 'workflow', 'styleguide', 'editorialProject' or 'editorialDeliverable'. Required. |
+| `entity` | string | **yes** | The entity identifier. For 'product': the product code. For 'sample'/'workflow'/'styleguide'/'editorialProject'/'editorialDeliverable': the entity's GUID (id). |
+| `productCode` | string | no | For 'sample' only: the product code the sample belongs to (FE sends this alongside the sample id). |
+| `entityCreatedDate` | string | no | The entity's creation date (epoch ms or ISO) — bounds the scan for performance, mirroring the web app. Get this from the entity's `created` field returned by the corresponding query tool, then pass it here. PRODUCT — REQUIRED: for entityType 'product' you MUST always chain a call to `query_ecomm_product_request` FIRST to look up the product's `created` date and pass it here. The Event Log scan for a product is anchored on this date; without it the query is unreliable (may time out or miss events), so never call query_event_log for a product before you have its created date. For the other entity types, providing it (chained from the entity's query tool `created`) is recommended and improves reliability on items with long histories; safe to omit (the tool falls back to the default 3-month window). |
+| `eventType` | JsonElement? | no | Event type filter — THE correct way to limit results to specific kinds of events (the named actions in the log). ALWAYS use this param when the user asks for a specific kind of event ('check-in/out events', 'status changes', 'reset', 'property updates', 'location changes'); do NOT put the event-type name in `keyword`. Just pass the term(s) as the user phrased them — you do NOT need the exact catalog name. The tool matches GENEROUSLY: each term you pass matches every catalog event whose name contains it (e.g. 'status change' covers all *Status Change events; 'reset' covers Product Reset and Work Unit Reset). The response tells you EXACTLY which event types were searched (`eventTypesCovered`) and lists any term that matched nothing (`eventTypeSuggestions`) so you can re-query. Because the tool reports its coverage back to you, TRUST this filter: do NOT fetch all events and filter them yourself, and do NOT skip the filter for fear of a wrong name. Just report to the user which event types were covered. Omit only when the user genuinely wants ALL event types. Pass a JSON array of names. |
+| `user` | JsonElement? | no | User filter — THE correct way to filter events by who performed them. ALWAYS use this param when the user asks 'what did &lt;person&gt; do' / 'events by &lt;person&gt;' / filtering by one or more people; do NOT put a person's name in `keyword`. Pass the person name(s) as the user gave them; the tool resolves each to the name the log stores. Matches events by ANY of the given people in a single query. Pass a JSON array of names. |
+| `lastMonths` | int? | no | Relative 'last N months' filter — use this (NOT dateFrom/dateTo) whenever the user asks for the last N months ('last 4 months', 'past 6 months', 'the last 2 months'). Pass just the integer N. The tool then computes the window EXACTLY as the CF web app (Gamma) does for its 'Last N months' filter (a calendar-aligned window in the user's timezone). Do NOT try to reproduce that yourself with dateFrom/dateTo (e.g. 'today minus N months') — Gamma's calculation is not a naive N-month subtraction, so a hand-computed range will NOT match the app. Omit when the user gives no time frame (the tool defaults to the same as lastMonths=3) or when the user names an ABSOLUTE range (then use dateFrom/dateTo). |
+| `dateFrom` | string | no | Start of an ABSOLUTE date range (epoch ms or ISO). Use ONLY when the user names a concrete period with real dates/months ('in May', 'since 2026-05-01', 'between the shoot and now'). For a relative 'last N months' request use `lastMonths` instead — NOT this. Leave empty otherwise — do not invent a wide start date to 'see everything' (that risks timeouts); the tool defaults to the last 3 months. For full history, use entityCreatedDate instead. |
+| `dateTo` | string | no | End of the ABSOLUTE date range (epoch ms or ISO). Set only alongside dateFrom when the user names a concrete period; defaults to now. For 'last N months' use `lastMonths`, not this. |
+| `keyword` | string | no | Free-text keyword search over the event text (event name and the Details description). Use ONLY for searching content/wording (e.g. a field name like 'Brand', a value, a code mentioned in details). Do NOT use keyword to filter by a person (use `user`) or by a kind of event (use `eventType`). Note: keyword is a single free-text string, NOT a way to OR multiple users or event types. |
+| `step` | JsonElement? | no | PRODUCT ONLY: restrict results to specific workflow step(s) (resolved to step ids). Use ONLY when the user explicitly names a step (e.g. 'Photography events for this product'). Do NOT set this for open questions like 'which steps did it go through' or 'is it stuck' — for those, omit the filter and read the `step` field across all returned events instead (filtering would hide the other steps). Pass a JSON array of step names. |
+| `jobCode` | JsonElement? | no | PRODUCT ONLY: job code(s) to filter by. Pass a JSON array of job codes. |
+| `location` | string | no | SAMPLE ONLY: location/sub-location name or id to filter by. |
+| `page` | int | no | Page number (1-based). Default 1. |
+| `pageSize` | int | no | Max results per page. Default 50. |
+
+</details>
+
+**Example input**
+
+```json
+{ "entityType": "product", "entity": "SP-10234", "eventType": ["Properties updated"], "pageSize": 10 }
+```
+
+**Example output**
+
+```json
+{ "entityType": "product", "entity": "SP-10234", "returned": 3, "hasMore": false, "dateWindowSearched": { "from": "2026-05-01T00:00:00.000+07:00", "to": "2026-07-01T23:59:59.999+07:00" }, "events": [ { "dateTime": "2026-06-20T09:14:00Z", "event": "Properties updated", "eventGroup": "Product", "details": "Properties updated: [\"Color\": \"test1\"]", "user": "Tien Nguyen" } ], "eventTypesCovered": ["Properties updated"] }
+```
+
+**Known limitations**
+
+Always scoped to ONE entity — identify the product/sample/workflow/styleguide/editorialProject/editorialDeliverable first (no workspace-wide event search). entityType is required. Defaults to the last 3 months when no date range is given — this matches the web app (Gamma) EXACTLY: a calendar-aligned window in the user's timezone (00:00 on the 1st of the month two months back → end of today), NOT a rolling 90 days. For any 'last N months' request pass `lastMonths`=N (NOT hand-computed dateFrom/dateTo) so the tool reproduces Gamma's calendar-aligned N-1 calculation; use dateFrom/dateTo only for absolute named ranges. Cite the returned `dateWindowSearched` for the exact range; don't call it 'the last 90 days'. 0 results under the default does NOT mean no history — re-query with entityCreatedDate or an explicit range. `details` is free text (no structured before/after). No events before October 2022. Newest-first, paged.
+
+---
+
+<a id="tool-query_locations"></a>
+## `query_locations` — Query Locations
+
+List studio locations, each with its nested sub-locations. Locations track where samples are throughout the studio — sets, warehouses, styling areas, etc. Types: Studio, Set, Wardrobe, Distribution Center, Stock Room, Styling, Preparation, Other. Sub-locations break down larger spaces (e.g. individual rails within a warehouse) and are returned inline under each parent's `children` array (name/id/type/check-in/enabled only — sub-locations carry a slimmer schema than top-level locations). Check-in locations automatically check in samples when scanned at that location. Supports pagination, keyword search, and filters. Filters/keyword/pagination apply to top-level locations only; children are always returned in full for each matched parent.
+
+- **CF module:** Studio Settings
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `keyword` | string | no | Text search by location name. |
+| `pageSize` | int | no | Items per page (default 50). |
+| `page` | int | no | Page number, 1-based (default 1). |
+| `isEnabled` | bool? | no | Filter by enabled/disabled status. |
+| `locationType` | string | no | Filter by location type. Values: Studio, Set, Wardrobe, Distribution Center, Stock Room, Styling, Preparation, Other. |
+| `isCheckedIn` | bool? | no | Filter by check-in zone (true = check-in, false = non check-in). |
+
+**Example input**
+
+```json
+{ "locationType": "Set", "isCheckedIn": true, "pageSize": 10 }
+```
+
+**Example output**
+
+```json
+{ "total": 8, "items": [ { "name": "Studio A", "id": "l1...", "locationCode": "LOC-01", "locationType": "Studio", "isEnabled": true, "isCheckedIn": true, "city": "London", "childrenCount": 3, "children": [ { "name": "Rail 1", "id": "l2...", "locationType": "Other", "isEnabled": true, "isCheckedIn": false } ] } ] }
+```
+
+**Known limitations**
+
+Filters/keyword/pagination apply to top-level locations only; each matched parent's sub-locations are always returned in full under `children` (slimmer schema — name/id/type/check-in/enabled). Types: Studio, Set, Wardrobe, Distribution Center, Stock Room, Styling, Preparation, Other. Check-in locations auto-check-in samples scanned there. Lists location config, not the samples at each location (use query_sample with a `location` filter).
+
+---
+
 <a id="tool-query_planning"></a>
 ## `query_planning` — Query Planning
 
@@ -705,6 +948,177 @@ Campaign-level container only — for per-output rows use query_editorial_delive
 **Known limitations**
 
 Time slots are stored as epoch ms and returned as ISO 8601. Non-standard production-support roles are only included when includeCustomResources is set.
+
+---
+
+<a id="tool-query_post_production_vendors"></a>
+## `query_post_production_vendors` — Query Post-Production Vendors
+
+List external post-production vendor connections configured in the studio. External post-production vendors are third-party services integrated into the workflow to handle image/video retouching and editing after the shoot. Connector types: FTP/SFTP, Pixelz, Box.com, Bright River, Gateway API. Each vendor shows its connection type and last connection check status. Supports pagination, keyword search, and vendor type filter.
+
+- **CF module:** Studio Settings
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `keyword` | string | no | Text search by vendor name. |
+| `pageSize` | int | no | Items per page (default 50). |
+| `page` | int | no | Page number, 1-based (default 1). |
+| `vendorType` | string | no | Filter by vendor type name or ID. Values: FTP, PIXELZ Integration, Box.com, Bright River Integration, Gateway API. |
+
+**Example input**
+
+```json
+{ "vendorType": "Pixelz", "pageSize": 10 }
+```
+
+**Example output**
+
+```json
+{ "total": 2, "items": [ { "name": "Pixelz Retouch", "id": "pv1...", "type": "PIXELZ Integration", "lastCheckSuccess": true, "lastCheckDate": "2026-07-05T12:00:00Z", "lastCheckError": null } ] }
+```
+
+**Known limitations**
+
+External post-production vendors are third-party retouching/editing services wired into the workflow. Lists the vendor connections + last connection-check status only — not the images they process (use query_asset / query_ecomm_production). Connector types: FTP/SFTP, Pixelz, Box.com, Bright River, Gateway API. Distinct from query_product_vendors (image capture, not post-production).
+
+---
+
+<a id="tool-query_presets"></a>
+## `query_presets` — Query Presets
+
+List presets configured in the studio. Presets define output specifications for images and videos — file format, DPI, dimensions, color profile, cropping, etc. Each preset has variants (up to 50) that deliver multiple image outputs with different specs from a single position. Media types: Photo, Video. Configured per workspace and assigned to Style Guide positions. Use 'type' param: ecomm (default) or editorial (add-on, not all studios have it). Supports pagination, keyword search, and workspace filter.
+
+- **CF module:** Studio Settings
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `type` | string | no | Preset type to query. Values: ecomm, editorial. Default: ecomm. |
+| `keyword` | string | no | Text search by preset name. |
+| `pageSize` | int | no | Items per page (default 50). |
+| `page` | int | no | Page number, 1-based (default 1). |
+| `workspace` | string | no | Filter by workspace/client name or ID. |
+
+**Example input**
+
+```json
+{ "type": "ecomm", "workspace": "Acme Studio", "pageSize": 10 }
+```
+
+**Example output**
+
+```json
+{ "total": 12, "items": [ { "name": "Web JPG 2000px", "id": "pr1...", "presetType": "ecomm", "mediaType": "Photo", "workspace": "Acme Studio", "numberOfVariants": 3 } ] }
+```
+
+**Known limitations**
+
+Presets define output specs (format, DPI, dimensions, color profile, cropping) and are assigned to Style Guide positions. Set `type`: ecomm (default) or editorial. Editorial is an add-on — if the studio lacks the Editorial Projects feature it silently returns nothing for editorial. Media types: Photo, Video. `numberOfVariants` = configured output variants (ecomm) / deliverables (editorial).
+
+---
+
+<a id="tool-query_print_configurations"></a>
+## `query_print_configurations` — Query Print Configurations
+
+List print configurations in the studio. Print configurations define how labels are printed — linking a layout template to a printer. Each configuration has a layout (built-in or custom). Supports pagination and keyword search.
+
+- **CF module:** Studio Settings
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `keyword` | string | no | Text search by configuration name. |
+| `pageSize` | int | no | Items per page (default 50). |
+| `page` | int | no | Page number, 1-based (default 1). |
+
+**Example input**
+
+```json
+{ "keyword": "barcode", "pageSize": 10 }
+```
+
+**Example output**
+
+```json
+{ "total": 4, "items": [ { "name": "Barcode Label", "id": "pc1...", "layoutName": "2x1 Barcode", "isCustomLayout": false } ] }
+```
+
+**Known limitations**
+
+Print configurations link a label layout template to a printer. `layoutName` resolves from a built-in layout map or the custom layout name; `isCustomLayout` distinguishes the two. Unresolvable layouts show "Invalid Layout". No type/workspace filter — keyword + pagination only.
+
+---
+
+<a id="tool-query_product_vendors"></a>
+## `query_product_vendors` — Query Product Vendors
+
+List product vendors configured in the studio. Product vendors are external teams that capture/provide product imagery via the Vendor Portal — they receive product requests, upload images, and submit them back into the workflow. Each vendor has a request level controlling what they deliver: Final Selection (delivers final chosen images including main/cover picks), Pre-selection (submits candidate images for selection later), Pre-selection By Position (candidate images mapped to specific shot positions e.g. front, back, detail). userCount is the number of vendor user accounts who can log into the Vendor Portal. Supports pagination, keyword search, and filters by enabled status or request level.
+
+- **CF module:** Studio Settings
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `keyword` | string | no | Text search by vendor name. |
+| `pageSize` | int | no | Items per page (default 50). |
+| `page` | int | no | Page number, 1-based (default 1). |
+| `isEnabled` | bool? | no | Filter by enabled/disabled status. |
+| `requestLevel` | string | no | Filter by request level name or ID. Values: Final Selection (1), Pre-selection (2), Pre-selection By Position (3). |
+
+**Example input**
+
+```json
+{ "requestLevel": "Final Selection", "isEnabled": true, "pageSize": 10 }
+```
+
+**Example output**
+
+```json
+{ "total": 5, "items": [ { "name": "Vendor Studio X", "id": "vt1...", "isEnabled": true, "requestLevel": "Final Selection", "userCount": 4 } ] }
+```
+
+**Known limitations**
+
+Product vendors are external teams that capture product imagery via the Vendor Portal. Lists the vendor teams + config only — not the images/products they deliver. `requestLevel` accepts a name or id: Final Selection (1), Pre-selection (2), Pre-selection By Position (3). `userCount` = vendor-portal user accounts. Distinct from query_post_production_vendors (retouching, not capture).
+
+---
+
+<a id="tool-query_production_types"></a>
+## `query_production_types` — Query Production Types
+
+List all production types (shooting types) configured in the studio. Production types define how products are photographed — on model, still life, video, etc. Categories: Model, Still Life, Video, VPI, Orbitvu, Looklet, Text, Profoto StyleShoots, Generative. isCustom: true = custom type created by the studio, false = built-in system type. Returns the full list (auto-pages internally, no pagination params needed).
+
+- **CF module:** Studio Settings
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+_None._
+
+**Example input**
+
+```json
+{}
+```
+
+**Example output**
+
+```json
+{ "total": 15, "items": [ { "name": "On Model", "id": 1, "category": "Model", "isDisabled": false, "isCustom": false } ] }
+```
+
+**Known limitations**
+
+Production types (shooting types) define how products are photographed. Takes NO params — returns the full list in one call (auto-pages internally). `id` is an int. Categories: Model, Still Life, Video, VPI, Orbitvu, Looklet, Text, Profoto StyleShoots, Generative. isCustom: true = studio-created, false = built-in. Includes disabled types (check `isDisabled`).
 
 ---
 
@@ -806,6 +1220,45 @@ Search samples (physical product items) — track location, check-in/out status,
 **Known limitations**
 
 The only tool that returns physical sample records. Check-in status values: WaitingForCheckingIn, CheckedIn, CheckedOut.
+
+---
+
+<a id="tool-query_styleguide"></a>
+## `query_styleguide` — Query Style Guide
+
+List style guides configured in the studio. A style guide is the set of styling/copywriting rules a client applies to its production work. Returns: id, name, workspace, description, isDefault, isEnabled, isInvalid, isWorkflowEnabled, created, updated, deepLinkUrl (clickable link to the style guide in the web app). **Use cases**: (1) Enumerate which style guides exist for a workspace. (2) Find the default/enabled style guide for a client. (3) Search style guides by name. (4) Surface invalid style guides (isInvalid=true). Pass 'workspace' (name or ID) to scope to one client; omit to list across the studio. Pass 'keyword' for server-side partial name search. Pass 'workflowId' (GUID) OR 'workflowName' to list only style guides bound to a given workflow (workflowName is resolved to a workflow id via search — exact match preferred, ambiguous names return candidates). Pass 'version' (default 2 = current style guides; 1 = legacy). By default the record id is omitted for readability. Pass 'includeIds=true' when the user wants ids — e.g. to then drill into a specific style guide with get_styleguide_detail.
+
+- **CF module:** Style Guides
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `workspace` | string | no | Workspace/client name or ID to scope the list. Omit to list across the studio. |
+| `keyword` | string | no | Search style guide by name (partial match, case-insensitive). Omit to list all. |
+| `workflowId` | string | no | Filter to style guides bound to this workflow. Workflow definition id (GUID, e.g. from query_workflow). Provide this OR 'workflowName'. A non-GUID value here is treated as a workflow name. |
+| `workflowName` | string | no | Filter by workflow name instead of an id — resolved to a workflow id via search (exact case-insensitive match preferred; ambiguous names return candidates). Provide this OR 'workflowId'. |
+| `version` | int | no | Style guide version: 2 = current (default), 1 = legacy. |
+| `pageSize` | int | no | Max results per page. Default 50. |
+| `page` | int | no | Page (0-based). Default 0. |
+| `includeIds` | bool | no | Include the raw record id. Default false — human-readable fields only. Set true when the user asks for ids or you need the id to call get_styleguide_detail. |
+
+**Example input**
+
+```json
+{ "workspace": "Acme", "keyword": "spring", "includeIds": true }
+```
+
+**Example output**
+
+```json
+{ "returned": 2, "hasMore": false, "styleGuides": [ { "id": "2ce383b9-...", "name": "Spring 2026 Apparel", "workspace": "Acme", "isDefault": false, "isEnabled": true, "isInvalid": false, "deepLinkUrl": "https://app.creativeforce-dev.io/settings/styleguides-v2/2ce383b9-..." } ] }
+```
+
+**Known limitations**
+
+List/search style guides only (styling & copywriting rule sets per client) — use get_styleguide_detail to read one guide's full content. The record id is omitted unless includeIds=true (needed to chain into get_styleguide_detail). version defaults to 2 (current); 1 = legacy. Cursor pagination via lastOrderKey = page*pageSize. There is no product-type filter (the list payload has no product type).
 
 ---
 
@@ -948,7 +1401,7 @@ Search tasks (individual workflow steps). Status: New, Todo, InProgress, Rejecte
 |------|------|:--------:|-------------|
 | `taskId` | string | no | Task ID (exact match) |
 | `status` | string | no | Step status name |
-| `step` | string | no | Step name: Photography, InternalPostProduction, FinalSelection, etc. |
+| `step` | string | no | Step name: Capture (a.k.a. Photography), InternalPostProduction, FinalSelection, etc. |
 | `productionType` | string | no | Production type name or ID |
 | `assignee` | string | no | Assignee name or user ID |
 | `postProductionVendor` | string | no | Post-production vendor name or ID |
@@ -992,10 +1445,79 @@ One workflow step per row. Status values: New, Todo, InProgress, Rejected, QCRej
 
 ---
 
+<a id="tool-query_team_on_set_skills"></a>
+## `query_team_on_set_skills` — Query Team On Set Skills
+
+List all team on set skills configured in the studio. Skills define roles that can be assigned to team members on productions (e.g. Photographer, Stylist, Model, Hair & Makeup, Art Director). Each skill belongs to a skill group (Photography, Talent). allowDoubleBooking: whether a team member with this skill can be booked on multiple sessions at the same time. isCustom: true = custom skill created by the studio, false = built-in system skill. Add-on skills whose subscription feature the studio does not have enabled (e.g. Videographer, Digital Processing, Post Review) are excluded, mirroring the Gamma Team On Set Skills page. Requires the Planning OR Resources subscription feature — returns an error when neither is enabled. Returns the full list in one call (no pagination).
+
+- **CF module:** Studio Settings
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+_None._
+
+**Example input**
+
+```json
+{}
+```
+
+**Example output**
+
+```json
+{ "total": 9, "items": [ { "name": "Photographer", "id": 1, "skillGroup": "Photography", "allowDoubleBooking": false, "isEnabled": true, "isCustom": false } ] }
+```
+
+**Known limitations**
+
+Team on set skills are roles assignable to team members on productions (Photographer, Stylist, Model, Hair & Makeup, Art Director, etc.). Takes NO params — full list in one call, no pagination. `id` is an int. Only Photography and Talent skill groups are returned; add-on skills whose subscription feature the studio lacks (Videographer, Digital Processing, Post Review) are excluded, mirroring the Gamma page. isCustom: true = studio-created, false = built-in. `allowDoubleBooking` = can be booked on overlapping sessions.
+
+---
+
+<a id="tool-query_workflow"></a>
+## `query_workflow` — Query Workflow
+
+List workflow definitions configured in the studio. A workflow definition is the production pipeline template (steps + branching) applied to jobs/products. Returns: id, name, workflowTypeId, workspace, isDefault, isEnabled, description, hasDraft, updated. **Use cases**: (1) Enumerate which workflows exist for a workspace. (2) Find the default/enabled workflow for a client. (3) Search workflows by name. Pass 'workspace' (name or ID) to scope to one client; omit to list across the studio. Pass 'keyword' for server-side partial name search. Sort: 'az' (A→Z), 'za' (Z→A), 'created' (creation date). By default raw ids are omitted for readability (no record id / version id). Pass 'includeIds=true' when the user wants ids — e.g. to then drill into a specific workflow with get_workflow_detail.
+
+- **CF module:** Workflow
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `workspace` | string | no | Workspace/client name or ID to scope the list. Omit to list across the studio. |
+| `keyword` | string | no | Search workflow by name (partial match, case-insensitive). Omit to list all. |
+| `isEnabled` | bool? | no | Filter by enabled state. true = only enabled, false = only disabled. Omit for both. |
+| `workflowTypeId` | int? | no | Filter by numeric workflow type id (content type). Omit for all types. |
+| `sort` | string | no | Sort order: 'az', 'za', or 'created'. Default 'created'. |
+| `pageSize` | int | no | Max results per page. Default 50. |
+| `page` | int | no | Page (0-based). Default 0. |
+| `includeIds` | bool | no | Include raw ids (record id, version id) and numeric workflowTypeId. Default false — human-readable fields only. Set true when the user asks for ids or you need the id to call get_workflow_detail. |
+
+**Example input**
+
+```json
+{ "workspace": "Acme", "keyword": "apparel", "includeIds": true }
+```
+
+**Example output**
+
+```json
+{ "returned": 1, "hasMore": false, "workflows": [ { "id": "f14e694e-...", "name": "Apparel Std", "workspace": "Acme", "isEnabled": true } ] }
+```
+
+**Known limitations**
+
+List/search workflow definitions (production pipeline templates) only — use get_workflow_detail to read one workflow's steps. The record id is omitted unless includeIds=true (needed to chain into get_workflow_detail). Returns both Published and Draft. Cursor pagination via lastOrderKey = page*pageSize; sort az/za/created. If WorkflowManagementUrl points at internal-backend it may return empty — the public gateway is required. workflowTypeId is emitted raw (no name lookup yet).
+
+---
+
 <a id="tool-query_workspace"></a>
 ## `query_workspace` — Query Workspace
 
-List workspaces (clients) in the studio with their calendar & timezone settings. Returns: id, name, isDefault, isEnabled, timezoneDisplayName, startDayOfWeek, firstWeekOfYear. **Use cases**: (1) Enumerate workspace names/IDs before grouping or filtering other entities by workspace. (2) Get a workspace's timezone and calendar settings. Pass 'keyword' for server-side partial name search; omit to get all workspaces. Use workspace IDs from the result to pass as 'workspace' filter to other query tools (query_ecomm_production, query_ecomm_job, query_ecomm_product_request, etc.).
+List workspaces (clients) in the studio with their calendar & timezone settings. Returns: id, name, isDefault, isEnabled, timezoneDisplayName, startDayOfWeek, firstWeekOfYear, deepLinkUrl (clickable link to the workspace settings in the web app). **Use cases**: (1) Enumerate workspace names/IDs before grouping or filtering other entities by workspace. (2) Get a workspace's timezone and calendar settings. Pass 'keyword' for server-side partial name search; omit to get all workspaces. Use workspace IDs from the result to pass as 'workspace' filter to other query tools (query_ecomm_production, query_ecomm_job, query_ecomm_product_request, etc.).
 
 - **CF module:** Workspaces
 - **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
