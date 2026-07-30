@@ -1,10 +1,110 @@
 {
   "schemaVersion": 1,
   "label": "tools",
-  "message": "31 tools",
+  "message": "34 tools",
   "color": "blue",
-  "toolCount": 31,
+  "toolCount": 34,
   "tools": [
+    {
+      "name": "create_planning_session",
+      "title": "Create Planning Session",
+      "module": "Planning",
+      "description": "Create a new planning session (a scheduled production shoot) with its time slots and team members. **This is a write** — it creates real data. **REQUIRED FIELDS — CHECK THE USER'S REQUEST FIRST:** Two fields are mandatory: `productionType` (a shooting-type name/id, or the literal 'editorial') and `timeSlots` (at least one start/end). A third, `workspace`, is required ONLY when the studio is in single-client-sessions-only mode. BEFORE you do anything else, check whether the user's prompt actually gave you the required fields. If any required field is missing, DO NOT call the tool and DO NOT guess or invent a value — instead ask the user for the missing field(s) in one short message, listing all of them together (e.g. \"To create this session I need: (1) the production type, (2) the date and time\"). Only once you have every required field do you move on to the preview. (The tool also enforces this server-side and returns `validation_failed` listing the missing fields, but asking up-front is faster and avoids a wasted call.) **MANDATORY PREVIEW BEFORE CALLING:** Before you call this tool, you MUST first show the user a clear summary of exactly what will be created and ask them to confirm. Present it as a short table/list covering every field you're about to send — session name (or note it will be auto-named), production type, each time slot (date + start/end + timezone), location, workspace/client, producer, every team member with their skill, and any custom properties or custom resources. Then ask a direct yes/no question like \"Shall I create this session?\" and WAIT for the user's explicit confirmation. Only after the user says yes do you call the tool. Do NOT call the tool on the user's first request without showing this preview and getting a yes — even if every field is already known. (After you call it, the host also shows its own Allow/Deny prompt with the raw arguments; that is a second, separate gate — it does not replace your in-chat preview.) Accepts human-readable NAMES (production type, location, workspace, producer, team member people + skills) — they're resolved to IDs server-side. Pass each person as the user typed them — a name, an email, or a user id — directly into `producer`/`teamMembers`; the tool resolves it for you, so there's no need to look an id up beforehand. **This tool already verifies people and skills itself, so don't call another tool to check them first — just call it directly.** If a name is ambiguous it returns the matching candidates (with emails) for you to pick from, and if a skill is invalid it says so — so a failed call tells you exactly how to fix the arguments and retry, rather than wasting a pre-check. **Writes fail hard on unresolved names**: if a person can't be matched to exactly one user, or a skill is given that isn't a valid allowed skill the person possesses, the tool returns an error and creates nothing — it never guesses. If a name is ambiguous, pass that person's email instead. `productionType` is required (a shooting-type name/id, or the literal 'editorial'). `timeSlots` is required — a non-empty array of { start, end } ISO datetimes that each carry their own day (list multiple days for a multi-day session). A `teamMembers` skill is optional (a member can be added without one), but if you give a skill it must be a valid allowed skill the person possesses. Returns the created session (sessionId, the backend-generated `sessionCode`, name, production type, time slots, team members, workspace) so you can verify the result after it lands — after creating, the tool reads the session back so `sessionCode` reflects the real persisted value (and is the auto-name when you left `name` empty). Report the `sessionCode` to the user as the session's identifier.",
+      "readOnly": false,
+      "idempotent": false,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "description": "Session name. Optional — if empty, the backend auto-names it (= the generated session code)."
+        },
+        {
+          "name": "productionType",
+          "type": "string",
+          "required": false,
+          "description": "REQUIRED. Production type: a shooting-type name or id, OR the literal 'editorial' for an editorial session. Resolved to productionTypeId + contentCreationTypeId."
+        },
+        {
+          "name": "timeSlots",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "REQUIRED. Time slots as a JSON array of { start, end }, each an ISO datetime that carries its own day. A bare datetime ('2026-06-25T09:00') is wall-clock in the session timezone; add an offset/Z ('...+02:00', '...Z') only if you mean an absolute instant. **Each slot must start and end on the SAME calendar day** (in the session timezone) — a single slot CANNOT span two days, and the tool rejects one that does (e.g. 7 Jul → 8 Jul is invalid). **When the user gives a continuous range that CROSSES MIDNIGHT, you MUST SPLIT it at midnight into TWO slots — do NOT clamp the end back to the first day, and do NOT drop the after-midnight part.** Split so no requested time is lost: first slot = start → 23:59 of the start day, second slot = 00:00 of the next day → the user's end time. Example — 'from 17:00 on 7 Jul to 02:00 on 8 Jul' → [{\"start\":\"2026-07-07T17:00\",\"end\":\"2026-07-07T23:59\"},{\"start\":\"2026-07-08T00:00\",\"end\":\"2026-07-08T02:00\"}]. A slot needs start < end, so if the after-midnight part is zero-length (the range ends exactly at 00:00), drop the second slot and keep just [{\"start\":\"2026-07-07T17:00\",\"end\":\"2026-07-07T23:59\"}]. Before sending, tell the user you've split the overnight range into two slots and confirm. **A MULTI-DAY session is likewise expressed as one slot PER DAY**: a shoot running 7–8 Jul 09:00–17:00 → TWO slots [{\"start\":\"2026-07-07T09:00\",\"end\":\"2026-07-07T17:00\"},{\"start\":\"2026-07-08T09:00\",\"end\":\"2026-07-08T17:00\"}], NOT one slot from 7 Jul to 8 Jul. E.g. one day, two blocks: [{\"start\":\"2026-06-25T09:00\",\"end\":\"2026-06-25T12:00\"},{\"start\":\"2026-06-25T13:00\",\"end\":\"2026-06-25T17:00\"}]."
+        },
+        {
+          "name": "timeZone",
+          "type": "string",
+          "required": false,
+          "description": "Session timezone — an IANA name (e.g. 'Europe/Copenhagen', 'Asia/Tokyo'). LEAVE EMPTY to use the user's timezone (shown in the USER SETTINGS line of this tool's context) — that is the default and the common case. Only set this when the user explicitly says the shoot is in a DIFFERENT timezone. `timeSlots` are wall-clock in the resolved timezone unless a slot carries an explicit offset/Z."
+        },
+        {
+          "name": "location",
+          "type": "string",
+          "required": false,
+          "description": "Set/location name or id. Omit or 'No set' for no location."
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "Workspace/client name or id. Required only when the studio is in single-client-sessions-only mode."
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "required": false,
+          "description": "Description. Optional, max ~2000 chars."
+        },
+        {
+          "name": "producer",
+          "type": "string",
+          "required": false,
+          "description": "Producer — user name (primary), or email/user id. Must resolve to exactly one user."
+        },
+        {
+          "name": "teamMembers",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Team members as a JSON array of { person, skill }. `person` = user name (or email/id); `skill` = skill name (or id) — OPTIONAL (a member can be added without a skill). If a skill is given it must be one the person possesses that the studio allows. E.g. [{\"person\":\"Anna Lee\",\"skill\":\"Stylist\"},{\"person\":\"Bob\"}]."
+        },
+        {
+          "name": "customProperties",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Custom properties as a JSON array of { name, value }. E.g. [{\"name\":\"Campaign\",\"value\":\"Spring\"}]. Values are validated against the property's type: a **Number** property needs a numeric value within ±99999999999.9999; a **Free text** property is capped at 2048 characters; a **List of options** property needs one of its defined options (case-insensitive) — a bad value returns an error listing the allowed options. Dates take ISO (e.g. '2026-06-24')."
+        },
+        {
+          "name": "customResources",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Custom resources — free-form (label, person) production-support roles NOT in the standard team (e.g. catering, lunch, driver, runner, PA). JSON array of { label, name }. E.g. [{\"label\":\"Catering\",\"name\":\"John's Kitchen\"},{\"label\":\"Driver\",\"name\":\"Sam\"}]. Stored separately from the session core; written right after the session is created."
+        }
+      ],
+      "exampleInput": "{ \"name\": \"Nike Spring\", \"productionType\": \"On-Model\", \"timeSlots\": [ { \"start\": \"2026-06-25T09:00\", \"end\": \"2026-06-25T17:00\" } ], \"location\": \"Studio A\", \"teamMembers\": [ { \"person\": \"Anna Lee\", \"skill\": \"Stylist\" } ] }",
+      "exampleOutput": "{ \"created\": true, \"sessionId\": \"p1...\", \"name\": \"Nike Spring\", \"productionType\": \"On-Model\", \"timeZone\": \"Europe/Copenhagen\", \"location\": \"Studio A\", \"teamMembers\": [ { \"person\": \"Anna Lee\", \"skill\": \"Stylist\", \"userId\": \"u1...\" } ] }",
+      "knownLimitations": "Write tool — creates a real session. `productionType` and `timeSlots` are required (no defaults). Names (production type, location, workspace, producer, crew people + skills) are resolved to IDs and FAIL HARD if unresolved — nothing is created. Custom resources are written by a second call after create; a failure there is a `warning`, not a rollback. Requires the McpWritePlanning screen (Access) + PlanningView (Write)."
+    },
+    {
+      "name": "delete_planning_session",
+      "title": "Delete Planning Session",
+      "module": "Planning",
+      "description": "Delete a planning session by its id. **This is a destructive write** — it permanently removes a real session, with no pre-delete guard (mirrors the app's single 'Are you sure?' confirm). **FIND THE SESSION FIRST.** This tool only accepts a session **id** (UUID); it does NOT search. If the user refers to the session by name, code, description, date, a person on it, or any other criteria, first use the planning-session query tool to find the matching session and take its `id` — do not guess an id. If that lookup returns more than one match, ask the user which one before deleting. **MANDATORY PREVIEW BEFORE CALLING:** before you call this tool, show the user exactly which session will be deleted — its name and code (and date/time if helpful, from the lookup result) — and ask a direct yes/no like \"Delete this session?\". Only call the tool after the user confirms. Do NOT delete on the user's first request without this preview and an explicit yes. (After you call it, the host also shows its own Allow/Deny prompt; that is a second, separate gate — it does not replace your in-chat preview.) Returns { deleted: true, sessionId } on success.",
+      "readOnly": false,
+      "idempotent": true,
+      "destructive": true,
+      "parameters": [
+        {
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "description": "REQUIRED. The session id (UUID) to delete — obtained from a prior planning-session query's `id` field. This tool does not resolve names or codes; pass a UUID."
+        }
+      ],
+      "exampleInput": "{ \"sessionId\": \"p1a2b3c4-d5e6-7890-abcd-ef1234567890\" }",
+      "exampleOutput": "{ \"deleted\": true, \"sessionId\": \"p1a2b3c4-d5e6-7890-abcd-ef1234567890\" }",
+      "knownLimitations": "Destructive write — permanently removes a session, with no pre-delete guard (mirrors the app's single confirm). Takes a session id (UUID) ONLY; it does not search — find the session with query_planning first, then pass its id. Single id only (bulk delete is out of scope). Requires McpWritePlanning (Access) + PlanningView (Write)."
+    },
     {
       "name": "get_asset_preview",
       "title": "Get Asset Preview",
@@ -173,7 +273,7 @@
       "name": "query_asset",
       "title": "Query Asset",
       "module": "Assets",
-      "description": "List or count/aggregate digital asset metadata (id, name, step, dates) — does NOT return preview images. Use when the user wants to FIND, LIST, or COUNT assets/photos/shots/deliverables. Filter by job, product, production type, step, workspace, photographer, stylist, model, star rating, time range. Drill-down: pass workUnitIds/jobIds/productIds from upstream queries. When groupBy params set, returns counts/aggregations instead of list. Default: latest step only when step not specified. Use names for filters (production type, step). IDs accepted as fallback. If the user wants to SEE/VIEW/RENDER the images, follow up with the get_asset_preview tool using the returned asset IDs.",
+      "description": "List or count/aggregate digital asset metadata (id, name, step, dates) — does NOT return preview images. Use when the user wants to FIND, LIST, or COUNT assets/photos/shots/deliverables. Filter by job, product, production type, step, workspace, photographer, stylist, model, star rating, time range. Drill-down: pass workUnitIds/jobIds/productIds from upstream queries. When groupBy params set, returns counts/aggregations instead of list. Default: latest step only when step not specified — so total:0 can be a false negative; on a 0-result the response carries a `hint` telling you to re-query with isLatestStep=false. Use names for filters (production type, step). IDs accepted as fallback. If the user wants to SEE/VIEW/RENDER the images, follow up with the get_asset_preview tool using the returned asset IDs.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -880,13 +980,13 @@
           "name": "groupByPeriod",
           "type": "string",
           "required": false,
-          "description": "Time-bucket aggregation: hour, day, week, or month. Pair with groupByPeriodField to choose which date drives the histogram."
+          "description": "Time-bucket aggregation: day, week, or month. Pair with groupByPeriodField to choose which date drives the buckets. Bucket boundaries follow the user's timezone. Provide the matching date range (productCreatedDateFrom/To or poolFirstCheckedInDateFrom/To) to bound the buckets; unbounded defaults to the last year."
         },
         {
           "name": "groupByPeriodField",
           "type": "string",
           "required": false,
-          "description": "Date field for time-bucket histogram. Options: productCreated (default), poolFirstCheckedIn. Other pool date fields available for future use."
+          "description": "Date field driving the time-bucket aggregation. Options: productCreated (default), poolFirstCheckedIn."
         },
         {
           "name": "pageSize",
@@ -1089,6 +1189,12 @@
           "description": "Filter by planning session GUIDs from upstream query_planning. JSON array or single ID."
         },
         {
+          "name": "workUnitIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Filter by work-unit (production item) ids — the production's own `id`. JSON array or single id. Use this to look up specific productions by id, e.g. to assign them to a planning session (the id IS the productionItemId) or to resolve a set of ids back to product code/name/production type. Matches the document `_id`."
+        },
+        {
           "name": "dateFrom",
           "type": "string",
           "required": false,
@@ -1205,13 +1311,13 @@
       ],
       "exampleInput": "{ \"step\": \"Capture\", \"status\": \"InProgress\", \"photographer\": \"John Smith\", \"pageSize\": 10 }",
       "exampleOutput": "{ \"total\": 18, \"hits\": [ { \"workUnitId\": \"c1...\", \"productCode\": \"SKU-9001\", \"step\": \"Capture\", \"status\": \"InProgress\", \"photographer\": \"John Smith\" } ] }",
-      "knownLimitations": "The central work-unit entity. When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list."
+      "knownLimitations": "The central work-unit entity. When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list. Pass `workUnitIds` to look up specific production items by their `id` — the same id is the `productionItemId` used to assign them to a planning session via update_planning_session's productionItemOps. The `session` field reflects the planning session this production item is CURRENTLY assigned to; it is null/absent when the item is NOT on any session (do not read a present `session` as a result of your own assign — re-query or use the update tool's response to confirm a write)."
     },
     {
       "name": "query_editorial_deliverable",
       "title": "Query Editorial Deliverable",
       "module": "Editorial",
-      "description": "Search Editorial Deliverables — the per-output unit inside an Editorial Project (each Deliverable is one delivery row, e.g. 'AEM Deliverable 1', 'D 20230627 3'). Does NOT return sample records — to list or find specific samples, use query_sample. Use to answer: which deliverables exist for a project/campaign, what step a deliverable is at, who owns it, what's overdue, how many at each step, deliverable counts by status/project/workspace/period. Filter by code, name, output-name, owner (full name), project (code/name/id), workspace, current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status (Backlog/Todo/InProgress/Done/Failed/Rejected), deliverable status, due-date range, content readiness flags (boolean only), asset-workflow status, finalization status, preset, custom property. Pass deliverableIds to look up specific deliverables by ID (e.g. from detail page context). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a range — works for both Date and Number properties; for Number pass plain numeric strings, e.g. {name, from:\"1\", to:\"10\"}). For parent-project custom property filters, use projectCustomPropertyFilters (same JSON format, applied via has_parent join). CUSTOM PROPERTIES: each deliverable's `customProperties` lists only properties that have a value SET. A property name being absent from a deliverable does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property(entityType='editorial_deliverable') (or entityType='editorial_project' for parent-project properties) to get the full list of properties defined for this studio; never conclude a property is undefined from a query_editorial_deliverable result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. TEXT FILTERS — these params accept inline operators (deliverableCode, deliverableName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
+      "description": "Search Editorial Deliverables — the per-output unit inside an Editorial Project (each Deliverable is one delivery row, e.g. 'AEM Deliverable 1', 'D 20230627 3'). Does NOT return sample records (sample counts/flags only). To list the samples assigned to a deliverable — or find which deliverables share a sample — use query_editorial_production (filter deliverableCode/deliverableIds or sampleCode; each hit carries a samples snapshot + its deliverable info); for per-sample tracking detail (location, check-in status), use query_sample. Use to answer: which deliverables exist for a project/campaign, what step a deliverable is at, who owns it, what's overdue, how many at each step, deliverable counts by status/project/workspace/period. Filter by code, name, output-name, owner (full name), project (code/name/id), workspace, current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status (Backlog/Todo/InProgress/Done/Failed/Rejected), deliverable status, due-date range, content readiness flags (boolean only), asset-workflow status, finalization status, preset, custom property. Pass deliverableIds to look up specific deliverables by ID (e.g. from detail page context). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a range — works for both Date and Number properties; for Number pass plain numeric strings, e.g. {name, from:\"1\", to:\"10\"}). For parent-project custom property filters, use projectCustomPropertyFilters (same JSON format, applied via has_parent join). CUSTOM PROPERTIES: each deliverable's `customProperties` lists only properties that have a value SET. A property name being absent from a deliverable does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property(entityType='editorial_deliverable') (or entityType='editorial_project' for parent-project properties) to get the full list of properties defined for this studio; never conclude a property is undefined from a query_editorial_deliverable result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. TEXT FILTERS — these params accept inline operators (deliverableCode, deliverableName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -1376,7 +1482,7 @@
           "name": "samplesAdded",
           "type": "string",
           "required": false,
-          "description": "Sample-assignment flag on the deliverable (boolean-level only — does NOT return sample details). Added = at least one sample assigned (assignedSamplesCount >= 1). NotAdded = no samples assigned. Available = at least one sample physically checked in (checkedInSamplesCount >= 1). NotAvailable = no checked-in samples. All = no filter. To get the actual list of samples for a project, use query_sample with editorialProjectIds instead."
+          "description": "Sample-assignment flag on the deliverable (boolean-level only — does NOT return sample details). Added = at least one sample assigned (assignedSamplesCount >= 1). NotAdded = no samples assigned. Available = at least one sample physically checked in (checkedInSamplesCount >= 1). NotAvailable = no checked-in samples. All = no filter. To list the samples assigned to a specific deliverable, use query_editorial_production with deliverableCode/deliverableIds and read each hit's samples block; for a whole project's samples use query_sample with editorialProjectIds."
         },
         {
           "name": "selectsAdded",
@@ -1525,7 +1631,7 @@
       "name": "query_editorial_production",
       "title": "Query Editorial Production",
       "module": "Editorial",
-      "description": "Search Editorial Productions (also called Editorial work units) — the central WorkUnit-doc row that tracks an Editorial Deliverable's content through the workflow (contentCreationTypeId=2). Use to answer: which work units exist for a project/deliverable, what step a production is at, who's shooting it, how many at each status/step, throughput by week, work unit counts by project/workspace/photographer. Filter by project (name/code/due-date/custom-property), deliverable (name/code/due-date/custom-property), product code, sample (code/name/custom-property), workflow type ('Asset Workflow' / 'Finalization'), workflow status ('To Do'/'In Progress'/'Done'), current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status ('Backlog'/'To Do'/'Rejected'/'In Progress'/'Failed'/'Done'), photographer/videographer/stylist/hair-and-makeup/model/art-director/assistant (Editorial team-on-set), External Post Vendor, External Post QC / Internal Post / Internal Post QC / Post Review assignees, workspace, media type (Image/Video — feature-gated), round of review, asset-delivery-finished date range, Selection/Post-Review collection statuses. Supports custom property filters via projectCustomPropertyFilters, deliverableCustomPropertyFilters, sampleCustomPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: a production surfaces custom properties from several entities (project / deliverable / sample / session), and each lists only properties that have a value SET; a property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('editorial_project', 'editorial_deliverable', 'sample', or 'session') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_editorial_production result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. Editorial only — for E-comm production rows use query_ecomm_production. For the parent project itself use query_editorial_project; for deliverable-level filtering use query_editorial_deliverable.",
+      "description": "Search Editorial Productions (also called Editorial work units) — the central WorkUnit-doc row that tracks an Editorial Deliverable's content through the workflow (contentCreationTypeId=2). Use to answer: which work units exist for a project/deliverable, what step a production is at, who's shooting it, how many at each status/step, throughput by week, work unit counts by project/workspace/photographer, which samples are shared across more than one deliverable and which deliverables depend on each one (set groupBySharedSamples=true — never page through list mode to compute this). Filter by project (name/code/due-date/custom-property), deliverable (name/code/due-date/custom-property), product code, sample (code/name/custom-property), workflow type ('Asset Workflow' / 'Finalization'), workflow status ('To Do'/'In Progress'/'Done'), current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status ('Backlog'/'To Do'/'Rejected'/'In Progress'/'Failed'/'Done'), photographer/videographer/stylist/hair-and-makeup/model/art-director/assistant (Editorial team-on-set), External Post Vendor, External Post QC / Internal Post / Internal Post QC / Post Review assignees, workspace, media type (Image/Video — feature-gated), round of review, asset-delivery-finished date range, Selection/Post-Review collection statuses. Supports custom property filters via projectCustomPropertyFilters, deliverableCustomPropertyFilters, sampleCustomPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: a production surfaces custom properties from several entities (project / deliverable / sample / session), and each lists only properties that have a value SET; a property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('editorial_project', 'editorial_deliverable', 'sample', or 'session') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_editorial_production result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. Editorial only — for E-comm production rows use query_ecomm_production. For the parent project itself use query_editorial_project; for deliverable-level filtering use query_editorial_deliverable.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -1879,6 +1985,12 @@
           "description": "Group by the value of sampleCustomPropertyName — aggregation mode. Requires sampleCustomPropertyName."
         },
         {
+          "name": "groupBySharedSamples",
+          "type": "bool",
+          "required": false,
+          "description": "Find samples SHARED across more than one deliverable — aggregation mode. Returns sharedSamples buckets [{sampleId, deliverableCount, deliverableIds}]; single-deliverable samples are excluded server-side, so this answers 'which samples are shared across deliverables' in ONE call — do NOT page through list mode and group manually. In this mode `total` = matching work units, NOT the shared-sample count — count sharedSamples instead. Drill down: pass sampleId values to query_sample (sampleIds param) for code/name/location/check-in, and deliverableIds to query_editorial_deliverable for names/status. Caveat: a deliverable with more than 200 samples has an empty samples snapshot and won't be counted."
+        },
+        {
           "name": "groupByPeriod",
           "type": "string",
           "required": false,
@@ -1905,7 +2017,7 @@
       ],
       "exampleInput": "{ \"projectName\": \"Back-to-school 2026\", \"currentStep\": \"InternalPostProduction\", \"pageSize\": 10 }",
       "exampleOutput": "{ \"total\": 14, \"hits\": [ { \"workUnitId\": \"e2...\", \"deliverableName\": \"AEM Deliverable 1\", \"currentStep\": \"InternalPostProduction\", \"status\": \"InProgress\" } ] }",
-      "knownLimitations": "Editorial work-unit (content moving through the workflow). For the delivery row itself use query_editorial_deliverable."
+      "knownLimitations": "Editorial work-unit (content moving through the workflow). For the delivery row itself use query_editorial_deliverable. The `session` field reflects the planning session this production item is CURRENTLY assigned to; it is null/absent when the item is NOT on any session (do not read a present `session` as a result of your own assign — confirm a write from the update tool's response)."
     },
     {
       "name": "query_editorial_project",
@@ -2229,7 +2341,7 @@
       "name": "query_planning",
       "title": "Query Planning",
       "module": "Planning",
-      "description": "**Custom Resource trigger** → if user prompt names a production support role NOT in the standard productionTeam (Photographer/Stylist/Model/Art Director/Hair&Makeup/Assistant/Videographer/DigitalProcessing) → call this tool with `includeCustomResources=true`. Common triggers: 'cater', 'lunch', 'runner', 'driver', 'PA', 'DIT', 'dog handler', 'medic' (and any similar free-form role). Custom Resource labels are FREE-FORM text studios type themselves → semantic-match them yourself from `customResourceLabelsAvailable[]` + `customResources[]` in the response. **Tool-first, ask-later**: call the tool, then if `customResourceLabelsAvailable=[]` ask user; otherwise semantic-match from availableLabels. **Trailing-junk / cut-off tolerance**: if user prompt has trailing backslash (`\\`), ellipsis (`...`), question marks (`??`), or appears truncated mid-word, IGNORE the noise and treat the readable trigger word as the query. Do NOT respond with 'your message looks cut off' — call the tool with the cleaned query. Examples: 'Who is today's Cater' → query for cater. 'Lunch...' → query for lunch. 'DIT??' → query for DIT. **Likely-misread tolerance**: if a trigger word could be misread as a proper noun (e.g. 'Cater' → 'Carter', 'DIT' → a person's initials), DEFAULT to the production-role interpretation (this tool is in a production planning context, not a general-knowledge chat). Don't suggest sports/celebrity readings of trigger words. **Default 'today' to ISO date**: when user says 'today', 'hôm nay', 'this morning', etc., automatically set `dateFrom`=`dateTo`=current date in `YYYY-MM-DD` (server timezone UTC). Same for 'tomorrow' (+1 day), 'yesterday' (-1 day), 'this week' (Mon-Sun current week). Don't ask the user to specify the date when they used a relative phrase. Search planning sessions — scheduled production shoots with team, time slots, and progress. Use this to answer: what's planned, when (ISO 8601 UTC), where, who's on set, sample check-in status, photography progress, alerts. **Who-is-working queries**: when user asks 'who is working this week', 'which talent has sessions today', 'list photographers on sessions next month' → set `groupByTeamMember=true` with `dateFrom`/`dateTo`. Response flips to person-centric: each entry shows the team member with their sessions. This is the primary way to answer talent-on-session questions when the studio does not use the Resource Booking add-on. Filter by team member (any role) or specific role (photographer, stylist, model, art director, assistant, videographer, hair & makeup). Also filter by sessionCode (e.g. 'SES137123CF'), sessionName (partial), sessionDescription (exact), location, production type, check-in/alert/photography status, date range. Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each session's `customProperties` lists only properties that have a value SET. A property name being absent from a session does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for sessions, call query_property(entityType='session') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_planning result alone. Filter by associated job (jobCode/jobName, or `job` ambiguous = code OR name) and product attributes (productCode/productName, or `product` ambiguous = code OR name, plus brand, category, color, styleCode) — exact match, case-insensitive, matches if ANY of the session's jobs/products satisfies the filter. Editorial workflow: filter by associated project (projectCode/projectName, or `project` ambiguous = code OR name, plus campaign) and deliverable (deliverableCode/deliverableName, or `deliverable` ambiguous = code OR name, plus deliverableOutputName) — exact match, case-insensitive, matches if ANY of the session's projects/deliverables satisfies the filter. Use `user` to find a session where a given user is on the production team regardless of skill/role (V2 ProductionTeams). Returns: session `id` (UUID), sessionName, sessionCode, time slots (ISO 8601 UTC), full production team (resolved names), check-in status, photography progress, job codes, product codes. When groupBy params set, returns counts/aggregations instead of list. **Session lookup param choice — strict per user phrasing:**   • User says 'session code SES137123CF' / 'code SES…' → `sessionCode` only.   • User says 'session named Nike Spring' / 'the Spring shoot' → `sessionName` only.   • User says 'session SES137123CF' / 'session Nike Spring' WITHOUT specifying code-vs-name → `session` (ambiguous param, matches code OR name OR UUID). Don't pass multiple session params at once — pick the one that matches user intent. **Chain with query_talent_crew_schedule**: when the user asks about bookings/holds for a specific session, FIRST call this tool → take response's `id` and `timeSlots` → pass to `query_talent_crew_schedule(sessionId=<id>, dateFrom=<min start>, dateTo=<max end>, ...)`. **Custom Resource queries** (cater / catering / lunch / food / runner / driver / transport / PA / production assistant / makeup artist (one-off) / any role NOT in standard productionTeam): set `includeCustomResources=true`. Custom resources are free-form (label, name) pairs attached inline to a session via the FE 'CUSTOM RESOURCE' panel → free-form means studios type whatever they want ('cater', 'Cater', 'catering', 'lunch', 'food service'). The tool returns ALL custom resources on the page and Claude does the semantic match (no server-side filter — too many false-negatives on free-form text like 'Caster' vs 'cater'). **Semantic match rule** (CRITICAL for custom resources): the response includes `customResourceLabelsAvailable: string[]` → distinct labels seen on the page, plus `customResources[{label,name}]` per session. Scan `customResourceLabelsAvailable` for labels **semantically similar** to the user's word, then read the matching `customResources` entries. DO NOT reply 'not found' until you've checked every label. Examples: 'cater' → look for 'catering', 'lunch', 'meal', 'food service', 'snack runner'; 'driver' → 'transport', 'shuttle', 'logistics'; 'PA' → 'production assistant', 'runner', 'gopher'. Tell the user which labels you considered (e.g. 'No exact 'cater' label, but 'catering' is set to John Smith → likely the same role.'). **Custom resource has NO booking status** (no Confirmed/Hold) → it's session-inline data, not a resource booking. Don't mention status pills for these rows. TEXT FILTERS — these params accept inline operators (sessionDescription): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
+      "description": "**Custom Resource trigger** → if user prompt names a production support role NOT in the standard productionTeam (Photographer/Stylist/Model/Art Director/Hair&Makeup/Assistant/Videographer/DigitalProcessing) → call this tool with `includeCustomResources=true`. Common triggers: 'cater', 'lunch', 'runner', 'driver', 'PA', 'DIT', 'dog handler', 'medic' (and any similar free-form role). Custom Resource labels are FREE-FORM text studios type themselves → semantic-match them yourself from `customResourceLabelsAvailable[]` + `customResources[]` in the response. **Tool-first, ask-later**: call the tool, then if `customResourceLabelsAvailable=[]` ask user; otherwise semantic-match from availableLabels. **Trailing-junk / cut-off tolerance**: if user prompt has trailing backslash (`\\`), ellipsis (`...`), question marks (`??`), or appears truncated mid-word, IGNORE the noise and treat the readable trigger word as the query. Do NOT respond with 'your message looks cut off' — call the tool with the cleaned query. Examples: 'Who is today's Cater' → query for cater. 'Lunch...' → query for lunch. 'DIT??' → query for DIT. **Likely-misread tolerance**: if a trigger word could be misread as a proper noun (e.g. 'Cater' → 'Carter', 'DIT' → a person's initials), DEFAULT to the production-role interpretation (this tool is in a production planning context, not a general-knowledge chat). Don't suggest sports/celebrity readings of trigger words. **Default 'today' to ISO date**: when user says 'today', 'hôm nay', 'this morning', etc., automatically set `dateFrom`=`dateTo`=current date in `YYYY-MM-DD`, computed in the USER's timezone (see `_userSettings` in prior tool results) — NOT UTC. Same for 'tomorrow' (+1 day), 'yesterday' (-1 day), 'this week' (Mon-Sun current week). Pass date-only `YYYY-MM-DD` values: the server interprets each date's day boundaries in the user's timezone, so no manual UTC offset is needed. Don't ask the user to specify the date when they used a relative phrase. Search planning sessions — scheduled production shoots with team, time slots, and progress. Use this to answer: what's planned, when (ISO 8601 UTC), where, who's on set, sample check-in status, photography progress, alerts. **Who-is-working queries**: when user asks 'who is working this week', 'which talent has sessions today', 'list photographers on sessions next month' → set `groupByTeamMember=true` with `dateFrom`/`dateTo`. Response flips to person-centric: each entry shows the team member with their sessions. This is the primary way to answer talent-on-session questions when the studio does not use the Resource Booking add-on. Filter by team member (any role) or specific role (photographer, stylist, model, art director, assistant, videographer, hair & makeup). Also filter by sessionCode (e.g. 'SES137123CF'), sessionName (partial), sessionDescription (exact), location, production type, check-in/alert/photography status, date range. Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each session's `customProperties` lists only properties that have a value SET. A property name being absent from a session does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for sessions, call query_property(entityType='session') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_planning result alone. Filter by associated job (jobCode/jobName, or `job` ambiguous = code OR name) and product attributes (productCode/productName, or `product` ambiguous = code OR name, plus brand, category, color, styleCode) — exact match, case-insensitive, matches if ANY of the session's jobs/products satisfies the filter. Editorial workflow: filter by associated project (projectCode/projectName, or `project` ambiguous = code OR name, plus campaign) and deliverable (deliverableCode/deliverableName, or `deliverable` ambiguous = code OR name, plus deliverableOutputName) — exact match, case-insensitive, matches if ANY of the session's projects/deliverables satisfies the filter. Use `user` to find a session where a given user is on the production team regardless of skill/role (V2 ProductionTeams). Returns: session `id` (UUID), sessionName, sessionCode, time slots (ISO 8601 UTC), full production team (resolved names), check-in status, photography progress, job codes, product codes. When groupBy params set, returns counts/aggregations instead of list. **Session lookup param choice — strict per user phrasing:**   • User says 'session code SES137123CF' / 'code SES…' → `sessionCode` only.   • User says 'session named Nike Spring' / 'the Spring shoot' → `sessionName` only.   • User says 'session SES137123CF' / 'session Nike Spring' WITHOUT specifying code-vs-name → `session` (ambiguous param, matches code OR name OR UUID). Don't pass multiple session params at once — pick the one that matches user intent. **Chain with query_talent_crew_schedule**: when the user asks about bookings/holds for a specific session, FIRST call this tool → take response's `id` and `timeSlots` → pass to `query_talent_crew_schedule(sessionId=<id>, dateFrom=<min start>, dateTo=<max end>, ...)`. **Custom Resource queries** (cater / catering / lunch / food / runner / driver / transport / PA / production assistant / makeup artist (one-off) / any role NOT in standard productionTeam): set `includeCustomResources=true`. Custom resources are free-form (label, name) pairs attached inline to a session via the FE 'CUSTOM RESOURCE' panel → free-form means studios type whatever they want ('cater', 'Cater', 'catering', 'lunch', 'food service'). The tool returns ALL custom resources on the page and Claude does the semantic match (no server-side filter — too many false-negatives on free-form text like 'Caster' vs 'cater'). **Semantic match rule** (CRITICAL for custom resources): the response includes `customResourceLabelsAvailable: string[]` → distinct labels seen on the page, plus `customResources[{label,name}]` per session. Scan `customResourceLabelsAvailable` for labels **semantically similar** to the user's word, then read the matching `customResources` entries. DO NOT reply 'not found' until you've checked every label. Examples: 'cater' → look for 'catering', 'lunch', 'meal', 'food service', 'snack runner'; 'driver' → 'transport', 'shuttle', 'logistics'; 'PA' → 'production assistant', 'runner', 'gopher'. Tell the user which labels you considered (e.g. 'No exact 'cater' label, but 'catering' is set to John Smith → likely the same role.'). **Custom resource has NO booking status** (no Confirmed/Hold) → it's session-inline data, not a resource booking. Don't mention status pills for these rows. TEXT FILTERS — these params accept inline operators (sessionDescription): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -2734,7 +2846,7 @@
       "name": "query_sample",
       "title": "Query Sample",
       "module": "Samples",
-      "description": "Search samples (physical product items) — track location, check-in/out status, and containers. The only tool that returns actual sample records. Use this to answer: where is a sample, is it checked in, which samples are at a location, which samples are overdue for return, which samples belong to a project, counts by location/status. Samples are linked to editorial projects — use editorialProjectIds to filter samples by project. Check-in status: WaitingForCheckingIn, CheckedIn, CheckedOut. Filter by sample code, barcode, product code, size, job, location, check-in status, workspace, container, container type, product type, label recognition, check-in/out dates, editorialProjectIds. Use human-readable names for location (resolved to IDs automatically). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each sample's `customProperties` lists only properties that have a value SET. A property name being absent from a sample does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for samples, call query_property(entityType='sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_sample result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true. TEXT FILTERS — these params accept inline operators (sampleCode, sampleName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
+      "description": "Search samples (physical product items) — track location, check-in/out status, and containers. The only tool that returns actual sample records. Sample records carry editorial PROJECT links only (editorialProjectIds) — NOT deliverable links. For sample↔deliverable questions ('which deliverables use this sample', 'which samples are shared across deliverables', 'list samples assigned to a deliverable'), use query_editorial_production instead: filter by sampleCode/sampleName or deliverableCode/deliverableIds — each work-unit hit returns both its deliverable info and its samples snapshot. Use this to answer: where is a sample, is it checked in, which samples are at a location, which samples are overdue for return, which samples belong to a project, counts by location/status. Samples are linked to editorial projects — use editorialProjectIds to filter samples by project. Check-in status: WaitingForCheckingIn, CheckedIn, CheckedOut. Filter by sample code, barcode, product code, size, job, location, check-in status, workspace, container, container type, product type, label recognition, check-in/out dates, editorialProjectIds. Use human-readable names for location (resolved to IDs automatically). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each sample's `customProperties` lists only properties that have a value SET. A property name being absent from a sample does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for samples, call query_property(entityType='sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_sample result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true. TEXT FILTERS — these params accept inline operators (sampleCode, sampleName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -2878,6 +2990,12 @@
           "description": "Custom property name (resolved to GUID) or GUID directly. Used with groupByCustomProperty for aggregation."
         },
         {
+          "name": "sampleIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Sample GUIDs — drill-down array, e.g. the sampleId values from query_editorial_production sharedSamples buckets. Accepts a JSON array or a JSON-encoded string array."
+        },
+        {
           "name": "editorialProjectIds",
           "type": "JsonElement?",
           "required": false,
@@ -2917,13 +3035,13 @@
           "name": "groupByPeriod",
           "type": "string",
           "required": false,
-          "description": "Time-bucket aggregation: hour, day, week, or month. Pair with groupByPeriodField."
+          "description": "Time-bucket aggregation: day, week, or month. Pair with groupByPeriodField. Bucket boundaries follow the user's timezone. Provide the matching date range (checkedInDateFrom/To or checkedOutDateFrom/To) to bound the buckets; unbounded defaults to the last year."
         },
         {
           "name": "groupByPeriodField",
           "type": "string",
           "required": false,
-          "description": "Date field for time-bucket histogram: checkedIn (default) or checkedOut."
+          "description": "Date field driving the time-bucket aggregation: checkedIn (default) or checkedOut."
         },
         {
           "name": "pageSize",
@@ -3500,13 +3618,13 @@
       "name": "query_team_on_set_skills",
       "title": "Query Team On Set Skills",
       "module": "Studio Settings",
-      "description": "List all team on set skills configured in the studio. Skills define roles that can be assigned to team members on productions (e.g. Photographer, Stylist, Model, Hair & Makeup, Art Director). Each skill belongs to a skill group (Photography, Talent). allowDoubleBooking: whether a team member with this skill can be booked on multiple sessions at the same time. isCustom: true = custom skill created by the studio, false = built-in system skill. Add-on skills whose subscription feature the studio does not have enabled (e.g. Videographer, Digital Processing, Post Review) are excluded, mirroring the Gamma Team On Set Skills page. Requires the Planning OR Resources subscription feature — returns an error when neither is enabled. Returns the full list in one call (no pagination).",
+      "description": "List all team on set skills configured in the studio. Skills define roles that can be assigned to team members on productions (e.g. Photographer, Stylist, Model, Hair & Makeup, Art Director). Each skill belongs to a skill group (Photography, Talent). allowDoubleBooking: whether a team member with this skill can be booked on multiple sessions at the same time. isCustom: true = custom skill created by the studio, false = built-in system skill. A system skill (isCustom=false) CANNOT be renamed, re-grouped, or deleted — you may only change its double-booking setting. A custom skill (isCustom=true) can be renamed, re-grouped, have its double-booking toggled, or be deleted. Add-on skills whose subscription feature the studio does not have enabled (e.g. Videographer, Digital Processing, Post Review) are excluded, mirroring the Gamma Team On Set Skills page. Requires the Planning OR Resources subscription feature — returns an error when neither is enabled. Returns the full list in one call (no pagination).",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
       "parameters": [],
       "exampleInput": "{}",
-      "exampleOutput": "{ \"total\": 9, \"items\": [ { \"name\": \"Photographer\", \"id\": 1, \"skillGroup\": \"Photography\", \"allowDoubleBooking\": false, \"isEnabled\": true, \"isCustom\": false } ] }",
+      "exampleOutput": "{ \"total\": 9, \"items\": [ { \"name\": \"Photographer\", \"id\": 1, \"skillGroup\": \"Photography\", \"skillGroupId\": 3, \"allowDoubleBooking\": false, \"isEnabled\": true, \"isCustom\": false } ] }",
       "knownLimitations": "Team on set skills are roles assignable to team members on productions (Photographer, Stylist, Model, Hair & Makeup, Art Director, etc.). Takes NO params — full list in one call, no pagination. `id` is an int. Only Photography and Talent skill groups are returned; add-on skills whose subscription feature the studio lacks (Videographer, Digital Processing, Post Review) are excluded, mirroring the Gamma page. isCustom: true = studio-created, false = built-in. `allowDoubleBooking` = can be booked on overlapping sessions."
     },
     {
@@ -3640,6 +3758,122 @@
       "exampleInput": "{ \"type\": \"result_feedback\", \"rating\": \"correct\", \"message\": \"Job list was accurate\", \"relatedToolName\": \"query_ecomm_job\" }",
       "exampleOutput": "{ \"status\": \"received\", \"type\": \"result_feedback\" }",
       "knownLimitations": "The only tool that writes anything — it sends your feedback to the Creative Force team and writes nothing to your studio's data."
+    },
+    {
+      "name": "update_planning_session",
+      "title": "Update Planning Session",
+      "module": "Planning",
+      "description": "Update an existing planning session (a scheduled production shoot). **This is a write** — it changes real data. It applies a TARGETED PARTIAL update: only the fields you pass change, everything else is left untouched. **FIND THE SESSION FIRST.** This tool takes a session **id** (UUID) — it does NOT search. Use the planning-session query tool to find the session first, then pass its `id`. **FOR CREW OR TIME-SLOT EDITS, PASS THE CURRENT STATE FROM THAT SAME QUERY.** This tool never reads the session itself, so for those two field groups you must give it the current state the query returned: for `crewOps`, copy the session's `team[]` straight into `currentTeamMembers` (keep each member's `userId`, `skillId`, `sessionTeamMemberId`); for `timeSlots`, pass the COMPLETE new slot list, keeping each retained slot's `sessionTimeSlotId` from the query result. (Scalars, customProperties and customResources need NO current state — they patch in place.) **CONFIRM BEFORE CALLING — but don't be repetitive.** Two conditions must hold before you call this tool: (1) the user has seen exactly what will change — every field you're about to update, and for crew the resulting team after the ops; and (2) the user has explicitly agreed to apply it. The GOAL is an informed yes, not a fixed script. So: if you've ALREADY laid out the specific changes in the conversation (e.g. you listed the production items / fields and the user replied \"yes, all of them\" / \"go ahead\"), that satisfies both conditions — do NOT re-print the same list as a separate \"preview\" block and ask a second time; just call the tool. Only build an explicit preview-and-confirm step when the changes haven't been spelled out yet, or the user's request is the FIRST mention and they haven't confirmed the specifics — then show the summary and ask a direct yes/no like \"Shall I apply this update?\" and WAIT. Never call it on a bare first request whose specifics the user hasn't seen and approved. (After you call it, the host also shows its own Allow/Deny prompt — a second, separate gate that does not replace getting the user's informed yes.) Accepts human-readable NAMES (production type, location, workspace, producer, crew people + skills) — resolved to IDs server-side. Pass each person as the user typed them (name, email, or id) — the tool resolves it, so there's no need to look an id up first, and a failed call tells you exactly how to fix the arguments. **Writes fail hard on unresolved names**: if a person can't be matched to exactly one user, or a skill isn't a valid allowed skill the person possesses, the tool returns an error and changes nothing. **Clearing fields:** to remove the location pass `location`=\"No set\"; to remove the producer pass `producer`=\"\"; to reset the card color pass `color`=\"none\"; to switch a session to editorial pass `productionType`=\"editorial\". **crewOps** is a list of delta operations on the current team — { op:\"add\", person, skill? } (skill OPTIONAL — omit it or pass \"none\" to add the person without a skill yet), { op:\"remove\", person }, { op:\"changeSkill\", person, skill } (pass skill \"none\" to clear it). There's no swap — express it as remove + add. Each op fails hard if it's inconsistent with `currentTeamMembers` (add a person already on the team, remove/changeSkill a person not on it). On success it returns `{ updated, sessionId, applied, changes }`: `applied` lists which field groups were written, and **`changes` is the authoritative per-field result you should report to the user** — each field you changed appears with its new value, and a removed field shows the literal \"cleared\" (e.g. `changes.producer = \"cleared\"`). **Verify the outcome from `changes` in this response — do NOT re-query the session just to confirm a change landed** (the read model can lag a just-written change).",
+      "readOnly": false,
+      "idempotent": false,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "sessionId",
+          "type": "string",
+          "required": false,
+          "description": "REQUIRED. The session id (UUID) to update — obtained from a prior planning-session query's `id` field. This tool does not resolve names or codes; pass a UUID."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "description": "New session name. Sparse — only sent if provided."
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "required": false,
+          "description": "New description. Sparse. Max ~2000 chars."
+        },
+        {
+          "name": "location",
+          "type": "string",
+          "required": false,
+          "description": "New set/location name or id. Pass 'No set' to CLEAR the location. Sparse."
+        },
+        {
+          "name": "productionType",
+          "type": "string",
+          "required": false,
+          "description": "New production type: a shooting-type name/id, OR the literal 'editorial' to switch the session to editorial. Sparse."
+        },
+        {
+          "name": "workspace",
+          "type": "string",
+          "required": false,
+          "description": "New workspace/client name or id. Sparse."
+        },
+        {
+          "name": "producer",
+          "type": "string",
+          "required": false,
+          "description": "New producer — user name, email, or id. Must resolve to exactly one user. Pass an empty string to CLEAR the producer (remove it). Sparse — omit to leave the producer unchanged."
+        },
+        {
+          "name": "color",
+          "type": "string",
+          "required": false,
+          "description": "Session-card color — one of the 12 fixed colors (Google-Calendar palette). Pass the color NAME (preferred) or its numeric id 0-11. Map the user's everyday color words to the closest name using this guide: `tomato`(11) = red; `flamingo`(4) = pink / light red / coral; `tangerine`(10) = orange; `banana`(1) = yellow; `sage`(9) = light/pale green; `basil`(2) = dark green; `peacock`(8) = teal / cyan / turquoise; `blueberry`(3) = blue / dark blue; `lavender`(7) = light purple / lilac; `grape`(5) = purple / violet; `graphite`(6) = gray; `bright`(0) = white / default (no tint). E.g. \"make it red\" → `tomato`; \"blue\" → `blueberry`; \"teal\"/\"turquoise\" → `peacock`; \"purple\" → `grape` (or `lavender` if they say light purple). If the user names a color exactly (e.g. \"tomato\"), use it as-is. Pass \"none\"/\"reset\"/empty to RESET to no manual color. Sparse — omit to leave the color unchanged."
+        },
+        {
+          "name": "timeZone",
+          "type": "string",
+          "required": false,
+          "description": "Session timezone — an IANA name (e.g. 'Asia/Tokyo'). Affects how bare datetimes in `timeSlots` are interpreted; also sent with the slot upsert. Defaults to the user's timezone. **To CHANGE the session's timezone while keeping the same clock times** (e.g. 'move this shoot to Tokyo time' — 9am stays 9am, now Tokyo): set `timeZone` to the new tz, set `currentTimeZone` to the session's existing tz, and pass the session's CURRENT timeSlots back unchanged (the absolute/UTC times from the query). The tool then keeps each slot's wall-clock and recomputes it under the new tz, exactly like the app's Change-timezone action."
+        },
+        {
+          "name": "currentTimeZone",
+          "type": "string",
+          "required": false,
+          "description": "The session's CURRENT timezone (IANA name or tz id), copied from the planning-session query. Pass this ONLY when you're changing `timeZone` to a different value AND want the existing clock times preserved (the timezone-change case described under `timeZone`). When set, the tool reads each retained slot's wall-clock in this old timezone and re-interprets it in the new `timeZone`. Omit it if you're sending fresh slot times (bare datetimes) rather than rebasing the existing ones."
+        },
+        {
+          "name": "timeSlots",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "The COMPLETE new time-slot list (full-array replace). JSON array of { sessionTimeSlotId?, start, end }: keep each retained slot's `sessionTimeSlotId` from the query result; omit it on a new slot; drop a slot entirely to delete it. `start`/`end` are ISO datetimes carrying their own day (see create tool). **Each slot must start and end on the SAME calendar day** (in the session timezone) — a single slot CANNOT span two days, and the tool rejects one that does (e.g. 7 Jul → 8 Jul is invalid). **When the user gives a continuous range that CROSSES MIDNIGHT, you MUST SPLIT it at midnight into TWO slots — do NOT clamp the end back to the first day, and do NOT drop the after-midnight part.** Split so no requested time is lost: first slot = start → 23:59 of the start day, second slot = 00:00 of the next day → the user's end time. Example — 'from 17:00 on 7 Jul to 02:00 on 8 Jul' → [{\"start\":\"2026-07-07T17:00\",\"end\":\"2026-07-07T23:59\"},{\"start\":\"2026-07-08T00:00\",\"end\":\"2026-07-08T02:00\"}]. A slot needs start < end, so if the after-midnight part is zero-length (the range ends exactly at 00:00), drop the second slot and keep just [{\"start\":\"2026-07-07T17:00\",\"end\":\"2026-07-07T23:59\"}]. Before sending, tell the user you've split the overnight range into two slots and confirm. **A MULTI-DAY session is likewise expressed as one slot PER DAY**: a shoot running 7–8 Jul 09:00–17:00 → TWO slots [{\"start\":\"2026-07-07T09:00\",\"end\":\"2026-07-07T17:00\"},{\"start\":\"2026-07-08T09:00\",\"end\":\"2026-07-08T17:00\"}], NOT one slot from 7 Jul to 8 Jul. Omit this param to leave time slots untouched."
+        },
+        {
+          "name": "crewOps",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Delta operations on the crew. JSON array of { op, person, skill? }. op = 'add' (skill required), 'remove', or 'changeSkill' (skill required). `person` = a name, email, or userId. For **remove**, the simplest is to pass the member's `userId` from `currentTeamMembers` (it's matched directly against the team). For **add**/**changeSkill**, pass a name or email (the tool looks up the person's skills to validate the new skill). **Skill is OPTIONAL on add** — omit it or pass `skill`:\"none\" to put someone on the team without a skill yet. To CLEAR an existing member's skill, use changeSkill with `skill`:\"none\". E.g. [{\"op\":\"add\",\"person\":\"Anna\",\"skill\":\"Stylist\"},{\"op\":\"add\",\"person\":\"Le Ngan\"},{\"op\":\"changeSkill\",\"person\":\"Carl\",\"skill\":\"none\"},{\"op\":\"remove\",\"person\":\"<userId>\"}]. REQUIRES `currentTeamMembers`."
+        },
+        {
+          "name": "currentTeamMembers",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "The session's current crew, copied straight from the planning-session query's `team[]`. JSON array of { userId, skillId, sessionTeamMemberId }. Required whenever `crewOps` is given — the tool applies the ops to this list and sends the full result. (Booking/hold status is NOT touched by this tool — it's managed by a separate booking-status flow — so you don't need to pass it.)"
+        },
+        {
+          "name": "customProperties",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Custom properties to set (true sparse patch — only the named ones change). JSON array of { name, value }. E.g. [{\"name\":\"Campaign\",\"value\":\"Winter\"}]. Values are validated against the property's type: a **Number** property needs a numeric value within ±99999999999.9999; a **Free text** property is capped at 2048 characters; a **List of options** property needs one of its defined options (case-insensitive) — a bad value returns an error listing the allowed options. Dates take ISO (e.g. '2026-06-24')."
+        },
+        {
+          "name": "customResources",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Custom resources to add/change — free-form (label, person) production-support roles (catering, driver, runner…). JSON array of { label, name }. The tool reads the session's current resources itself and overlays these by label, so pass only what changes. (Setting `name` to empty keeps the row with no person — it does NOT delete the row; to delete a row use `removeCustomResources`.)"
+        },
+        {
+          "name": "removeCustomResources",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Custom resources to DELETE — a JSON array of labels to remove entirely from the session, e.g. [\"Driver\",\"Catering\"]. The tool drops these from the session's resource set and writes the rest. Use this (not an empty `name` in `customResources`) when the user wants a resource row gone."
+        },
+        {
+          "name": "productionItemOps",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Assign / remove / move PRODUCTION ITEMS (work units) to/from this session — the assignment link only; it never changes the production item's own workflow or status. JSON array of { op, productionItemIds }, where op is 'add', 'remove', or 'move' and `productionItemIds` is an ARRAY of ids (so 'add all 12 work units of this job' is ONE op). **Get the ids from the production query tool first**, then preview which production items you'll assign and get a yes. **WHICH ID TO PASS depends on the session's content type:** for an **e-comm** (shooting-type) session, pass the work unit's `id` from query_ecomm_production. for an **editorial** session, pass the **`deliverableId`** taken from query_editorial_production's `deliverableOfFinalize.deliverableId` field. **Do NOT pass the editorial work unit's top-level `id` — editorial assignment uses the deliverableId, and a work-unit id will be rejected as non-existent.** **add vs move — choose by the production item's CURRENT state, NOT by the user's verb** (users say 'move' loosely): use **add** for a production item that isn't on any session yet (the common case); use **move** ONLY when the user names/implies the production item is currently on ANOTHER session ('from session A', 'on yesterday's shoot', 'it's on the wrong session') — move re-homes it here. When unsure, use **add**; if the backend reports an id was already on another session, the tool's warning tells you to retry that id with 'move'. Examples: 'Add the Nike hoodie work unit to this session' → add; 'Move these work units into session X' (no source named) → add; 'Move the hoodie work unit FROM session A to here' → move. **PRODUCTION-TYPE RULE (must hold for add/move):** every production item you assign MUST have the SAME production type / shooting type as the planning session's own production type. A session holds items of ONE production type only — e.g. a flat/still work unit cannot go on an on-model session, and you cannot mix two different production types in one call. Check each item's production type against the session's before assigning; if they differ, don't assign it — tell the user which items don't match instead. E.g. [{\"op\":\"add\",\"productionItemIds\":[\"<id1>\",\"<id2>\"]},{\"op\":\"move\",\"productionItemIds\":[\"<id3>\"]}]. Best-effort: production-type-mismatched / already-assigned ids come back as a warning, the rest still apply."
+        }
+      ],
+      "exampleInput": "{ \"sessionId\": \"p1a2b3c4-d5e6-7890-abcd-ef1234567890\", \"name\": \"Holiday Campaign\", \"crewOps\": [ { \"op\": \"add\", \"person\": \"Anna Lee\", \"skill\": \"Stylist\" } ], \"currentTeamMembers\": [ { \"userId\": \"u1...\", \"skillId\": 3, \"sessionTeamMemberId\": \"tm1...\" } ], \"color\": \"tomato\", \"productionItemOps\": [ { \"op\": \"add\", \"productionItemIds\": [ \"wu1...\", \"wu2...\" ] } ] }",
+      "exampleOutput": "{ \"updated\": true, \"sessionId\": \"p1a2b3c4-d5e6-7890-abcd-ef1234567890\", \"applied\": [ \"scalars\", \"crew\", \"products\" ], \"changes\": { \"name\": \"Holiday Campaign\", \"color\": \"tomato\", \"teamMembers\": [ { \"person\": \"Anna Lee\", \"skill\": \"Stylist\", \"userId\": \"u1...\" } ], \"productionItemsAdded\": [ \"wu1...\", \"wu2...\" ] } }",
+      "knownLimitations": "Write tool — targeted partial update; only the fields you pass change. Id-only (find the session with query_planning first). For crew/time-slot edits pass the current state from that query (`currentTeamMembers` / `timeSlots` with their ids) — the tool never re-reads the session. Production items: `productionItemOps` assigns/removes/moves existing production items (work units) — the assignment link only, never the item's own workflow/status (get ids from query_ecomm_production; op add for an unassigned item, move only when it's on another session); production-type compatibility is enforced by the backend and rejected ids come back as a warning. Clears via a sentinel string (location \"No set\", producer \"\", color \"none\"). Verify from the returned `changes` map — do NOT re-query. Booking/hold status is NOT settable (separate flow, blocked by CPD-554). Requires McpWritePlanning (Access) + PlanningView (Write)."
     }
   ]
 }
