@@ -64,8 +64,7 @@ https://mcp.creativeforce.io/mcp
 ```
 
 Authentication is OAuth 2.1 with your Creative Force account — see the [setup guide](setup.md).
-Your Creative Force subscription must include the **MCP Server** feature, and you will only see
-the tools your account's permissions allow.
+You will only see the tools your account's permissions allow.
 
 ---
 
