@@ -9,6 +9,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the docum
 Initial public documentation for the Creative Force MCP server. To be tagged **v1.0.0** at the
 public release.
 
+### Changed
+- Connecting no longer requires the **MCP Server** subscription add-on. Access is decided only by
+  the MCP tool permissions granted on a role, so the prerequisite, the "connection denied"
+  troubleshooting row, and the note about a missing **MCP Server** tab have been removed from the
+  setup guide, along with the subscription sentence in the README.
+
 ### Added
 - README, setup guide, and support page.
 - `SECURITY.md` responsible-disclosure policy and security posture.

@@ -6,9 +6,6 @@ Force MCP server and verifies the connection. It takes about five minutes.
 ## Prerequisites
 
 - A **Creative Force account** you can sign in to with a username and password.
-- Your studio's Creative Force subscription includes the **MCP Server** feature. If it does not,
-  the connection is refused with a *"connection denied"* message — contact your Creative Force
-  account manager to enable it. Use of the MCP server is free of charge.
 - Your role has the relevant **MCP tool permissions** granted (see
   [Grant MCP tool permissions](#grant-mcp-tool-permissions)). The tools you see depend on your
   **screen permissions** in Creative Force — you will only see tools for the areas your account
@@ -39,8 +36,8 @@ themselves.
 Each tool you grant adds a corresponding capability in the connected AI tool. Granting more tools
 surfaces more capabilities; we recommend enabling all of them for the fullest experience.
 
-> If you don't see the **MCP Server** tab in role settings, the MCP Server feature is not enabled
-> on your subscription. Contact your Creative Force account manager.
+Use of the MCP server is free of charge, and no subscription add-on is required — granting the
+permissions is all it takes.
 
 Permission changes can take up to ten minutes to take effect, or re-authenticate to apply them
 immediately.
@@ -131,7 +128,6 @@ and use case"* and the AI tool composes it for you.
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | `401 Unauthorized` | Token missing or expired | Re-run the OAuth login; clear the client's cached auth (e.g. delete `~/.mcp-auth`) and reconnect. |
-| "Connection denied" on connect | Studio lacks the **MCP Server** subscription feature | Ask your Creative Force account manager to enable it. |
 | No tools visible after connecting | Your role lacks MCP tool permissions | Ask your admin to grant access under **Settings → Roles → MCP Server**. |
 | A tool you expect is missing | Your account lacks the screen permission for that area | Request the relevant Creative Force permission; tools are filtered per user. |
 | Tools visible but returning "Access denied" | Permission cache is stale (up to 10 min) | Wait and retry, or re-authenticate. |
