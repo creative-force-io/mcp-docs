@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.creativeforce/mcp",
-  "description": "Read-only MCP access to Creative Force photo-production data (jobs, assets, talent, editorial).",
+  "description": "MCP access to Creative Force photo-production data — jobs, products, samples, assets, talent, editorial, workflows and studio settings. Read-only apart from planning-session scheduling.",
   "version": "1.0.0",
   "repository": {
     "url": "https://github.com/creative-force-io/mcp-docs",

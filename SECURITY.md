@@ -15,17 +15,29 @@ We will acknowledge your report, investigate, and keep you informed of the resol
 
 The Creative Force MCP server is designed to minimise risk:
 
-- **Read-only.** Every tool is a query. The server does not create, update, or delete your
-  production data. The single exception is `send_feedback`, which sends a message to the
-  Creative Force team and writes nothing to your studio's data.
+- **Read-first.** 30 of the 34 tools are queries that cannot change your data. Writes are confined
+  to a single area — planning sessions (`create_planning_session`, `update_planning_session`,
+  `delete_planning_session`) — plus `send_feedback`, which sends a message to the Creative Force
+  team and writes nothing to your studio's data. No tool can modify jobs, products, samples,
+  assets, tasks, editorial records or studio settings.
+- **Writes are opt-in and separately gated.** Write tools sit in their own **Write/Delete**
+  permission group on the role's MCP Server tab, behind a **Write Planning** permission that is
+  distinct from *Query Planning*, off by default for every role, and additionally requiring the
+  underlying Creative Force permission at Edit level. A studio that grants only the Read-Only group
+  has a strictly read-only server.
+- **Destructive operations are annotated and guarded.** `delete_planning_session` carries
+  `destructiveHint`, so MCP clients prompt the user for confirmation before it runs, and the server
+  refuses or warns when the session still has confirmed bookings or outfits attached.
+- **Writes are immediate and have no undo.** Changes land in Creative Force straight away. Reversing
+  one means making the opposite change. Treat *Write Planning* as you would edit rights in the web
+  app.
 - **Studio-scoped.** A session can only ever see data for the authenticated user's studio.
   Access is resolved per request from the user's own Creative Force identity.
 - **Permission-filtered.** Tools are filtered by the user's Creative Force screen permissions —
   a user only sees the tools for areas they are already allowed to access.
-- **OAuth 2.1 authentication.** Connections authenticate with the user's Creative Force account
-  using OAuth 2.1 with PKCE. There are no shared or long-lived API keys to leak.
-- **Subscription-gated.** The server is only available to studios whose subscription includes the
-  MCP Server feature.
+- **No shared credentials.** Connections authenticate with the user's own Creative Force account
+  using the OAuth 2.0 authorization code flow with PKCE. There are no shared or long-lived API
+  keys to leak.
 
 ## A note for agent operators (prompt injection)
 
@@ -33,5 +45,10 @@ Because the server returns your studio's content to an AI assistant, treat tool 
 untrusted input to the model, exactly as you would any external data. Text retrieved from
 production records (names, notes, descriptions) could attempt to influence the assistant. Keep a
 human in the loop for any consequential action the assistant suggests based on retrieved data.
+
+This matters more now that the server has write tools. If your studio grants the **Write/Delete**
+group, retrieved text is reaching a model that can create, change and delete planning sessions.
+Keep the client's own confirmation prompts enabled, and grant the Write/Delete group only to roles
+that would be entitled to make those changes in the web app.
 
 See also **[privacy.md](privacy.md)** for data-handling details.

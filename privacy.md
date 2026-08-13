@@ -7,47 +7,73 @@
 ## Overview
 
 The Creative Force MCP server lets an AI assistant query your studio's Creative Force production
-data on your behalf. It is **read-only** and **studio-scoped**: it answers questions using the data
-your own Creative Force account can already see, and it does not change that data. The one exception
-is `send_feedback`, which sends a message to the Creative Force team.
+data on your behalf. It is **read-first** and **studio-scoped**: it answers questions using the data
+your own Creative Force account can already see. 30 of its 34 tools are read-only. The four that
+write are `create_planning_session`, `update_planning_session` and `delete_planning_session` — which
+change planning sessions only — and `send_feedback`, which sends a message to the Creative Force
+team. Write tools are off by default and must be granted per role.
 
-Access is authenticated with your own Creative Force account (OAuth 2.1) — there is no separate
-login and no shared API key.
+Access is authenticated with your own Creative Force account (OAuth 2.0 authorization code flow with
+PKCE) — there is no separate login and no shared API key.
 
 ## What the server accesses
 
 When you ask a question, the server reads — strictly within your studio and limited to what your
 Creative Force permissions already allow — from these areas:
 
-- Jobs, productions (work units), and workflow steps/tasks
+- Jobs, productions (work units), and workflow definitions, steps and tasks
 - Product catalog and physical samples
 - Asset metadata and image previews
+- Style guides and their capture/output requirements
 - Planning sessions and schedules
-- Talent and crew records, including avatars and availability
+- Talent and crew records, including avatars, availability and — where your role has the **Rates**
+  screen permission — their rate information
 - Editorial projects, productions, and deliverables
+- The event log for a record: who changed it and when
+- Studio settings: locations, presets, print configurations, production types, product and
+  post-production vendors, containers, data sources, and on-set skills
 - Your workspaces and their settings
 
 It reads this data live from Creative Force each time you ask. The server does **not** maintain its
 own separate database of your business records.
 
+## What the server can change
+
+The server can create, update and delete **planning sessions**, and nothing else. Those three tools
+are off by default: they require the **Write Planning** permission on your role, which is separate
+from *Query Planning*, plus the underlying Creative Force permission at Edit level. Deleting a
+session is annotated as destructive, so MCP clients prompt for confirmation before it runs.
+
+Changes are written to Creative Force immediately and appear in the planning view straight away.
+**There is no undo** — to reverse a change, make the opposite change or adjust it directly in
+Creative Force. Deletion is guarded: a session with confirmed bookings or outfits attached will warn
+or stop rather than leave those pointing at nothing.
+
+Session management covers the session and the schedule, set, team and products on it. It cannot
+change Resourcing, outfits, the underlying product request or production task, or Talent &amp; Crew
+user properties — a person's skills, agency, rate and personal details are not modifiable via MCP.
+
 ## What the server does not do
 
-- It does **not** create, edit, or delete your production data. The only write operation is
-  `send_feedback`, which goes to the Creative Force team — not to your studio's records.
+- It does **not** create, edit, or delete any production data outside planning sessions. Jobs,
+  products, samples, assets, tasks, editorial records and studio settings are read-only through
+  every tool.
 - It does **not** provide access across studios. A session only ever sees the authenticated user's
   studio.
 - It does **not** bypass your permissions. You only see the tools and data for areas your Creative
-  Force account is already allowed to access.
+  Force account is already allowed to access, and a write tool additionally needs Edit rights.
 
 ## Authentication and access control
 
-- **OAuth 2.1 with PKCE**, using your Creative Force account. Access tokens are validated on each
-  request and cached only briefly (typically until the token expires) to avoid re-validating every
-  call; they are not retained beyond that.
-- **Subscription-gated** — the server is available only to studios whose subscription includes the
-  MCP Server feature.
+- **OAuth 2.0 authorization code flow with PKCE**, using your Creative Force account. Access tokens
+  are validated on each request and cached only briefly (typically until the token expires) to avoid
+  re-validating every call; they are not retained beyond that.
 - **Permission-filtered** — tools and results are filtered by your Creative Force screen permissions
-  on every request.
+  on every request. Permission changes take effect within about ten minutes, or immediately on
+  re-authentication.
+
+No subscription add-on is required; access is decided solely by the MCP tool permissions granted on
+your role.
 
 ## Logging and analytics
 
