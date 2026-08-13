@@ -4,9 +4,9 @@
 ![Auth](https://img.shields.io/badge/auth-OAuth%202.0%20%2B%20PKCE-green)
 ![Access](https://img.shields.io/badge/access-read--first-brightgreen)
 
-> Connect Claude, ChatGPT, Microsoft Copilot, and other MCP-compatible clients to your Creative
-> Force photo-production data — studio-scoped, permission-filtered, and authenticated with your own
-> Creative Force account.
+> Connect Claude, ChatGPT, Microsoft Copilot, Notion, and other MCP-compatible clients to your
+> Creative Force photo-production data — studio-scoped, permission-filtered, and authenticated with
+> your own Creative Force account.
 
 ## What this is
 
@@ -59,7 +59,8 @@ The complete, always-current tool list — every parameter, type, and example �
 
 ## Get started
 
-1. **[Setup guide →](setup.md)** — connect Claude, ChatGPT or Copilot and run your first query.
+1. **[Setup guide →](setup.md)** — connect Claude, ChatGPT, Copilot or Notion and run your first
+   query.
 2. **[Tool reference →](tool-reference.md)** — every tool and parameter.
 3. **[Use cases and prompts →](use-cases.md)** — realistic example prompts.
 4. **[Permissions →](permissions.md)** — how tool access is granted per user role.

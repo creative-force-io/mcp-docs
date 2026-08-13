@@ -1,8 +1,8 @@
 # Use cases & example prompts
 
 Realistic prompts for working with your Creative Force data through an MCP client (Claude, ChatGPT,
-Copilot). Each section covers one **query category** — the unit MCP permissions are granted in —
-and notes the tools it triggers.
+Copilot, Notion). Each section covers one **query category** — the unit MCP permissions are granted
+in — and notes the tools it triggers.
 
 > These are illustrative. Actual results depend on **your studio's data** and **your permissions** —
 > you only ever see what your Creative Force account already has access to. Everything is read-only
