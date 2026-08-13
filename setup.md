@@ -63,6 +63,11 @@ Each tool you grant adds a corresponding capability in the connected AI tool. Gr
 surfaces more capabilities; we recommend enabling all of them for the fullest experience. Only
 **Allow All (incl. new tools)** turns on tools added in future releases automatically.
 
+> 📷 **Screenshots:** [Help Centre → Role Permissions](https://help.creativeforce.io/en/articles/15570880-mcp-server-setup-configuration#h_cfc1f2942c)
+> shows the MCP Server tab, and
+> [Data Queries → Permissions](https://help.creativeforce.io/en/articles/15566092-mcp-server-data-queries#h_c332da9219)
+> screenshots the exact permission rows for every query category.
+
 A tool needs **both** its MCP Server permission *and* the Creative Force permission for the data
 screen it reads — see **[permissions.md](permissions.md)** for the full tool-by-tool map.
 
@@ -73,7 +78,11 @@ immediately.
 
 How you connect depends on which Claude product you use.
 
+> 📷 **Screenshots:** [Help Centre → Connecting Claude](https://help.creativeforce.io/en/articles/15570880-mcp-server-setup-configuration#h_5874e404d6)
+
 ### Claude.ai / Claude Desktop
+
+> 📷 [Claude Web/Desktop](https://help.creativeforce.io/en/articles/15570880-mcp-server-setup-configuration#h_7b80aaf0e6) — walkthrough GIFs of adding the connector, signing in, and enabling tool permissions.
 
 #### Admin steps
 
@@ -118,6 +127,8 @@ We recommend enabling all of them.
 
 ### Claude Code (CLI)
 
+> 📷 [Claude Code](https://help.creativeforce.io/en/articles/15570880-mcp-server-setup-configuration#h_a371e18cf3)
+
 **Option A — CLI command:**
 
 ```
@@ -149,6 +160,8 @@ On first use, Claude Code opens the Creative Force OAuth login in your browser.
 ChatGPT connects via a custom connector in **Developer Mode**, which is available on **Plus, Pro,
 Team, Enterprise, and Edu** plans. The free plan does not support custom connectors and cannot
 connect to the Creative Force MCP server.
+
+> 📷 **Screenshots:** [Help Centre → Connecting ChatGPT](https://help.creativeforce.io/en/articles/15570880-mcp-server-setup-configuration#h_122a8fa33e) — walkthrough GIFs of enabling Developer Mode, creating the app, the OIDC checkbox, and authorising.
 
 1. In ChatGPT, open your account menu and go to **Settings → Apps → Advanced Settings**, then
    toggle on **Developer Mode**.
@@ -182,6 +195,18 @@ no extra setup on their side.
 
 > ⚙️ This setup must be performed by a **Microsoft account admin** and requires a
 > [publishing licence for Copilot agents](https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-licensing?tabs=web).
+
+> 📷 **Screenshots:** every step below is screenshotted in
+> [Help Centre → MCP Server: Copilot Studio](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_bc003283f0) —
+> [1 Create agent](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_78a4ca4c49) ·
+> [2 Add MCP server](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_7c243c474b) ·
+> [3 Authentication](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_009aa83960) ·
+> [4 Connect](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_a89fd8f28e) ·
+> [5 Publish licence](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_905ce54660) ·
+> [6 Enable for Teams](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_fe0276ffc5) ·
+> [7 Agent details](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_d4f0a65b99) ·
+> [Use in Microsoft 365](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_9225b320b6) ·
+> [Use in Teams](https://help.creativeforce.io/en/articles/16237883-mcp-server-copilot-studio#h_2261f7a2ac)
 
 ### Step 1 — Create a new agent
 
@@ -343,6 +368,9 @@ servers once, then each user adds the Creative Force connection.
 
 > Requires a Notion account with **Notion AI** enabled.
 
+> 📷 **No Help Centre article yet.** Notion is the one client without a published walkthrough, so
+> there are no screenshots to link to. The steps below are the whole flow.
+
 ### Admin step — enable custom MCP servers
 
 1. Go to **Account → Settings → Connections**, then open the **Manage** tab.
@@ -415,7 +443,9 @@ and use case"* and the AI tool composes it for you.
 | No results returned | Your account has no access to a studio with production data | Verify your Creative Force account is attached to a studio that holds data for the area you asked about. |
 | Connection timeout | Server URL unreachable from your network | Confirm `https://mcp.creativeforce.io/mcp` is reachable from your network. |
 
-Still stuck? See **[support.md](support.md)**.
+Also see the Help Centre's
+[Troubleshooting](https://help.creativeforce.io/en/articles/15570880-mcp-server-setup-configuration#h_89f5c6e166)
+table. Still stuck? See **[support.md](support.md)**.
 
 ## See also
 
