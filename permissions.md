@@ -2,7 +2,7 @@
 
 The Creative Force MCP server shows each user **only the tools their account is allowed to use**.
 Access is set **per user role** in Creative Force, so a studio can decide exactly what an AI
-assistant may see on each person's behalf. This page explains how that works.
+assistant may see — and change — on each person's behalf. This page explains how that works.
 
 > This is the page linked from **"Learn more"** on the **User Roles → MCP SERVER** tab.
 
@@ -26,8 +26,8 @@ Tools are organised into two groups:
 
 | Group | What's in it |
 |-------|--------------|
-| **Read-only** | Tools that read data without making any changes. |
-| **Write/Delete** | Tools that can read data and make changes. |
+| **Read-Only** | Tools that read data without making any changes — 30 of the 34 tools. |
+| **Write/Delete** | Tools that change data — the three planning-session tools, gated by the single **Write Planning** permission. |
 
 Each group has one control with four options:
 
@@ -41,6 +41,15 @@ Each group has one control with four options:
 Only **Allow All (incl. new tools)** covers future tools — by design, so that adding a tool never
 silently grants it everywhere. The setting is per role; the server applies it on each request.
 
+Individual permissions have two settings, **None** and **Access**:
+
+| Control | Behaviour |
+|---------|-----------|
+| **None** | When a connected AI assistant tries to use that capability, the request fails. |
+| **Access** | When a connected AI assistant tries to use that capability, the request succeeds. |
+
+A role granted only the **Read-Only** group gets a strictly read-only server.
+
 ## What each tool needs
 
 Each tool needs **two** separate permissions, both named exactly as they appear in the role popup:
@@ -49,52 +58,86 @@ Each tool needs **two** separate permissions, both named exactly as they appear 
    Asset*); and
 2. a **Creative Force permission** — the data area the tool reads (section → permission).
 
-Every current tool is in the **Read-only** group, so allowing that group (any "Allow All…" option)
-grants all the MCP SERVER permissions below at once — or grant each one individually under
-**Custom**. The Creative Force permission must be set in addition, in its own section of the role.
+One MCP SERVER permission usually covers a whole **category** of tools rather than a single tool.
+The Creative Force permission must be set in addition, in its own section of the role.
 
-| Tool | MCP SERVER permission | Creative Force permission (section → permission) |
-|------|-----------------------|--------------------------------------------------|
-| `query_asset` | Query Asset | Assets → Assets Hub |
-| `get_asset_preview` | Query Asset | Assets → Assets Hub |
-| `query_ecomm_job` | Query E-Comm Job | E-Comm → Jobs |
-| `query_ecomm_production` | Query E-Comm Production | E-Comm → Production |
-| `query_task` | Query Task | E-Comm → Production |
-| `query_ecomm_product_request` | Query E-Comm Product Request | E-Comm → Products |
-| `query_sample` | Query Sample | Samples → Samples |
-| `query_planning` | Query Planning | Planning → Calendar |
-| `query_talent_crew` | Query Talent &amp; Resource | Planning → Talent &amp; Crew |
-| `get_talent_crew_preview` | Query Talent &amp; Resource | Planning → Talent &amp; Crew |
-| `query_talent_crew_schedule` | Query Talent &amp; Resource | Planning → Resourcing |
-| `query_editorial_project` | Query Editorial Project | Editorial → Editorial projects |
-| `query_editorial_production` | Query Editorial Production | Editorial → Production |
-| `query_editorial_deliverable` | Query Editorial Deliverable | Editorial → Editorial deliverables |
-| `query_workspace` | Query Workspace | Studio Settings → Clients |
+### Read-Only group
+
+| MCP SERVER permission | Tools it covers | Creative Force permission (section → permission) |
+|-----------------------|-----------------|--------------------------------------------------|
+| Query Asset | `query_asset`, `get_asset_preview` | Assets → Assets Hub (View) |
+| Query E-Comm Job | `query_ecomm_job` | E-COMM → Jobs (View) |
+| Query E-Comm Production | `query_ecomm_production` | E-COMM → Production (View) |
+| Query E-Comm Product Request | `query_ecomm_product_request` | E-COMM → Products (View) |
+| Query Editorial Production | `query_editorial_production` | Editorial → Production (View) |
+| Query Editorial Project | `query_editorial_project` | Editorial → Editorial projects (View) |
+| Query Editorial Deliverable | `query_editorial_deliverable` | Editorial → Editorial deliverables (View) |
+| Query Task | `query_task` | Task Management → Photography Management, Internal Post Management, Digital Processing Management (View) |
+| Query Sample | `query_sample` | Samples → Samples (View) |
+| Query Planning | `query_planning` | Planning → Calendar, Set, Talent &amp; Crew (View) |
+| Query Talent &amp; Resource | `query_talent_crew`, `get_talent_crew_preview`, `query_talent_crew_schedule` | Planning → Talent &amp; Crew (View); Resourcing for the schedule tool |
+| Query Event Log | `query_event_log` | Studio Settings → Event Log (View) |
+| Query Style Guide | `query_styleguide`, `get_styleguide_detail` | Studio Settings → Style Guides (View) |
+| Query Workflow | `query_workflow`, `get_workflow_detail` | Studio Settings → Workflow (View) |
+| Query Studio Setting | `query_containers`, `query_data_sources`, `query_locations`, `query_post_production_vendors`, `query_presets`, `query_print_configurations`, `query_product_vendors`, `query_production_types`, `query_team_on_set_skills` | Studio Settings → the matching sub-setting (e.g. Production Types) (View) |
+| Query Workspace | `query_workspace` | Studio Settings → Clients (View) |
 
 So a role using `query_asset`, for example, needs **both** *Query Asset* (MCP SERVER) **and**
 *Assets Hub* (Assets) — granting one without the other leaves the tool unavailable.
 
+### Write/Delete group
+
+| MCP SERVER permission | Tools it covers | Creative Force permission |
+|-----------------------|-----------------|---------------------------|
+| Write Planning | `create_planning_session`, `update_planning_session`, `delete_planning_session` | Planning, at **Edit** level |
+
+**Query Planning and Write Planning are separate.** A role with *Query Planning* but not *Write
+Planning* can ask questions about sessions but cannot create, change, or delete them. Granting
+*Write Planning* is what turns session management on.
+
 Notes:
 
 - A single MCP SERVER permission can cover several tools — e.g. *Query Asset* gates both
-  `query_asset` and `get_asset_preview`, and *Query Talent &amp; Resource* gates all three talent
-  tools. Each still needs its own Creative Force permission.
-- Every tool today is **read-only**, so the **Write/Delete** group is currently empty. It is in
-  place for future tools that change data; those will need their Creative Force permission at
-  **Edit** level, not just View.
+  `query_asset` and `get_asset_preview`, and *Query Studio Setting* gates all nine studio-settings
+  tools. Each still needs its own Creative Force permission. A tool's permission name cannot be
+  inferred from its tool name, so use this table or the role popup itself.
 - This list is generated from the server's source and grows as tools are added. The complete,
   always-current tool list — with parameters and examples — is in
   **[tool-reference.md](tool-reference.md)**.
 
+## Gating that is not a role permission
+
+Two things narrow what a tool returns even when the role permissions above are fully granted.
+Neither is set on the MCP SERVER tab:
+
+- **Field-level permission.** `query_talent_crew` returns a talent's **rates** only when the role has
+  the **Rates** screen permission. When rates are withheld the response says so explicitly
+  (`ratesAccess: denied`) — that means hidden by permission, not absent. Do not read a missing
+  `rates` array as "this talent has no rates configured".
+- **Plan features.** Parts of `get_styleguide_detail` depend on the studio's subscription rather than
+  the user's role: the Delivery tab needs the **Advanced Style Guides** plan feature (or pre-existing
+  saved routing), and the Localization tab needs the **Localization** plan feature. A tab the user
+  cannot see on the Style Guide screen is not surfaced through the tool either.
+
 ## Always available
 
-Two tools need **no permission** and are not shown on the MCP SERVER tab:
+**`query_property`** needs no permission and is not shown on the MCP SERVER tab — it returns the
+available filter properties and carries no studio data of its own.
 
-- **`send_feedback`** — sends a note to the Creative Force team. Available to every connected user.
-- **`query_property`** — returns the available filter properties; it carries no studio data of its
-  own.
+`send_feedback` **does** have its own **Send Feedback** permission on the MCP SERVER tab. It is not a
+read-only tool, but it is not in the Write/Delete group either: it writes only to Creative Force's
+own feedback inbox, never to your studio's data.
+
+## Applying changes
+
+Permission changes take effect within about ten minutes, or immediately if the user
+re-authenticates. All MCP tool permissions default to **None** for every standard role, so access is
+always an explicit grant.
 
 ---
 
 <sub>See also: the [setup guide](setup.md) for connecting a client, and
-[privacy.md](privacy.md) for what the server reads and stores.</sub>
+[privacy.md](privacy.md) for what the server reads and stores. Permission names and screen mappings
+on this page follow the Creative Force Help Centre articles
+<a href="https://help.creativeforce.io/en/articles/15566092-mcp-server-data-queries">Data Queries</a>
+and <a href="https://help.creativeforce.io/en/articles/16072867-mcp-server-manage-planning-sessions">Manage Planning Sessions</a>.</sub>
