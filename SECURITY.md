@@ -15,11 +15,11 @@ We will acknowledge your report, investigate, and keep you informed of the resol
 
 The Creative Force MCP server is designed to minimise risk:
 
-- **Read-first.** 30 of the 34 tools are queries that cannot change your data. Writes are confined
+- **Read-first.** 35 of the 39 tools are queries that cannot change your data. Writes are confined
   to a single area — planning sessions (`create_planning_session`, `update_planning_session`,
   `delete_planning_session`) — plus `send_feedback`, which sends a message to the Creative Force
   team and writes nothing to your studio's data. No tool can modify jobs, products, samples,
-  assets, tasks, editorial records or studio settings.
+  assets, tasks, editorial records, collections, short lists or studio settings.
 - **Writes are opt-in and separately gated.** Write tools sit in their own **Write/Delete**
   permission group on the role's MCP Server tab, behind a **Write Planning** permission that is
   distinct from *Query Planning*, off by default for every role, and additionally requiring the

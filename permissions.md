@@ -26,7 +26,7 @@ Tools are organised into two groups:
 
 | Group | What's in it |
 |-------|--------------|
-| **Read-Only** | Tools that read data without making any changes — 30 of the 34 tools. |
+| **Read-Only** | Tools that read data without making any changes — 35 of the 39 tools. |
 | **Write/Delete** | Tools that change data — the three planning-session tools, gated by the single **Write Planning** permission. |
 
 Each group has one control with four options:
@@ -76,10 +76,12 @@ The Creative Force permission must be set in addition, in its own section of the
 | Query Sample | `query_sample` | Samples → Samples (View) |
 | Query Planning | `query_planning` | Planning → Calendar, Set, Talent &amp; Crew (View) |
 | Query Talent &amp; Resource | `query_talent_crew`, `get_talent_crew_preview`, `query_talent_crew_schedule` | Planning → Talent &amp; Crew (View); Resourcing for the schedule tool |
+| Query Collection | `query_collection`, `query_collection_detail` | *(confirm at release)* |
+| Query Short List | `query_shortlist`, `query_shortlist_detail` | *(confirm at release)* |
 | Query Event Log | `query_event_log` | Studio Settings → Event Log (View) |
 | Query Style Guide | `query_styleguide`, `get_styleguide_detail` | Studio Settings → Style Guides (View) |
 | Query Workflow | `query_workflow`, `get_workflow_detail` | Studio Settings → Workflow (View) |
-| Query Studio Setting | `query_containers`, `query_data_sources`, `query_locations`, `query_post_production_vendors`, `query_presets`, `query_print_configurations`, `query_product_vendors`, `query_production_types`, `query_team_on_set_skills` | Studio Settings → the matching sub-setting (e.g. Production Types) (View) |
+| Query Studio Setting | `query_containers`, `query_data_sources`, `query_locations`, `query_post_production_vendors`, `query_presets`, `query_preset_detail`, `query_print_configurations`, `query_product_vendors`, `query_production_types`, `query_team_on_set_skills` | Studio Settings → the matching sub-setting (e.g. Production Types) (View) |
 | Query Workspace | `query_workspace` | Studio Settings → Clients (View) |
 
 So a role using `query_asset`, for example, needs **both** *Query Asset* (MCP SERVER) **and**

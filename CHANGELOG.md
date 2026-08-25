@@ -9,6 +9,22 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the docum
 Initial public documentation for the Creative Force MCP server. To be tagged **v1.0.0** at the
 public release.
 
+### Added
+- **Collections, short lists and preset detail** — five new tools take the server from 34 to 39
+  (35 read-only, 4 write):
+  - `query_collection` / `query_collection_detail` — review and approval collections across Photo
+    Review, Post Review, Selection and Gallery: per-asset decisions, star ratings, colour flags,
+    markings, comments with author and timestamp, the invited-reviewer roster with role and seen
+    state, and sharing settings.
+  - `query_shortlist` / `query_shortlist_detail` — casting short lists: talent on each list, likes
+    and dislikes attributed by name, comments, reviewer roster, and full talent profiles.
+  - `query_preset_detail` — the full output spec behind a preset, its variants and metadata rules,
+    and every style guide or editorial deliverable it is attached to.
+
+  Documented in the README capability table, the use-case guide (new Collections and Short Lists
+  sections, plus preset detail under Studio Settings), permissions, privacy and the registry
+  manifest.
+
 ### Changed
 - **Documentation re-synced with the live server (34 tools).** The generated
   `tool-reference.md` and `tools.json` were already current; every hand-written page still
