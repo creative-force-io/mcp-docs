@@ -20,6 +20,8 @@ in — and notes the tools it triggers.
 | [Samples](#samples) | Search physical samples and track check-in status and location | `query_sample` |
 | [Planning](#planning) | Search planning sessions by team member or time slot | `query_planning`, `query_talent_crew`, `query_talent_crew_schedule` |
 | [Editorial](#editorial) | Editorial projects, productions, and deliverables | `query_editorial_project`, `query_editorial_deliverable` |
+| [Collections](#collections) | Review and approval collections — decisions, ratings, comments, reviewers | `query_collection`, `query_collection_detail` |
+| [Short Lists](#short-lists) | Casting short lists — talent, votes, comments and feedback | `query_shortlist`, `query_shortlist_detail` |
 | [Event Log](#event-log) | Find specific events and who performed them, for products, samples and more | `query_event_log` |
 | [Style Guides](#style-guides) | Style guide configuration — shot positions, asset naming, colour rules | `query_styleguide`, `get_styleguide_detail` |
 | [Workflows](#workflows) | Workflow configuration — steps, settings, rejection transitions | `query_workflow`, `get_workflow_detail` |
@@ -109,6 +111,31 @@ family and the assistant picks the right tools.
 - *"Which editorial deliverables are overdue for the March issue?"*
 - *"Show the editorial productions still in progress for project Vogue-SS26."*
 
+## Collections
+
+Review and approval collections across all types — Photo Review, Post Review, Selection and Gallery.
+See where a review has got to, what each reviewer decided, the ratings, colour flags and comments
+left on individual assets, who was invited and whether they have opened it, and how the collection
+was shared.
+
+- *"Which collections are still waiting on reviewer decisions?"*
+- *"Who hasn't opened the review I sent for the Liberty campaign?"*
+- *"Where did reviewers disagree on this collection?"*
+- *"Show me the comments and star ratings left on this gallery."*
+- *"Which Post Review collections are waiting on a re-invite?"*
+- *"Rank our open collections by how many assets still need a decision."*
+
+## Short Lists
+
+Casting short lists — the talent on each list, who liked and disliked each option by name, the
+comments and @-mentions left on them, the invited reviewer roster, and full talent profiles
+including job title, skills, agencies, rates and contact details.
+
+- *"Show me the short list for the Spring campaign and who voted for whom."*
+- *"Which models got the most likes on this short list?"*
+- *"What feedback did the client leave on the casting options?"*
+- *"Which short lists have been shared but not yet reviewed?"*
+
 ## Event Log
 
 The event history for products, samples, workflows, style guides, editorial projects and editorial
@@ -147,6 +174,14 @@ Post-Production Vendors, Product Vendors, and Print Configurations.
 - *"How many Production Types exist for the 'Model' Category?"*
 - *"Which Data Sources have Sync Rules, and what are they?"*
 - *"Do any of my Presets specs use Color Profile 'ECI-RGB'?"*
+
+Presets go further than the list: ask for a single preset and get its full output spec — variants,
+metadata rules, and every style guide or editorial deliverable it is attached to.
+
+- *"What does the Ecom JPG preset actually output?"*
+- *"What's different between these two presets?"*
+- *"Which style guides use this preset?"*
+- *"Which of our presets aren't attached to anything?"*
 
 ## Managing planning sessions
 

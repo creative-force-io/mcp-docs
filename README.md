@@ -17,7 +17,7 @@ studio's live production data to AI assistants through the
 *"how many products are still in photography for the spring catalog?"* and get answers
 grounded in your real data.
 
-The server is **read-first**: of its 34 tools, **30 are read-only** queries that never change your
+The server is **read-first**: of its 39 tools, **35 are read-only** queries that never change your
 data. The four that write are limited and explicit — `create_planning_session`,
 `update_planning_session`, `delete_planning_session` (flagged destructive, so clients prompt before
 it runs), and `send_feedback`, which sends a note to the Creative Force team and writes nothing to
@@ -26,7 +26,7 @@ default for every role; see [permissions.md](permissions.md).
 
 ## What you can ask about
 
-The server exposes **34 tools** across the Creative Force data model:
+The server exposes **39 tools** across the Creative Force data model:
 
 | Category | What you can query |
 |----------|--------------------|
@@ -39,10 +39,12 @@ The server exposes **34 tools** across the Creative Force data model:
 | Planning | Search planning sessions by team member or time slot — **and create, change or delete them** |
 | Talent &amp; Crew | Talent and crew records, avatars, scheduling and availability |
 | Editorial | Editorial projects, productions, and deliverables |
+| Collections | Review and approval collections — decisions, ratings, comments, reviewers and sharing |
+| Short Lists | Casting short lists — the talent on each list, votes, comments and feedback |
 | Event Log | Find specific events and who performed them, for products, samples and more |
 | Style Guides | Style guide configuration — shot positions, asset naming, colour rules |
 | Workflows | Workflow configuration — steps, settings, rejection transitions |
-| Studio Settings | Production types, locations, containers, presets, data sources, on-set skills, product and post-production vendors, print configurations |
+| Studio Settings | Production types, locations, containers, presets and their full output specs, data sources, on-set skills, product and post-production vendors, print configurations |
 | Workspaces | Your workspaces (clients) and their settings |
 | Feedback | Send feedback, report issues, or request features |
 
