@@ -10,7 +10,23 @@ Initial public documentation for the Creative Force MCP server. To be tagged **v
 public release.
 
 ### Added
-- **Collections, short lists and preset detail** — five new tools take the server from 34 to 39
+- **Copywriting text, editorial detail, and rate limits** — three more tools take the server to 42
+  (38 read-only, 4 write):
+  - `get_text_asset_content` — the submitted copy on copywriting tasks: written fields grouped by
+    layout, selection values resolved to names, colour swatches and care-symbol images, and the
+    language of each version. Needs the **Copywriting** add-on and the *Query Asset* permission.
+  - `query_editorial_detail` — a project's document library, with per-document deliverable
+    assignments and version history.
+  - `query_deliverable_detail` — a deliverable's creative brief: written direction, attached
+    documents, mock-ups and mood-board images.
+
+  `get_styleguide_detail` also gains the style guide's **tone of voice** — the brand-voice presets
+  with their descriptions and examples.
+
+  **Rate limits** are now documented in the setup guide — applied per studio, per user and per tool,
+  with a `RATE_LIMIT` error naming the level, the tool and the retry delay rather than an empty
+  result.
+- **Collections, short lists and preset detail** — five new tools took the server from 34 to 39
   (35 read-only, 4 write):
   - `query_collection` / `query_collection_detail` — review and approval collections across Photo
     Review, Post Review, Selection and Gallery: per-asset decisions, star ratings, colour flags,

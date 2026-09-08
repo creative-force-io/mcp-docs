@@ -13,13 +13,13 @@ in — and notes the tools it triggers.
 | Category | What you can ask about | Tools |
 |----------|------------------------|-------|
 | [Production](#production) | Search productions by step, vendor, photographer, or location | `query_ecomm_production`, `query_editorial_production` |
-| [Assets](#assets) | Search digital assets by job, product, step, or time range | `query_asset`, `get_asset_preview` |
+| [Assets](#assets) | Search digital assets by job, product, step, or time range; read submitted copywriting text | `query_asset`, `get_asset_preview`, `get_text_asset_content` |
 | [Jobs](#jobs) | Search production jobs by code, status, or deadline | `query_ecomm_job` |
 | [Products](#products) | Search the product catalogue by code, name, category, brand, or status | `query_ecomm_product_request` |
 | [Tasks](#tasks) | Search workflow tasks by step, status, assignee, or vendor | `query_task` |
 | [Samples](#samples) | Search physical samples and track check-in status and location | `query_sample` |
 | [Planning](#planning) | Search planning sessions by team member or time slot | `query_planning`, `query_talent_crew`, `query_talent_crew_schedule` |
-| [Editorial](#editorial) | Editorial projects, productions, and deliverables | `query_editorial_project`, `query_editorial_deliverable` |
+| [Editorial](#editorial) | Editorial projects, productions and deliverables, document libraries and creative briefs | `query_editorial_project`, `query_editorial_deliverable`, `query_editorial_detail`, `query_deliverable_detail` |
 | [Collections](#collections) | External review collections — decisions, ratings, comments, reviewers | `query_collection`, `query_collection_detail` |
 | [Short Lists](#short-lists) | Casting short lists — talent, votes, comments and feedback status | `query_shortlist`, `query_shortlist_detail` |
 | [Event Log](#event-log) | Find specific events and who performed them, for products, samples and more | `query_event_log` |
@@ -49,6 +49,13 @@ when.
 - *"How many assets have been delivered for Product PCSC187B482C_200?"*
 - *"Show me the hero images for product P456."* — chains `get_asset_preview` after `query_asset` to
   return an inline image gallery rather than filenames.
+
+Copywriting tasks carry text rather than images. Ask for the submitted copy and you get the written
+fields grouped as they are laid out, selection values resolved to their names, colour swatches and
+care-symbol images, and the language each version was written in.
+
+- *"Show me the copy that was submitted for this product."*
+- *"Compare the English and German copy for this product side by side."*
 
 ## Jobs
 
@@ -111,6 +118,14 @@ family and the assistant picks the right tools.
 - *"Which editorial deliverables are overdue for the March issue?"*
 - *"Show the editorial productions still in progress for project Vogue-SS26."*
 
+Go a level deeper on either one: a project's **document library** — what is attached, which
+deliverables each document is assigned to, and its version history — or a deliverable's **creative
+brief**, with the written direction, attached documents, mock-ups and mood-board images.
+
+- *"What documents are attached to this project, and which deliverables use them?"*
+- *"What's the creative brief for this deliverable?"*
+- *"Show me the mood-board images for this shot."*
+
 ## Collections
 
 Collections are how Creative Force shares assets out to **external reviewers** for feedback,
@@ -164,6 +179,8 @@ one of them including its rules and asset metadata.
 - *"Are any Style Guides using 'Sequence Token - Letter' in their naming?"*
 - *"Which Style Guides are currently marked as invalid?"*
 - *"Do any of my Style Guides not have Color References enabled?"*
+- *"What tone of voice does this style guide set for copywriting?"* — returns the brand-voice presets
+  with their descriptions and examples.
 
 ## Workflows
 
