@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "label": "tools",
-  "message": "34 tools",
+  "message": "42 tools",
   "color": "blue",
-  "toolCount": 34,
+  "toolCount": 42,
   "tools": [
     {
       "name": "create_planning_session",
@@ -109,7 +109,7 @@
       "name": "get_asset_preview",
       "title": "Get Asset Preview",
       "module": "Assets",
-      "description": "Get inline image previews for digital assets so the user can see them. Use when the user wants to SEE / VIEW / DISPLAY / RENDER specific assets or images. Accepts a list of asset IDs — typically obtained from query_asset (or any other tool that returns asset IDs). Returns a JSON object with a `previews` array of { assetId, url } — render each as ![assetId](url) in your reply so the user can see the images. URLs are short-lived presigned links. Do NOT use for searching, listing, or counting assets — use query_asset for that.",
+      "description": "Get inline image previews for digital assets so the user can see them. Use when the user wants to SEE / VIEW / DISPLAY / RENDER specific assets or images. Accepts a list of asset IDs — typically obtained from query_asset (or any other tool that returns asset IDs). Returns a JSON object with a `previews` array of { id, url, fileName }. **The images are rendered for the user by the paired preview widget — do NOT also embed them in your reply.** Specifically: do NOT output any Markdown image tags (`![...](url)`) or the preview URLs in your text; the widget already shows every image, so repeating them produces duplicate 'Show Image' blocks. Just answer in words (e.g. how many, which ones, filenames) and let the widget display the pictures. URLs are short-lived presigned links. Do NOT use for searching, listing, or counting assets — use query_asset for that. Prefer assetIds — use fileIds only when you have no assetId for the image. If both are given, assetIds is used and fileIds is ignored.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -119,17 +119,23 @@
           "type": "JsonElement?",
           "required": false,
           "description": "Asset IDs to fetch preview images for. Pass as a JSON array of strings, e.g. [\"id1\",\"id2\"]. Get IDs from query_asset or any tool that returns assetIds."
+        },
+        {
+          "name": "fileIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "File IDs (a `fileId` from any tool that returns one) — a different id space from assetIds. Use when a tool gives you a fileId rather than an assetId. Ignored when assetIds is set."
         }
       ],
       "exampleInput": "{ \"assetIds\": [\"a1b2c3\", \"d4e5f6\"] }",
-      "exampleOutput": "{ \"previews\": [ { \"assetId\": \"a1b2c3\", \"url\": \"https://cdn.../a1b2c3.jpg?sig=...\", \"fileName\": \"shot_001.jpg\" } ], \"missing\": [], \"truncated\": false }",
-      "knownLimitations": "Hard cap of 200 asset IDs per call (extras are dropped and `truncated: true` is returned). Preview URLs are short-lived presigned links that expire. Returns images only — use query_asset to search/list/count."
+      "exampleOutput": "{ \"previews\": [ { \"id\": \"a1b2c3\", \"url\": \"https://cdn.../a1b2c3.jpg?sig=...\", \"fileName\": \"shot_001.jpg\" } ], \"missing\": [], \"truncated\": false }",
+      "knownLimitations": "Hard cap of 200 IDs per call (extras are dropped and `truncated: true` is returned). Preview URLs are short-lived presigned links that expire. Returns images only — use query_asset to search/list/count. `assetIds` is the primary input; `fileIds` is a narrow editorial-only side path for editorial-document / brief mood-board / mock-up images (from query_editorial_detail / query_deliverable_detail). The two are DIFFERENT id spaces and are never mixed — if both are passed, assetIds wins and fileIds is ignored (a `note` says so). `previews[].id` is the assetId (assetIds path) or the fileId (fileIds path)."
     },
     {
       "name": "get_styleguide_detail",
       "title": "Get Style Guide Detail",
       "module": "Style Guides",
-      "description": "Get the full content of a single style guide by id or by name, organized the way the Style Guide screen is (a General section + one entry per production type, split into tabs). Pass 'styleGuideId' (GUID, e.g. from query_styleguide) OR 'name' (resolved to an id via search; exact match preferred, ambiguous names return candidates). Returns a header (name, internalName, workspace, isEnabled/isInvalid, versionNumber, settingType, hasNewerVersion, created/updated, deepLinkUrl), a 'general' block { description, coverImage (image metadata only), colorMatching (color-reference rules, only when enabled — incl. colorAccurateStep for approach 'Use Selection from Production Type' and perProductionTypeAccurateSteps for the first-production-type approach), categoryTriggers (assigned product-category names), other (nonSelectAssetsOutputName), properties (style-guide custom props as [{name,value}]) }, and 'productionTypes': [{ name, workflow (the workflow this type's work runs through — its name; use it to chain into get_workflow_detail), kind ('visual' or 'text'), isEnabled, description (production-type-level brief), referenceImages (PT-level reference files, metadata only), variantMapping, heroPosition (name of the hero position), and tabs }]. Each tab is OMITTED when it has no data, so a type only shows the tabs it actually configures. Tab visibility also MIRRORS the Style Guide screen: a tab is only returned when the production type's assigned workflow actually contains the matching step — Capture needs a capture step, External/Internal Post their post steps, Copywriting/Localization a copywriting step, Delivery an asset-delivery step wired to a connection the workspace owns (Delivery additionally requires the Advanced Style Guides plan feature or pre-existing saved routing; Localization the Localization plan feature). So a tab the user cannot see on the screen is not surfaced here. (This step-based gating is only applied when the assigned workflow is resolvable; if it isn't, tabs fall back to being shown whenever they carry data.) Visual types use: 'capture' { assignedWorkflow (the bound workflow name), description, files (PT reference files, image metadata only), positions: [{ name, isHero, isOptional, isPhotoReview, type, mediaType, isColorReference, isEnforceAlts, minShotsAlts, shots { minShots, maxShots }, description, exampleImages (position cover) / referenceImages (position attachments) (image METADATA only — fileName, size, mediaType, previewUrl; never the binary; a bare { fileId } is returned when the asset service has no metadata for it), condition (decoded position rules), properties (position custom props) }] }, 'presetsAndNaming' { positions: [{ position, preset (the selected preset name), namePattern (output naming), specs: [{ variantNumber, variantCode, isEnabled, namePattern, spec (the variant's real spec — dimensions/format/dpi/color-space/crop/… ) }] }] }, 'internalPost' { retouchingBrief { description, files, goodExamples, badExamples }, videoBrief { description, files } } (per production type; image metadata only), 'trigger' { type (when this production type's work is triggered — e.g. 'On product creation' or 'When a step of a specific production type is done'), sources: [{ sourceProductionType, steps, passThroughAssets, positionsToPassThrough (the generative 'Positions to Pass Through' — [{ position, tag }]) }] }, 'externalPost' { steps (per-step external-post flags), positions: [{ position, mappings: [{ step, flow, vendor, folderPattern (FTP), pixelzTemplate / pixelzFallbackTemplate / gatewayTemplate / brightRiverTemplate (the main template), variantTemplates: [{ variant (variantCode), template, fallbackTemplate }] (the per-variant template-of-variants mapping) }] }] }, 'delivery' { connections (the delivery connections the assigned workflow delivers to — the matrix columns, when resolvable), rows: [{ position, variant (which output — 'main' or 'variant N'; absent for a whole-position row), deliveredToAll (true = delivered to every connection), deliveredConnections, excludedConnections }] }, and 'properties' (production-type custom props). When DESCRIBING delivery, summarize exception-style, NOT row-by-row: name the connection(s), then — since most outputs are delivered everywhere — state the default (e.g. 'all N outputs delivered to all connections') and list ONLY the outputs that deviate (an output with excludedConnections, or a partial deliveredConnections). Never enumerate every output when they are all deliveredToAll. If 'connections' is absent, say the specific connection list isn't available (the production type has no resolvable assigned workflow) and describe delivery by deliveredToAll/excludedConnections only. Text/copywriting types use: 'copywriting' { configuration (config name), layouts (the configuration's layout/screen NAMES in display order — the copywriter's data-entry form is split into these named screens), fields (the configured fields, ordered — each has { name, type (Single Line Text / Text Area / Care Instructions / Color / Hidden Field / Predefined List / Material Composition / Custom Content Widget), layout ({ name (which layout/screen the field sits on — matches an entry in `layouts`), row, column (its place on the 12-column grid; row top→bottom, column left→right); ABSENT when the field is not placed on any layout), deliveryName (the API delivery key), required (the configuration default 'Required'/'Optional'), minLength, maxLength (character/selection limits), autoTranslation (text fields), conditionalDelivery (hidden fields) } plus the type-specific settings that apply: Text Area → richText, deliveryFormat (HTML/Markdown), textFormat (enabled rich-text toggles); Predefined List → displayType (Dropdown/Multiple choice selection/Tagging), options (the choice names); Color → colors [{ name, value (hex) }]; Care Instructions → symbols [{ category, variations (enabled symbol names) }]; Material Composition → materialComposition { components, materials, disclaimers }; Single Line/Text Area/Hidden → prefill (the rendered data-merge default). Text fields may also carry guidelines { preferredWords, forbiddenWords, neverUseEmojis, conventions[{ term, correct, dontWrite }] } and Text Area may carry ai { enabled, instruction, referenceExample }. Any field may carry condition (decoded conditional-visibility rules). Only the blocks that apply to the field's type / that are configured are present), fieldSettings (per-field overrides — visibility/required/conditionalDelivery/skipTranslation — only fields that differ from the configuration default) }, 'localization' { locale, bundleByStyle }, 'presetsAndNaming' { fileOutputName }, 'delivery' { connections, rows: [{ field, deliveredToAll, deliveredConnections, excludedConnections }] } (a per-field × delivery-connection matrix — same shape as visual delivery), 'trigger' { type, sourceProductionTypes, conjunction, step }, and 'properties' (text PT custom props). When DESCRIBING a copywriting production type, GROUP the fields by their layout: present one section per name in `layouts` (in that order), listing the fields whose `layout.name` matches — ordered by layout.row then layout.column (the on-screen reading order). Put any field with no `layout` in a final 'Not placed on a layout' section. This mirrors how the copywriter actually sees the form. Pass 'productType' (a production type name e.g. 'On-Model', or a numeric shootingTypeId) to narrow the result to just that production type. **Use cases**: (1) Explain what a style guide covers — which production types it defines and, per type, the capture brief, naming, trigger rules, or copywriting config. (2) Inspect a type's positions (hero / optional / photo-review), shot rules, and reference/example images. (3) Read the description / styling rules, the asset naming, or the copywriting field configuration. By default the latest published version is returned; pass 'includeDraft=true' to prefer the draft, or 'versionId' to fetch a specific version. Pass 'raw=true' to also return the untouched styleGuide object (copywriting, properties, positions detail) for deep inspection. By default the response is human-readable: each production type shows its resolved 'name' (not the numeric shootingTypeId) and raw ids (record id, version ids) are omitted. Pass 'includeIds=true' ONLY when the user explicitly asks for raw ids/version ids (record id, versionId, latestVersionId, draftVersionId, numeric shootingTypeId, per-type workflowDefinitionId/workflowDefinitionVersionId, positionId, preset specId, image fileId).",
+      "description": "Get the full content of a single style guide by id or by name, organized the way the Style Guide screen is (a General section + one entry per production type, split into tabs). Pass 'styleGuideId' (GUID, e.g. from query_styleguide) OR 'name' (resolved to an id via search; exact match preferred, ambiguous names return candidates). Returns a header (name, internalName, workspace, isEnabled/isInvalid, versionNumber, settingType, hasNewerVersion, created/updated, deepLinkUrl), a 'general' block { description, coverImage (image metadata only), colorMatching (color-reference rules, only when enabled — incl. colorAccurateStep for approach 'Use Selection from Production Type' and perProductionTypeAccurateSteps for the first-production-type approach), categoryTriggers (assigned product-category names), other (nonSelectAssetsOutputName), properties (style-guide custom props as [{name,value}]) }, and 'productionTypes': [{ name, workflow (the workflow this type's work runs through — its name; use it to chain into get_workflow_detail), kind ('visual' or 'text'), isEnabled, description (production-type-level brief), referenceImages (PT-level reference files, metadata only), variantMapping, heroPosition (name of the hero position), and tabs }]. Each tab is OMITTED when it has no data, so a type only shows the tabs it actually configures. Tab visibility also MIRRORS the Style Guide screen: a tab is only returned when the production type's assigned workflow actually contains the matching step — Capture needs a capture step, External/Internal Post their post steps, Copywriting/Localization a copywriting step, Delivery an asset-delivery step wired to a connection the workspace owns (Delivery additionally requires the Advanced Style Guides plan feature or pre-existing saved routing; Localization the Localization plan feature). So a tab the user cannot see on the screen is not surfaced here. (This step-based gating is only applied when the assigned workflow is resolvable; if it isn't, tabs fall back to being shown whenever they carry data.) Visual types use: 'capture' { assignedWorkflow (the bound workflow name), description, condition (the PRODUCTION-TYPE-level condition — when this whole production type is active; it gates every position beneath it), files (PT reference files, image metadata only), positions: [{ name, isHero, isOptional, isPhotoReview, type, mediaType, isColorReference, isEnforceAlts, minShotsAlts, shots { minShots, maxShots }, description, exampleImages (position cover) / referenceImages (position attachments) (image METADATA only — fileName, size, mediaType, previewUrl; never the binary; a bare { fileId } is returned when the asset service has no metadata for it), condition (decoded position rules — see _fieldNotes.condition/ruleType), properties (position custom props) }] }, 'presetsAndNaming' { positions: [{ position, preset (the selected preset name), presetId (the preset's id — chain it into query_preset_detail to explain the preset's full config; this is how 'what preset is applied to job/style guide X' is answered), namePattern (output naming), specs: [{ variantNumber, variantCode, isEnabled, namePattern, spec (the variant's real spec — dimensions/format/dpi/color-space/crop/… ) }] }] }, 'internalPost' { retouchingBrief { description, files, goodExamples, badExamples }, videoBrief { description, files } } (per production type; image metadata only), 'trigger' { type (when this production type's work is triggered — e.g. 'On product creation' or 'When a step of a specific production type is done'), sources: [{ sourceProductionType, steps, passThroughAssets, positionsToPassThrough (the generative 'Positions to Pass Through' — [{ position, tag }]) }] }, 'externalPost' { steps (per-step external-post flags), positions: [{ position, mappings: [{ step, flow, vendor, folderPattern (FTP), pixelzTemplate / pixelzFallbackTemplate / gatewayTemplate / brightRiverTemplate (the main template), variantTemplates: [{ variant (variantCode), template, fallbackTemplate }] (the per-variant template-of-variants mapping) }] }] }, 'delivery' { connections (the delivery connections the assigned workflow delivers to — the matrix columns, when resolvable), rows: [{ position, variant (which output — 'main' or 'variant N'; absent for a whole-position row), deliveredToAll (true = delivered to every connection), deliveredConnections, excludedConnections }] }, and 'properties' (production-type custom props). When DESCRIBING delivery, summarize exception-style, NOT row-by-row: name the connection(s), then — since most outputs are delivered everywhere — state the default (e.g. 'all N outputs delivered to all connections') and list ONLY the outputs that deviate (an output with excludedConnections, or a partial deliveredConnections). Never enumerate every output when they are all deliveredToAll. If 'connections' is absent, say the specific connection list isn't available (the production type has no resolvable assigned workflow) and describe delivery by deliveredToAll/excludedConnections only. Text/copywriting types use: 'copywriting' { configuration (config name), layouts (the configuration's layout/screen NAMES in display order — the copywriter's data-entry form is split into these named screens), fields (the configured fields, ordered — each has { name, type (Single Line Text / Text Area / Care Instructions / Color / Hidden Field / Predefined List / Material Composition / Custom Content Widget), layout ({ name (which layout/screen the field sits on — matches an entry in `layouts`), row, column (its place on the 12-column grid; row top→bottom, column left→right); ABSENT when the field is not placed on any layout), deliveryName (the API delivery key), required (the configuration default 'Required'/'Optional'), minLength, maxLength (character/selection limits), autoTranslation (text fields), conditionalDelivery (hidden fields) } plus the type-specific settings that apply: Text Area → richText, deliveryFormat (HTML/Markdown), textFormat (enabled rich-text toggles); Predefined List → displayType (Dropdown/Multiple choice selection/Tagging), options (the choice names); Color → colors [{ name, value (hex) }]; Care Instructions → symbols [{ category, variations (enabled symbol names) }]; Material Composition → materialComposition { components, materials, disclaimers }; Single Line/Text Area/Hidden → prefill (the rendered data-merge default). Text fields may also carry guidelines { preferredWords, forbiddenWords, neverUseEmojis, conventions[{ term, correct, dontWrite }] } and Text Area may carry ai { enabled, instruction, referenceExample }. Any field may carry condition (decoded conditional-visibility rules). Only the blocks that apply to the field's type / that are configured are present), fieldSettings (per-field overrides — visibility/required/conditionalDelivery/skipTranslation — only fields that differ from the configuration default) }, 'localization' { locale, bundleByStyle }, 'presetsAndNaming' { fileOutputName }, 'delivery' { connections, rows: [{ field, deliveredToAll, deliveredConnections, excludedConnections }] } (a per-field × delivery-connection matrix — same shape as visual delivery), 'trigger' { type, sourceProductionTypes, conjunction, step }, and 'properties' (text PT custom props). When DESCRIBING a copywriting production type, GROUP the fields by their layout: present one section per name in `layouts` (in that order), listing the fields whose `layout.name` matches — ordered by layout.row then layout.column (the on-screen reading order). Put any field with no `layout` in a final 'Not placed on a layout' section. This mirrors how the copywriter actually sees the form. Pass 'productType' (a production type name e.g. 'On-Model', or a numeric shootingTypeId) to narrow the result to just that production type. **Use cases**: (1) Explain what a style guide covers — which production types it defines and, per type, the capture brief, naming, trigger rules, or copywriting config. (2) Inspect a type's positions (hero / optional / photo-review), shot rules, and reference/example images. (3) Read the description / styling rules, the asset naming, or the copywriting field configuration. By default the latest published version is returned; pass 'includeDraft=true' to prefer the draft, or 'versionId' to fetch a specific version. Pass 'raw=true' to also return the untouched styleGuide object (copywriting, properties, positions detail) for deep inspection. By default the response is human-readable: each production type shows its resolved 'name' (not the numeric shootingTypeId) and raw ids (record id, version ids) are omitted. Pass 'includeIds=true' ONLY when the user explicitly asks for raw ids/version ids (record id, versionId, latestVersionId, draftVersionId, numeric shootingTypeId, per-type workflowDefinitionId/workflowDefinitionVersionId, positionId, preset specId, image fileId). The visual widget (production-type accordion with reference images) is OPT-IN via 'showWidget=true' (default false) — set it ONLY when the user explicitly asks to SEE the style guide visually (show the style guide / its reference images/photos / visualize). By default the full content (incl. all conditions/rules the accordion does not render) is returned as plain data and no widget is drawn.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -181,11 +187,17 @@
           "type": "bool",
           "required": false,
           "description": "Include raw ids (record id, versionId, latestVersionId, draftVersionId, numeric shootingTypeId, positionId, image fileId, preset specId) and numeric type/mediaTypeId. Default false — human-readable names only. Set true only when the user explicitly asks for ids."
+        },
+        {
+          "name": "showWidget",
+          "type": "bool",
+          "required": false,
+          "description": "Render the style guide as a visual widget (production-type accordion with reference images). Default false. Set true ONLY when the user explicitly asks to SEE the style guide visually — e.g. 'show me the style guide', 'show the reference images/photos', 'visualize'. When false the full content is returned as plain data (incl. all conditions/rules) and no widget is drawn."
         }
       ],
       "exampleInput": "{ \"name\": \"Spring 2026 Apparel\", \"productType\": \"On-Model\" }",
-      "exampleOutput": "{ \"name\": \"Spring 2026 Apparel\", \"workspace\": \"Acme\", \"settingType\": \"Published\", \"general\": { \"description\": \"...\", \"colorMatching\": { \"required\": true, \"approach\": \"Use Selection from Production Type\", \"colorAccurateStep\": \"Photography\" }, \"other\": { \"nonSelectAssetsOutputName\": \"_non-select-%product_code\" }, \"categoryTriggers\": [\"Dresses\"] }, \"productionTypes\": [ { \"name\": \"On-Model\", \"workflow\": \"Apparel Std\", \"kind\": \"visual\", \"capture\": { \"assignedWorkflow\": \"Apparel Std\", \"description\": \"...\", \"positions\": [ { \"name\": \"Front\", \"isHero\": true, \"shots\": { \"minShots\": 1, \"maxShots\": 3 } } ] }, \"presetsAndNaming\": { \"positions\": [ { \"position\": \"Front\", \"preset\": \"Web Std\", \"specs\": [ { \"variantCode\": \"M\", \"spec\": { \"width\": 2000 } } ] } ] }, \"internalPost\": { \"retouchingBrief\": { \"description\": \"...\" } } } ] }",
-      "knownLimitations": "Fetch ONE style guide by id or name (use query_styleguide to find the id); resolves the latest published version by default (includeDraft=true for the draft). Names are human-readable — pass includeIds=true for raw ids, raw=true for the untouched payload. A per-PT tab is omitted when it has no data. Visual PTs surface capture (assignedWorkflow/description/files/positions), presetsAndNaming (preset + per-variant spec detail), externalPost (incl. per-variant template mappings), internalPost, delivery, properties; text PTs surface copywriting, localization, presetsAndNaming (fileOutputName), delivery matrix, trigger, properties; generative trigger surfaces passThroughAssets + positionsToPassThrough. Positions, copywriting config, presets, and asset metadata are best-effort enrichments (may be absent on backend failure). Asset images are metadata-only (fileName/size/previewUrl) — never the binary; a bare { fileId } is returned when metadata can't be resolved. The Delivery matrix is returned as text/JSON only (the widget does not render it); per-PT workflow (and the delivery connection columns derived from it) resolves via the workflow binding carried on the PTSG payload — absent only when the PT truly has no assigned workflow. The widget shows the assigned workflow, the Internal Post briefs (incl. good/bad example galleries), and a visible file name on every file."
+      "exampleOutput": "{ \"name\": \"Spring 2026 Apparel\", \"workspace\": \"Acme\", \"settingType\": \"Published\", \"general\": { \"description\": \"...\", \"colorMatching\": { \"required\": true, \"approach\": \"Use Selection from Production Type\", \"colorAccurateStep\": \"Photography\" }, \"other\": { \"nonSelectAssetsOutputName\": \"_non-select-%product_code\" }, \"categoryTriggers\": [\"Dresses\"] }, \"productionTypes\": [ { \"name\": \"On-Model\", \"workflow\": \"Apparel Std\", \"kind\": \"visual\", \"capture\": { \"assignedWorkflow\": \"Apparel Std\", \"description\": \"...\", \"condition\": [ { \"rules\": [ { \"ruleType\": \"Property Rule\", \"detail\": { \"property\": \"Job Code\", \"operator\": \"Contains\", \"value\": \"Flat\" } } ] } ], \"positions\": [ { \"name\": \"Front\", \"isHero\": true, \"shots\": { \"minShots\": 1, \"maxShots\": 3 }, \"condition\": [ { \"rules\": [ { \"ruleType\": \"Production Rule\", \"detail\": { \"outfit\": \"Producing an outfit\" } }, { \"ruleType\": \"Source Rule\", \"detail\": { \"source\": \"Source is VENDOR PROVIDED\" } } ] } ] } ] }, \"presetsAndNaming\": { \"positions\": [ { \"position\": \"Front\", \"preset\": \"Web Std\", \"specs\": [ { \"variantCode\": \"M\", \"spec\": { \"width\": 2000 } } ] } ] }, \"internalPost\": { \"retouchingBrief\": { \"description\": \"...\" } } } ], \"_fieldNotes\": { \"condition\": \"OR'd sections; rules within a section are AND'd\", \"ruleType\": \"Property / Production (outfit) / Source / Sub Function Output / Instruction Rule\" } }",
+      "knownLimitations": "Fetch ONE style guide by id or name (use query_styleguide to find the id); resolves the latest published version by default (includeDraft=true for the draft). Names are human-readable — pass includeIds=true for raw ids, raw=true for the untouched payload. The visual widget is opt-in via showWidget=true (default false — full content incl. conditions is returned as plain data); set it only when the user asks to SEE the style guide. A per-PT tab is omitted when it has no data. Visual PTs surface capture (assignedWorkflow/description/PT-level condition/files/positions), presetsAndNaming (preset + per-variant spec detail), externalPost (incl. per-variant template mappings), internalPost, delivery, properties; text PTs surface copywriting, localization, presetsAndNaming (fileOutputName), delivery matrix, trigger, properties; generative trigger surfaces passThroughAssets + positionsToPassThrough. Conditions are decoded at two levels — position (capture.positions[].condition) and production type (capture.condition, gates all positions) — each as OR'd sections of AND'd rules; ruleType is one of Property / Production (outfit) / Source / Sub Function Output / Instruction, and a Property rule's operator label depends on the property's data type (Date/Number/Text) — see _fieldNotes. Variant-level conditions live on the preset, surfaced by query_preset (not duplicated here). Filtering to a productType that does not exist in the studio returns a productTypeWarning (distinct from a real-but-unconfigured type). Positions, copywriting config, presets, and asset metadata are best-effort enrichments (may be absent on backend failure). Asset images are metadata-only (fileName/size/previewUrl) — never the binary; a bare { fileId } is returned when metadata can't be resolved. The Delivery matrix is returned as text/JSON only (the widget does not render it); per-PT workflow (and the delivery connection columns derived from it) resolves via the workflow binding carried on the PTSG payload — absent only when the PT truly has no assigned workflow. The widget shows the assigned workflow, the Internal Post briefs (incl. good/bad example galleries), and a visible file name on every file."
     },
     {
       "name": "get_talent_crew_preview",
@@ -206,6 +218,32 @@
       "exampleInput": "{ \"talentCrewIds\": [\"t-101\", \"t-102\"] }",
       "exampleOutput": "{ \"previews\": [ { \"talentCrewId\": \"t-101\", \"name\": \"Jane Doe\", \"avatarUrl\": \"https://cdn.../t-101.jpg?sig=...\" } ], \"missing\": [] }",
       "knownLimitations": "Visual-only avatar gallery. Do NOT chain after query_talent_crew or query_talent_crew_schedule — those already render avatars. Avatars are resolved in chunks of 50; talent without an avatarId are omitted."
+    },
+    {
+      "name": "get_text_asset_content",
+      "title": "Get Text Asset Content",
+      "module": "Assets",
+      "description": "Read the submitted COPY (body text) of one or more copywriting (Text) assets — the configured fields (Title, Description, Care instructions, Material composition, Colour, Predefined lists), grouped by layout, with every selection field's internal ids resolved to their configured names, plus Colour swatches and Care-symbol images, and each task's language. This is the DETAIL companion to query_asset / query_task: find text assets first (a query_asset hit with isTextAsset:true, or a query_task hit) and pass their taskId(s) here. Use when the user wants to SEE / COMPARE / SUMMARISE the actual copy for a product (e.g. 'show me the German copy', 'compare the EN and DE description', 'what does this product's copy say'). Pass ONE taskId to open a single task, or SEVERAL to compare languages side by side (e.g. the EN + DE tasks of the same product). Only taskIds are needed — the work unit, product and language are resolved from Elasticsearch. Returns submitted content only (not unsaved drafts); an empty field returns an empty value (never an error). BUNDLE tasks: a style-bundle work unit has several products that each have their OWN copy for the same task, so one such taskId returns MULTIPLE items (one per product, isBundle:true, same taskId/workUnitId) — treat them as one bundle and present/switch by productCode (mirrors the Gamma product picker). A taskId that isn't found, or whose work unit isn't a Text asset, is reported under notFound / notCopywriting rather than failing the whole call.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "taskIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "The copywriting task id(s) to open. Pass a single GUID string, or a JSON array of GUID strings to open several tasks at once (e.g. the EN and DE tasks of one product to compare). Get them from a query_asset text-asset hit (isTextAsset:true) or a query_task hit. No name resolution."
+        },
+        {
+          "name": "showPreview",
+          "type": "bool",
+          "required": false,
+          "description": "Render the copy as a visual preview widget (cards with swatches / care-symbol images). Default true — this tool exists to preview copy, so normally leave it on. Set false ONLY when you are chaining this call to extract the copy as plain data (e.g. to summarise or compare in text) and do NOT want the widget to pop up — the copy is still returned as JSON either way."
+        }
+      ],
+      "exampleInput": "{ \"taskIds\": [\"48d5abab-1111-2222-3333-444455556666\", \"48d5abab-9999-8888-7777-666655554444\"] }",
+      "exampleOutput": "{ \"itemCount\": 2, \"items\": [ { \"taskId\": \"48d5abab-...\", \"workUnitId\": \"f0dcd8a8-...\", \"productId\": \"89d224cb-...\", \"productCode\": \"D2_PC_012\", \"productionType\": \"PDP Copy EN\", \"isBundle\": false, \"language\": \"English (United States)\", \"layoutCount\": 1, \"layouts\": [ { \"layoutName\": \"Product Detail Page\", \"order\": 1, \"fields\": [ { \"fieldName\": \"Title\", \"fieldType\": \"SingleLineText\", \"content\": \"Merino Wool Crew Neck Sweater\" }, { \"fieldName\": \"Colour\", \"fieldType\": \"Color\", \"content\": [ { \"name\": \"Charcoal Grey\", \"hex\": \"#36454F\" } ] } ] } ] } ], \"appBaseUrl\": \"https://app.creativeforce-dev.io\", \"showPreview\": true }",
+      "knownLimitations": "Read one OR MORE copywriting (Text) assets' submitted copy by taskIds (a single GUID or a JSON array) — find them first via a query_asset text-asset hit (isTextAsset:true) or a query_task hit. Only taskIds are needed; the work unit, product and language are resolved from Elasticsearch (2 ES queries total regardless of task count). Pass several taskIds to compare languages side by side (the model fans out per product internally). Each item carries productCode (human-readable) alongside the productId GUID. BUNDLE tasks: a style-bundle work unit has several products that each have their own copy for the same task, so one such taskId returns MULTIPLE items (one per product, isBundle:true, same taskId/workUnitId, bundleProductCount = product count) — group them as one bundle and switch by productCode (mirrors Gamma's product picker). Detail-only: does NOT search or resolve names. Submitted content only (no unsaved drafts); no per-field version or last-modified. Only the six content field types are returned (SingleLineText/TextArea/CareInstruction/Color/PredefinedList/MaterialComposition); Hidden/Widget fields are skipped. Color items carry hex (or imageUrl for image-thumbnail colours); CareInstruction items carry an internalId (the widget maps it to the symbol image via appBaseUrl). An empty field returns an empty value (never an error). Language + localized selection names appear only on studios with the Locales add-on; Copywriting-only studios still read the copy (language omitted, default names). A taskId with no ES asset → notFound; one whose work unit isn't a Text asset → notCopywriting (the call doesn't fail). Max 100 taskIds per call. The bound preview widget renders by default (showPreview:true); set showPreview=false to suppress it on chain-mode calls (the copy is still returned as JSON)."
     },
     {
       "name": "get_workflow_detail",
@@ -273,7 +311,7 @@
       "name": "query_asset",
       "title": "Query Asset",
       "module": "Assets",
-      "description": "List or count/aggregate digital asset metadata (id, name, step, dates) — does NOT return preview images. Use when the user wants to FIND, LIST, or COUNT assets/photos/shots/deliverables. Filter by job, product, production type, step, workspace, photographer, stylist, model, star rating, time range. Drill-down: pass workUnitIds/jobIds/productIds from upstream queries. When groupBy params set, returns counts/aggregations instead of list. Default: latest step only when step not specified — so total:0 can be a false negative; on a 0-result the response carries a `hint` telling you to re-query with isLatestStep=false. Use names for filters (production type, step). IDs accepted as fallback. If the user wants to SEE/VIEW/RENDER the images, follow up with the get_asset_preview tool using the returned asset IDs.",
+      "description": "List or count/aggregate digital asset metadata (id, name, step, dates) — does NOT return preview images. Use when the user wants to FIND, LIST, or COUNT assets/photos/shots/deliverables. Filter by job, product, production type, step, workspace, photographer, stylist, model, star rating, time range. Drill-down: pass workUnitIds/jobIds/productIds from upstream queries. When groupBy params set, returns counts/aggregations instead of list. Default: latest step only when step not specified — this matches the CF web app's Assets tab and is what you almost always want. Leave isLatestStep UNSET in normal use. Only set isLatestStep=false to RECOVER from a total:0 result (a possible false negative — the response carries a `hint` when this applies). Do NOT set isLatestStep=false when you already have results: it returns the SAME asset once per step it passed through (Capture, QC, AssetDelivery, …), so one production shows up as several near-duplicate hits — that is a cross-step artifact, NOT different assets or drifting data. Use names for filters (production type, step). IDs accepted as fallback. Copywriting (Text) assets have isTextAsset:true; to read their copy call get_text_asset_content(taskIds) with the taskId(s) from the hit(s). Each asset carries a `presetId` (the preset applied to it; null when none) — to explain what preset a shot uses, chain that presetId into query_preset_detail. If the user wants to SEE/VIEW/RENDER the images, follow up with the get_asset_preview tool using the returned asset IDs.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -414,7 +452,7 @@
           "name": "isLatestStep",
           "type": "bool?",
           "required": false,
-          "description": "Latest step only (default true when step omitted)"
+          "description": "Latest step only. Leave UNSET for normal queries (defaults to true when step omitted — mirrors the Assets tab, one hit per asset). Set to false ONLY to recover from a total:0 false-negative; false widens to EVERY step so each asset repeats once per step it passed through (near-duplicate hits = a cross-step artifact, not distinct assets). Never set false just to be safe."
         },
         {
           "name": "workUnitIds",
@@ -526,8 +564,324 @@
         }
       ],
       "exampleInput": "{ \"step\": \"Capture\", \"starRating\": 5, \"dateFrom\": \"2026-06-01\", \"pageSize\": 10 }",
-      "exampleOutput": "{ \"total\": 87, \"hits\": [ { \"assetId\": \"a1b2...\", \"name\": \"shot_001.jpg\", \"step\": \"Capture\", \"starRating\": 5 } ] }",
-      "knownLimitations": "Returns metadata only — no image URLs. To display images, pass these assetIds to get_asset_preview. When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list."
+      "exampleOutput": "{ \"total\": 87, \"returned\": 10, \"assets\": [ { \"id\": \"a1b2...\", \"name\": \"shot_001.jpg\", \"step\": \"Capture\", \"taskId\": \"48d5...\", \"isTextAsset\": false } ] }",
+      "knownLimitations": "Returns metadata only — no image URLs. To display images, pass these asset ids to get_asset_preview. Each hit carries taskId (drill-down key); copywriting (Text) assets have isTextAsset:true — read their copy with get_text_asset_content(taskIds). When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list."
+    },
+    {
+      "name": "query_collection",
+      "title": "Query Collection",
+      "module": "Collections",
+      "description": "Search collections — Creative Force's mechanism for sharing assets out to EXTERNAL reviewers for feedback, approval, and decisions (external review collaboration). A collection groups assets (from jobs/products or editorial deliverables) so invited external reviewers can approve, comment, and make decisions. OPTIONAL param `collectionType` picks which kind of collection to search: 'Photo Review' (2) and 'Post Review' (1) — the two review types shown together on the merged Review Collections screen; 'Review' — a convenience value = Photo Review + Post Review together (the merged screen); 'Selection' (6, collaborative final-asset selection); 'Gallery' (7, published gallery). **If `collectionType` is omitted it DEFAULTS to 'Review'** (Photo + Post Review) — the response then carries `isDefaultCollectionType:true` and a `hint`; surface that hint to the user (e.g. 'Showing Review collections by default — say Selection/Gallery/Photo Review/Post Review to narrow'). When the user names a type explicitly, no hint is returned. **IMPORTANT — Short List collections are NOT handled by this tool.** A Short List (Talent & Crew) is a distinct collection type (functionType 5); this tool cannot search it and 'Short List' is NOT a valid `collectionType` here. If the user asks about short lists (e.g. 'show my short lists', 'short lists containing model X', 'talent short lists awaiting feedback'), use the separate **query_shortlist** tool instead — do NOT call query_collection for that. All identifiers are names/codes — resolved to IDs automatically. Draft and Backlog collections are hidden (not filterable). When any groupBy* param is set, returns aggregation buckets instead of a list; pageSize=0 returns count only. Each collection type requires its subscription add-on; querying a type the studio hasn't purchased returns an explanatory error, not an empty list. FILTER SCOPE BY TYPE — each type exposes a DIFFERENT filter set (see each param's 'APPLIES TO'); do NOT pass a filter outside its type or you'll get empty/misleading results:   • Review / Photo Review / Post Review (can be E-comm or Editorial — use contentType to narrow): name, owner, workspace, status, state, decisionMade, comments, invitationSent, collectionRound, contentType, job*, product*, project*, deliverable*, roundOfReview.   • Selection: name, owner, workspace, status, state, decisionMade, comments, invitationSent, project*, deliverable*. NO job/product, collectionRound, contentType, roundOfReview.   • Gallery: name, owner, workspace, state, comments, invitationSent, project*. NO status, decisionMade, deliverable, job/product, collectionRound, contentType, roundOfReview.   (invitationSent = invitationSentFrom/To, applies to all three since any of them can be shared.) TEXT FILTERS — this param accepts inline operators (collectionName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'. (Job/Product/Project/Deliverable code+name are exact-match option filters, not inline-operator text.)",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "collectionType",
+          "type": "string",
+          "required": false,
+          "description": "OPTIONAL. Which kind of collection to search: 'Photo Review', 'Post Review', 'Review' (= Photo + Post Review, the merged screen), 'Selection', or 'Gallery'. Omit to default to 'Review' (the response will flag isDefaultCollectionType:true + a hint to show the user)."
+        },
+        {
+          "name": "collectionName",
+          "type": "string",
+          "required": false,
+          "description": "Collection name filter. Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'."
+        },
+        {
+          "name": "ownerName",
+          "type": "string",
+          "required": false,
+          "description": "Collection owner's name (or GUID). Use for 'collections owned by Anna', 'my collections'."
+        },
+        {
+          "name": "workspaceName",
+          "type": "string",
+          "required": false,
+          "description": "Workspace / client name (or GUID). Matches collections whose content belongs to this workspace (see `_fieldNotes.workspaces`). Use for 'collections in workspace Nike'."
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "required": false,
+          "description": "Collection status: New, Awaiting Content, Ready for Review, Published (= Shared for Review), Review in Progress, Decisions Submitted, Awaiting New Versions, Review Completed. Draft/Backlog are hidden and not selectable. Mapping user intent to a status: 'awaiting decisions' / 'not yet decided' / 'reviewers still deciding' → 'Review in Progress' (reviewers are looking but decisions are NOT yet all submitted). Do NOT use 'Decisions Submitted' for that — 'Decisions Submitted' means every decision maker has ALREADY submitted (review decisions are DONE for the round). APPLIES TO: Review, Selection. NOT Gallery (Gallery has no status filter)."
+        },
+        {
+          "name": "state",
+          "type": "string",
+          "required": false,
+          "description": "Collection state: 'Enabled' or 'Disabled'. APPLIES TO: all types."
+        },
+        {
+          "name": "collectionRound",
+          "type": "int?",
+          "required": false,
+          "description": "Collection review round (1-based). Round 1 matches collections currently on round 1 WITH Automatic Round Tracking enabled; pass -1 for the 'No Round' bucket (round-1 collections with round tracking OFF — the FE labels these 'No Round', NOT a literal round -1); 2+ matches that later round. APPLIES TO: Review only (Post Review)."
+        },
+        {
+          "name": "contentType",
+          "type": "string",
+          "required": false,
+          "description": "Content type: 'E-Comm' or 'Editorial'. APPLIES TO: Review only (Editorial Post Review)."
+        },
+        {
+          "name": "jobCode",
+          "type": "string",
+          "required": false,
+          "description": "Job/order code tied to the collection (exact match; comma-separated = OR). APPLIES TO: Review (E-comm) only."
+        },
+        {
+          "name": "jobName",
+          "type": "string",
+          "required": false,
+          "description": "Job name tied to the collection (exact match; comma-separated = OR). APPLIES TO: Review (E-comm) only."
+        },
+        {
+          "name": "productCode",
+          "type": "string",
+          "required": false,
+          "description": "Product code tied to the collection (exact match; comma-separated = OR). APPLIES TO: Review (E-comm) only."
+        },
+        {
+          "name": "productName",
+          "type": "string",
+          "required": false,
+          "description": "Product name tied to the collection (exact match; comma-separated = OR). APPLIES TO: Review (E-comm) only."
+        },
+        {
+          "name": "projectName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial project name tied to the collection (exact match; comma-separated = OR). APPLIES TO: Review, Selection, Gallery."
+        },
+        {
+          "name": "projectCode",
+          "type": "string",
+          "required": false,
+          "description": "Editorial project code tied to the collection (exact match; comma-separated = OR). APPLIES TO: Review, Selection, Gallery."
+        },
+        {
+          "name": "deliverableName",
+          "type": "string",
+          "required": false,
+          "description": "Editorial deliverable name tied to the collection (exact match; comma-separated = OR). APPLIES TO: Review, Selection. NOT Gallery."
+        },
+        {
+          "name": "deliverableCode",
+          "type": "string",
+          "required": false,
+          "description": "Editorial deliverable code tied to the collection (exact match; comma-separated = OR). APPLIES TO: Review, Selection. NOT Gallery."
+        },
+        {
+          "name": "roundOfReview",
+          "type": "string",
+          "required": false,
+          "description": "Round Of Review value (workflow round tag). Supports 'No Round'. APPLIES TO: Review only (Editorial Post Review)."
+        },
+        {
+          "name": "decisionMade",
+          "type": "string",
+          "required": false,
+          "description": "Filter by review decision (comma-separated = OR): Undecided, Approved, Approved with Changes, Rejected. APPLIES TO: Review, Selection. NOT Gallery."
+        },
+        {
+          "name": "commentsMade",
+          "type": "string",
+          "required": false,
+          "description": "Whether the collection has comments: 'Yes' or 'No'. APPLIES TO: all types."
+        },
+        {
+          "name": "roundNotReInvited",
+          "type": "bool",
+          "required": false,
+          "description": "Set true to find Post Review collections that auto-advanced to a NEW round but whose reviewers were likely NEVER re-invited for that round — the owner forgot to click 'Send Invitations' after fresh asset versions arrived. Answers prompts like 'any collections that moved to a new round but where invitations were never re-sent?'. Applies a combined signal: Post Review + Automatic Round Tracking ON + current round >= 2 + status 'Ready for Review' (after Send Invitations the status leaves Ready for Review → Published, so a round-2+ collection still sitting in Ready for Review is the tell-tale of a pending re-invite). Automation-created collections are excluded (an Automation Rule may auto-send the invite). IMPORTANT — this is a BEST-EFFORT heuristic, not exact (there is no per-round invitation timestamp in the data): read `_fieldNotes.roundNotReInvited` and relay its caveat to the user (it's a strong signal but may miss a collection whose owner MANUALLY moved it off 'Ready for Review' without sending invitations). APPLIES TO: Review only (Post Review). Overrides any `status`/`collectionRound` you also pass."
+        },
+        {
+          "name": "jobCustomPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}] (Job custom properties. APPLIES TO: Review (E-comm) only.)"
+        },
+        {
+          "name": "productCustomPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}] (Product custom properties. APPLIES TO: Review (E-comm) only.)"
+        },
+        {
+          "name": "projectCustomPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}] (Editorial project custom properties. APPLIES TO: Review, Selection, Gallery.)"
+        },
+        {
+          "name": "deliverableCustomPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}] (Editorial deliverable custom properties. APPLIES TO: Review, Selection. NOT Gallery.)"
+        },
+        {
+          "name": "createdFrom",
+          "type": "string",
+          "required": false,
+          "description": "Created from (ISO date, inclusive). Combine with createdTo for a range."
+        },
+        {
+          "name": "createdTo",
+          "type": "string",
+          "required": false,
+          "description": "Created to (ISO date, exclusive)."
+        },
+        {
+          "name": "invitationSentFrom",
+          "type": "string",
+          "required": false,
+          "description": "Invitation sent from (ISO date, inclusive) — filters on when the collection was SHARED / its invitations were SENT to reviewers (see `_fieldNotes.invitationSentAt`), NOT when the collection was created. Use for 'collections sent/shared before/after date X' or 'invited more than a week ago' (pass invitationSentTo = today-minus-7-days). Combine with a decision/status filter for 'sent >1 week ago and still undecided'. Collections with no invitation sent yet are excluded. APPLIES TO all collection types that can be shared (Review, Selection, Gallery)."
+        },
+        {
+          "name": "invitationSentTo",
+          "type": "string",
+          "required": false,
+          "description": "Invitation sent to (ISO date, exclusive). See invitationSentFrom."
+        },
+        {
+          "name": "collectionIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Collection GUIDs (JSON array) to look up specific records directly — e.g. the `collectionId`s returned under a talent's `collections[]` by query_talent_crew, to inspect those collections here."
+        },
+        {
+          "name": "groupByStatus",
+          "type": "bool",
+          "required": false,
+          "description": "Group by collection status — aggregation mode"
+        },
+        {
+          "name": "groupByOwner",
+          "type": "bool",
+          "required": false,
+          "description": "Group by collection owner — aggregation mode"
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client — aggregation mode"
+        },
+        {
+          "name": "groupByType",
+          "type": "bool",
+          "required": false,
+          "description": "Group results by Photo Review vs Post Review — aggregation mode. Only meaningful for the Review types (collectionType Review / Photo Review / Post Review)."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (default 50). pageSize=0 returns count only. Ignored in aggregation mode."
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page (0-based). Ignored in aggregation mode."
+        }
+      ],
+      "exampleInput": "{ \"collectionType\": \"Selection\", \"status\": \"Review in Progress\", \"pageSize\": 10 }",
+      "exampleOutput": "{ \"total\": 6, \"returned\": 6, \"_fieldNotes\": { \"workspaces\": \"content-derived rollup\", \"decision\": \"reviewer feedback decision, not status\" }, \"collections\": [ { \"id\": \"col-guid-1\", \"collectionName\": \"SS26 Hero Review\", \"collectionType\": \"Selection\", \"status\": \"Review in Progress\", \"owner\": \"Anna PM\", \"workspaces\": [\"Acme Corp\"], \"state\": \"Enabled\", \"round\": 1, \"decision\": [\"Undecided\"], \"assetCount\": 24, \"createdAt\": \"2026-06-01T09:00:00Z\" } ] }",
+      "knownLimitations": "Searches external-review collections (share assets out for feedback/approval). collectionType is one of Review (= Photo + Post Review, the merged screen; the DEFAULT when omitted — response then flags isDefaultCollectionType:true + a hint), Photo Review, Post Review, Selection, Gallery. **Short List is NOT a valid collectionType here** — use query_shortlist for Talent & Crew short lists. Each type exposes a DIFFERENT filter set (see each param's 'APPLIES TO'); passing a filter outside its type yields empty/misleading results — e.g. job/product/round/contentType apply to Review only, deliverable to Review+Selection, Gallery has no status/decision. Draft & Backlog collections are hidden (not filterable). Each type requires its subscription add-on; querying an unpurchased type returns an explanatory error, not an empty list. When any groupBy* is set it returns aggregation buckets (byStatus/byOwner/byWorkspace/byType) instead of a list; pageSize=0 returns count only. `decision` is the reviewer feedback decision, NOT the collection `status` (see _fieldNotes). `roundNotReInvited=true` (Post Review only) surfaces collections that auto-advanced to a new round (>= R2) but are still at 'Ready for Review' — a best-effort signal that the owner hasn't re-sent invitations for the new round (there is no per-round invitation timestamp, so it can miss some; see _fieldNotes.roundNotReInvited). Chain a returned collectionId back in via collectionIds=[...], or from query_talent_crew's per-hit collections[]."
+    },
+    {
+      "name": "query_collection_detail",
+      "title": "Query Collection Detail",
+      "module": "Collections",
+      "description": "Open ONE external-review collection and return BOTH its CONTENT (the product requests / jobs / deliverables added to it — the CONTENT tab, under `contentItems`) AND its ASSETS with per-asset review decisions, marking + comment counts, and a decision summary. Use this AFTER query_collection to answer 'what's inside collection X' (contentItems = products/jobs; assets = the images), 'which assets were rejected / are still pending', 'who approved which asset', 'how many comments/markings per asset'. Works for Review / Photo Review / Post Review / Selection / Gallery collections. **NOT for Talent & Crew short lists** (functionType 5) — those have a different surface; a short-list id returns an error pointing at query_shortlist_detail. **collectionId is required and must be a GUID.** This tool does NOT resolve names: if the user gives a collection NAME, first call query_collection(collectionName=…) and pass the returned `id` here. The asset list can be narrowed with `assetStatus`, `keyword` (asset name / product code), `starRating` (Gallery/Selection), `colorFlag`, `decision` (Approved/Rejected/…), and `decisionMaker` (who decided) — combine `decision`+`decisionMaker` for 'assets rejected by Anna'. **Flag discipline — set the include* flags ONLY when the question needs that slice** (each gates an extra REST call; the base asset+decision+counts call always runs): set `includeReviewers=true` only when asked WHO is invited / their roles / who has seen it; set `includeComments=true` only when asked WHAT reviewers SAID (the actual comment text, e.g. 'what did they say about asset X', 'show the review feedback') — returns per-asset comments under assets[].comments[] AND collection-wide general comments under collectionComments[]. Annotation geometry is NOT returned (only markingCount); asset thumbnails are not resolved — open the collection in Gamma to view images. Read the `_fieldNotes` in the response for what each field means.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "collectionId",
+          "type": "string",
+          "required": true,
+          "description": "REQUIRED. The collection's GUID. Chain from a query_collection result `id`. If the user gives a NAME, call query_collection(collectionName=…) first and pass the id here — this tool does not resolve names."
+        },
+        {
+          "name": "includeReviewers",
+          "type": "bool",
+          "required": false,
+          "description": "Add the full reviewers[] block (invited reviewers: name, role, seen, per-reviewer approve/reject tally). Voter NAMES on asset decisions are resolved regardless. Set ONLY when asked about reviewers."
+        },
+        {
+          "name": "includeComments",
+          "type": "bool",
+          "required": false,
+          "description": "Add the actual reviewer comment TEXT per asset (assets[].comments[]). Set ONLY when asked what reviewers SAID — otherwise the base call returns commentCount only."
+        },
+        {
+          "name": "includeContentItems",
+          "type": "bool",
+          "required": false,
+          "description": "Add the CONTENT tab (contentItems[] = the product requests / jobs / editorial deliverables added to the collection, with production type + status). Set ONLY when asked WHAT was added to the collection at the product/job level (e.g. 'which products are in this collection', 'what jobs does it cover') — the asset grid + decisions are always returned regardless. Mirrors the FE, which lazy-loads the CONTENT tab only when opened."
+        },
+        {
+          "name": "includeAssetVersion",
+          "type": "bool",
+          "required": false,
+          "description": "Add each asset's `assetVersion` (POST REVIEW collections only — ignored for other types). Set ONLY when asked about asset versions / revisions / re-uploads. Costs one extra REST call. See the response `_fieldNotes` for what the value means."
+        },
+        {
+          "name": "assetStatus",
+          "type": "string",
+          "required": false,
+          "description": "Optional filter on the asset list: 'Active', 'Approved', or 'Rejected'. Use for 'which assets were rejected'."
+        },
+        {
+          "name": "keyword",
+          "type": "string",
+          "required": false,
+          "description": "Keyword search over the asset name and its product code (contains, case-insensitive). Use for 'the asset called hero_001' or 'assets for SKU-9001'."
+        },
+        {
+          "name": "starRating",
+          "type": "string",
+          "required": false,
+          "description": "Star rating filter (Gallery/Selection): comma-separated numbers 0-5 (OR). 0 matches unrated assets too. Use for 'which assets are rated 4 or 5'."
+        },
+        {
+          "name": "colorFlag",
+          "type": "string",
+          "required": false,
+          "description": "Color-label filter: comma-separated color-flag ids (OR). 0 matches assets with no label. Use for 'assets flagged red'."
+        },
+        {
+          "name": "decision",
+          "type": "string",
+          "required": false,
+          "description": "Filter by review decision on the asset (comma-separated = OR): Approved, Rejected, Approved with Changes, Undecided. Matches assets whose per-asset decisions[] contain that decision. Use for 'which assets are approved'."
+        },
+        {
+          "name": "decisionMaker",
+          "type": "string",
+          "required": false,
+          "description": "Filter by WHO decided — a decision maker's name (comma-separated = OR). Matches assets that person has a decision on. Resolved to the reviewer via the invited-reviewer roster. Use for 'assets rejected by Anna' (combine with `decision`)."
+        },
+        {
+          "name": "assetPageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max assets returned (default 100)."
+        },
+        {
+          "name": "assetPage",
+          "type": "int",
+          "required": false,
+          "description": "Asset page (0-based)."
+        }
+      ],
+      "exampleInput": "{ \"collectionId\": \"col-guid-1\", \"decision\": \"Rejected\", \"includeAssetVersion\": true }",
+      "exampleOutput": "{ \"id\": \"col-guid-1\", \"collectionName\": \"S169: DN Video Collection\", \"collectionType\": \"Post Review\", \"status\": \"Awaiting New Versions\", \"owner\": \"Anna PM\", \"barCode\": \"CO138392CF\", \"state\": \"Enabled\", \"round\": 3, \"decisionLevel\": \"By Asset\", \"assetCount\": 99, \"altAssetCount\": 0, \"itemCount\": 30, \"returnedAssets\": 44, \"decisionSummary\": { \"approved\": 38, \"rejected\": 0, \"approvedWithChanges\": 0, \"mixed\": 0, \"undecided\": 6 }, \"assets\": [ { \"assetId\": \"a1\", \"collectionItemId\": \"ci1\", \"fileName\": \"SS26_hero_001.jpg\", \"assetStatus\": \"Approved\", \"productCode\": \"SKU-9001\", \"productionType\": \"On Model\", \"isHero\": true, \"roundCompleted\": 1, \"assetVersion\": 3, \"decisions\": { \"approved\": 2, \"rejected\": 1, \"approvedWithChanges\": 0, \"decisionMakers\": [\"Anna PM (Approved)\", \"Reviewer X (Rejected)\"] }, \"markingCount\": 3, \"commentCount\": 2 } ], \"_partial\": [] }",
+      "knownLimitations": "Opens ONE Review/Photo Review/Post Review/Selection/Gallery collection and returns (base) its ASSETS + per-asset reviewer DECISIONS + marking/comment counts + a decision summary. NOT for Talent & Crew short lists (functionType 5) — a short-list id returns an error pointing at query_shortlist_detail. collectionId is REQUIRED and must be a GUID; this tool does NOT resolve names — call query_collection(collectionName=...) first and chain the returned id. Hybrid source: assets from SearchProxy ES (collection/searchasset), content items + decisions/comments/reviewers/settings from the Collaboration REST API. `decisionSummary` counts ASSETS by the collective state of their votes (summing to returnedAssets) — `approved`/`rejected`/`approvedWithChanges`/`undecided` are real CF states (all votes agree / none); `mixed` is a tool label for reviewers DISAGREEING on one asset, NOT a CF status. Use `returnedAssets` for the current-round grid count — `assetCount` is a stored header counter (all-rounds for Post Review, excl. alt, may include deleted). A 'By All Asset' collection has no per-asset decisionSummary — a single collectionDecision is surfaced instead. Per-asset `roundCompleted` (Post Review + Automatic Round Tracking ONLY) = the FE grid's R{n} badge = the round that asset/product reached its final state: for an APPROVED asset the round it was approved and LOCKED in (unchanged in later rounds), for a still-open one the current round. Within one collection at round N, assets carry DIFFERENT roundCompleted values (some products finish early and lock at R1, others are churned to R3) — rank/bucket assets by roundCompleted to answer 'which products needed the most rounds'. Absent (0) = round tracking off or not Post Review; do NOT infer a round then. This is DISTINCT from `assetVersion` (QC re-upload count) and from the collection-level `round`. Asset filters: assetStatus (Active/Approved/Rejected), keyword (asset name/product code), starRating (Gallery/Selection), colorFlag, decision (Approved/Rejected/Approved with Changes/Undecided; contains-match, not exclusive), decisionMaker (WHO decided, resolved via the roster — combine with decision for 'shots Anna rejected'). Opt-in flags (each default off): includeContentItems (the CONTENT tab = products/jobs/deliverables added to the collection; itemCount is always present regardless), includeComments (reviewer comment TEXT: assets[].comments[] + general collectionComments[]), includeReviewers (invited reviewers + per-reviewer approve/reject tally), includeAssetVersion (POST REVIEW collections ONLY — per-asset `assetVersion` = the FE grid's purple V{n} badge = how many times that asset was REJECTED at post-production QC + re-uploaded (1 = rejected once, 2 = twice); sourced from an extra collections/gettasksdetail call. A MISSING assetVersion means the asset is the ORIGINAL, never rejected/re-uploaded — NOT 'version 1' (there is no V1 badge for an un-revised asset; V1 already means revised once). When asked which assets were re-uploaded/revised, list only those that HAVE an assetVersion. Asset versions do NOT exist for Photo Review / Selection / Gallery / Review — the flag is ignored for those types and _partial notes why; never claim their assets are 'version 1'). Marking geometry and asset thumbnails are NOT returned (counts only) — chain assetIds → get_asset_preview to view images. Read-only (seen=false). Requires a collection add-on + McpQueryCollection."
     },
     {
       "name": "query_containers",
@@ -628,6 +982,26 @@
       "exampleInput": "{ \"method\": \"Shopify\", \"workspace\": \"Acme Studio\", \"pageSize\": 10 }",
       "exampleOutput": "{ \"total\": 3, \"items\": [ { \"name\": \"Shopify Feed\", \"id\": \"ds1...\", \"method\": \"Shopify\", \"isActive\": true, \"numberOfUsingClients\": 2, \"lastCheckStatus\": \"Success\", \"lastCheckDate\": \"2026-07-06T08:00:00Z\", \"lastSyncStatus\": \"Success\", \"lastSyncDate\": \"2026-07-06T08:05:00Z\" } ] }",
       "knownLimitations": "Data sources monitor external storage (FTP, Amazon S3, Google Cloud, Shopify, Airtable, etc.) and auto-import product data. Lists the connection config + sync status only — not the imported products themselves (use query_ecomm_product_request). `method` accepts a connection-method name or id; `workspace` a name or id."
+    },
+    {
+      "name": "query_deliverable_detail",
+      "title": "Query Deliverable Detail",
+      "module": "Editorial",
+      "description": "Open ONE editorial deliverable by id and return its CREATIVE BRIEF: whether a brief exists, whether it has written direction, the direction text itself, the attached documents, and the mock-up / mood-board images. The DETAIL companion to query_editorial_deliverable (the LIST tool, which knows only a brief COUNT) — id-only, no name resolution: when the user names a deliverable, call query_editorial_deliverable first and chain the returned 'deliverableId'. Returns metadata + the direction text only (never a document's file contents); to SEE a brief image, mock-up or mood-board, pass its fileId to get_asset_preview. Field meanings are in the response '_fieldNotes'.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "deliverableId",
+          "type": "string",
+          "required": false,
+          "description": "The editorial deliverable id (GUID) to open. Chain it from a query_editorial_deliverable result 'deliverableId'. Missing / non-GUID → error pointing at query_editorial_deliverable."
+        }
+      ],
+      "exampleInput": "{ \"deliverableId\": \"4d8b1163-3398-4755-a1e6-f2aeeea9656e\" }",
+      "exampleOutput": "{ \"deliverableId\": \"4d8b1163-...\", \"hasBrief\": true, \"hasWrittenDirection\": true, \"directionText\": \"**Shoot on a white sweep**, model facing left.\\n\\n# Key looks\\n- Look A\\n- Look B\", \"brief\": { \"documents\": [ { \"documentId\": \"a1b2c3d4-...\", \"name\": \"Look sketch\", \"type\": \"File upload\", \"fileExtension\": \".jpg\", \"version\": 1, \"fileId\": \"...\", \"isImage\": true } ], \"moodboardCount\": 1, \"moodboardFileIds\": [ \"1a209727-...\" ], \"mockupCount\": 1, \"mockupFileIds\": [ \"27a4cf5f-...\" ] } }",
+      "knownLimitations": "Detail companion to query_editorial_deliverable (LIST). id-only — does NOT resolve names; chain deliverableId from a query_editorial_deliverable row. The /creativebriefs/list endpoint ALWAYS returns one record per deliverable, so hasBrief is derived from CONTENT: hasBrief = hasWrittenDirection OR any attached document/mockup/moodboard; hasWrittenDirection = directionText present & non-blank. hasBrief:false → no `brief` object. directionText is MARKDOWN, returned verbatim ONLY when present (render it; do not show raw ** / #) — a PM-approved deviation from the ticket's metadata-only wording; a document's file CONTENTS are still never returned. Brief documents come from a separate /documents/search?forCreativeBrief=true call (best-effort → _partial). Mood-boards/mock-ups have NO display name — surfaced as counts + image fileIds; pass those fileIds to get_asset_preview AS fileIds to SEE them. Requires the Editorial Projects add-on. Field meanings are in the response _fieldNotes."
     },
     {
       "name": "query_ecomm_job",
@@ -1009,7 +1383,7 @@
       "name": "query_ecomm_production",
       "title": "Query E-Comm Production",
       "module": "Production",
-      "description": "Search productions (work units) — the central entity tracking a product through the workflow. Use this to answer: what step is a production on, who's working on it, how many are done/in-progress, production counts by photographer/vendor/location/type, and turnaround times. Status: New, Todo, InProgress, Done. Step names: Capture (a.k.a. Photography), InternalPostProduction, FinalSelection, etc. Filter by job, product, sample, production type, vendor team, post-production vendor, photographer, stylist, model, art director, videographer, digital-processing user, location, workspace. **Job lookup param choice — strict per user phrasing:** caller says 'job code JOB-123' → `jobCode`; 'job named Spring Campaign' → `jobName`; 'job X' without saying code-vs-name → `job` (ambiguous, matches code OR name). Same pattern for product (`productCode`/`productName`/`product`). **Codes are EXACT (case-sensitive); names are case-insensitive.** **Sample lookup**: `sample` is ambiguous — matches sample UUID OR sampleCode (exact, case-sensitive) OR cfBarcode (exact, case-sensitive) OR sampleName (case-insensitive). Filter by planning session: `session` (ambiguous session UUID, code, or name partial — matches against planningSessionId OR planningSession.sessionCode OR planningSession.sessionName). Drill-down: pass jobIds/productIds/planningSessionIds from upstream queries. Use human-readable names for all filters (resolved to IDs automatically). Returns: current step & status, production type, products, job, samples (codes/names/cfBarcodes/sizes/total/checkedIn), team on set (all 8 roles), vendors, location, style guide, outfit (incl. styling item codes), planning session (id/name/code/start/end), timing. CUSTOM PROPERTIES: a production surfaces custom properties from three entities — `jobCustomProperties`, `products[].customProperties`, `samples` — and each lists only properties that have a value SET. A property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('job', 'product', or 'sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_production result alone. When groupBy params set, returns counts/aggregations instead of list.",
+      "description": "Search productions (work units) — the central entity tracking a product through the workflow. Use this to answer: what step is a production on, who's working on it, how many are done/in-progress, production counts by photographer/vendor/location/type, and turnaround times. Status: New, Todo, InProgress, Done. Step names: Capture (a.k.a. Photography), InternalPostProduction, FinalSelection, etc. Filter by job, product, sample, production type, vendor team, post-production vendor, photographer, stylist, model, art director, videographer, digital-processing user, location, workspace. Also filter by the review collection a production is shared into: collectionName, collectionStatus, collectionRound (requires the Share For External Review / Photo Review Collections add-on). **Job lookup param choice — strict per user phrasing:** caller says 'job code JOB-123' → `jobCode`; 'job named Spring Campaign' → `jobName`; 'job X' without saying code-vs-name → `job` (ambiguous, matches code OR name). Same pattern for product (`productCode`/`productName`/`product`). **Codes are EXACT (case-sensitive); names are case-insensitive.** **Sample lookup**: `sample` is ambiguous — matches sample UUID OR sampleCode (exact, case-sensitive) OR cfBarcode (exact, case-sensitive) OR sampleName (case-insensitive). Filter by planning session: `session` (ambiguous session UUID, code, or name partial — matches against planningSessionId OR planningSession.sessionCode OR planningSession.sessionName). Drill-down: pass jobIds/productIds/planningSessionIds from upstream queries. Use human-readable names for all filters (resolved to IDs automatically). Returns: current step & status, production type, products, job, samples (codes/names/cfBarcodes/sizes/total/checkedIn), team on set (all 8 roles), vendors, location, style guide (name + `styleGuideId`), outfit (incl. styling item codes), planning session (id/name/code/start/end), timing. To answer 'what preset/style rules does this job use?' — chain `styleGuideId` into get_styleguide_detail (per-position presetsAndNaming carries the preset + its presetId, which chains into query_preset_detail for the full preset config). CUSTOM PROPERTIES: a production surfaces custom properties from three entities — `jobCustomProperties`, `products[].customProperties`, `samples` — and each lists only properties that have a value SET. A property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('job', 'product', or 'sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_production result alone. When groupBy params set, returns counts/aggregations instead of list.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -1169,6 +1543,24 @@
           "type": "string",
           "required": false,
           "description": "Outfit code (exact match)"
+        },
+        {
+          "name": "collectionName",
+          "type": "string",
+          "required": false,
+          "description": "Review-collection name the production is shared into (exact, case-insensitive; comma-separated = OR). Filters productions that belong to a Review collection with this name. For collections themselves use query_collection."
+        },
+        {
+          "name": "collectionStatus",
+          "type": "string",
+          "required": false,
+          "description": "Review-collection status the production's collection is in: New, Awaiting Content, Ready for Review, Published, Review in Progress, Decisions Submitted, Awaiting New Versions, Review Completed. Comma-separated = OR."
+        },
+        {
+          "name": "collectionRound",
+          "type": "string",
+          "required": false,
+          "description": "Review-collection round number the production is in (1-based). Pass -1 for 'No Round'. Comma-separated = OR."
         },
         {
           "name": "jobIds",
@@ -1628,10 +2020,66 @@
       "knownLimitations": "Per-output unit within an Editorial Project. For project-level rollups use query_editorial_project; for work-unit progress use query_editorial_production."
     },
     {
+      "name": "query_editorial_detail",
+      "title": "Query Editorial Detail",
+      "module": "Editorial",
+      "description": "Open ONE editorial project by id and return its DOCUMENT LIBRARY (the project Documents tab): what documents exist, of what type, which version, and where they are assigned. The DETAIL companion to query_editorial_project (the LIST tool) — id-only, no name resolution: when the user names a project, call query_editorial_project first and chain the returned 'projectId'. Returns document metadata only (never a file's contents); to SEE an image document, pass its 'fileId' to get_asset_preview. Field meanings are in the response '_fieldNotes'.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "projectId",
+          "type": "string",
+          "required": false,
+          "description": "The editorial project id (GUID) to open. Chain it from a query_editorial_project result 'projectId'. Missing / non-GUID → error pointing at query_editorial_project."
+        },
+        {
+          "name": "keyword",
+          "type": "string",
+          "required": false,
+          "description": "Filter the document library by document name (mirrors the FE Documents-tab search box). Omit to return all documents."
+        },
+        {
+          "name": "includeAssignments",
+          "type": "bool",
+          "required": false,
+          "description": "Also return, per document, the deliverables it is assigned to (one extra call per document). Set only when the user asks WHICH deliverables a document applies to — otherwise the assignedDeliverableCount on each document is enough."
+        },
+        {
+          "name": "assignmentPageSize",
+          "type": "int",
+          "required": false,
+          "description": "Cap on assigned-deliverables returned per document when includeAssignments (default 50)."
+        },
+        {
+          "name": "includeVersionHistory",
+          "type": "bool",
+          "required": false,
+          "description": "Also return each File-upload document's full version history (number/when/by whom, newest→oldest). One batched call for all File-upload docs (URL docs have none). Set only when the user asks for version history / who changed a document — the current 'version' is already on every File-upload doc without this flag."
+        },
+        {
+          "name": "documentPageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max documents returned (default 50)."
+        },
+        {
+          "name": "documentPage",
+          "type": "int",
+          "required": false,
+          "description": "0-based document page (default 0 → first page)."
+        }
+      ],
+      "exampleInput": "{ \"projectId\": \"ddf69df4-22e0-4784-8470-15e299dc52a2\", \"keyword\": \"shot\", \"includeAssignments\": true }",
+      "exampleOutput": "{ \"projectId\": \"ddf69df4-...\", \"documentCount\": 9, \"documents\": [ { \"documentId\": \"ea2477bc-...\", \"name\": \"Demo 05-01-2024\", \"type\": \"File upload\", \"fileExtension\": \".eps\", \"version\": 1, \"fileId\": \"71464239-...\", \"isImage\": false, \"assignedDeliverableCount\": 1, \"assignedDeliverables\": [ { \"deliverableId\": \"a387a844-...\", \"deliverableName\": \"ED_2\", \"deliverableCode\": \"ED100046CF\", \"forCreativeBrief\": true } ] }, { \"documentId\": \"656dc575-...\", \"name\": \"google drive - other files\", \"type\": \"Document from URL\", \"url\": \"https://drive.google.com/file/d/.../view\", \"assignedDeliverableCount\": 1 } ] }",
+      "knownLimitations": "Detail companion to query_editorial_project (LIST). id-only — does NOT resolve names; chain projectId from a query_editorial_project row (a name goes to query_editorial_project first). Metadata-first: never returns a document's file CONTENTS. Document type: 1 File upload (fileExtension + version + fileId + isImage), 2 Document from URL (url = documentUrl ?? googleDriveUrl — the latter misnamed, carries any provider; its name IS its label). assignedDeliverableCount is on every doc (0 = orphan); includeAssignments only adds the deliverable NAMES (one extra call per doc, best-effort → _partial). includeVersionHistory returns each File-upload doc's version history (number/when/by whom, newest→oldest — the wire is unsorted; URL docs have none; one batched call). To SEE an image document, pass its fileId to get_asset_preview AS fileIds (not assetIds). Requires the Editorial Projects add-on. Field meanings are in the response _fieldNotes."
+    },
+    {
       "name": "query_editorial_production",
       "title": "Query Editorial Production",
       "module": "Editorial",
-      "description": "Search Editorial Productions (also called Editorial work units) — the central WorkUnit-doc row that tracks an Editorial Deliverable's content through the workflow (contentCreationTypeId=2). Use to answer: which work units exist for a project/deliverable, what step a production is at, who's shooting it, how many at each status/step, throughput by week, work unit counts by project/workspace/photographer, which samples are shared across more than one deliverable and which deliverables depend on each one (set groupBySharedSamples=true — never page through list mode to compute this). Filter by project (name/code/due-date/custom-property), deliverable (name/code/due-date/custom-property), product code, sample (code/name/custom-property), workflow type ('Asset Workflow' / 'Finalization'), workflow status ('To Do'/'In Progress'/'Done'), current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status ('Backlog'/'To Do'/'Rejected'/'In Progress'/'Failed'/'Done'), photographer/videographer/stylist/hair-and-makeup/model/art-director/assistant (Editorial team-on-set), External Post Vendor, External Post QC / Internal Post / Internal Post QC / Post Review assignees, workspace, media type (Image/Video — feature-gated), round of review, asset-delivery-finished date range, Selection/Post-Review collection statuses. Supports custom property filters via projectCustomPropertyFilters, deliverableCustomPropertyFilters, sampleCustomPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: a production surfaces custom properties from several entities (project / deliverable / sample / session), and each lists only properties that have a value SET; a property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('editorial_project', 'editorial_deliverable', 'sample', or 'session') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_editorial_production result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. Editorial only — for E-comm production rows use query_ecomm_production. For the parent project itself use query_editorial_project; for deliverable-level filtering use query_editorial_deliverable.",
+      "description": "Search Editorial Productions (also called Editorial work units) — the central WorkUnit-doc row that tracks an Editorial Deliverable's content through the workflow (contentCreationTypeId=2). Use to answer: which work units exist for a project/deliverable, what step a production is at, who's shooting it, how many at each status/step, throughput by week, work unit counts by project/workspace/photographer, which samples are shared across more than one deliverable and which deliverables depend on each one (set groupBySharedSamples=true — never page through list mode to compute this). Filter by project (name/code/due-date/custom-property), deliverable (name/code/due-date/custom-property), product code, sample (code/name/custom-property), workflow type ('Asset Workflow' / 'Finalization'), workflow status ('To Do'/'In Progress'/'Done'), current step (Capture/Final Selection/External Post/External Post QC/Internal Post/Internal Post QC/Post Review/Asset Delivery), current step status ('Backlog'/'To Do'/'Rejected'/'In Progress'/'Failed'/'Done'), photographer/videographer/stylist/hair-and-makeup/model/art-director/assistant (Editorial team-on-set), External Post Vendor, External Post QC / Internal Post / Internal Post QC / Post Review assignees, workspace, media type (Image/Video — feature-gated), round of review, asset-delivery-finished date range, and the review collection a production is shared into (collectionName, collectionStatus, collectionRound). Supports custom property filters via projectCustomPropertyFilters, deliverableCustomPropertyFilters, sampleCustomPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: a production surfaces custom properties from several entities (project / deliverable / sample / session), and each lists only properties that have a value SET; a property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('editorial_project', 'editorial_deliverable', 'sample', or 'session') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_editorial_production result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. Editorial only — for E-comm production rows use query_ecomm_production. For the parent project itself use query_editorial_project; for deliverable-level filtering use query_editorial_deliverable.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -1904,7 +2352,25 @@
           "name": "collectionStatusIds",
           "type": "JsonElement?",
           "required": false,
-          "description": "Selection / Post-Review collection statuses (multi-select) attached to child tasks. Status IDs: 2000 Todo, 2010 Pending, 2100 Submitted, 2200 PartiallySubmitted, 3000 InProgress, 4000 Approved, 5000 Rejected, 9000 Done. Filter compiles to has_child(task) → nested(collections.collectionStatusId). Available only when SHARE_FOR_EXT_REVIEW or SELECTION_COLLECTIONS subscription features are enabled. Accepts a JSON array of integers or a JSON-encoded string array."
+          "description": "Selection / Post-Review collection statuses (multi-select) attached to child tasks. Status IDs: 2000 Todo, 2010 Pending, 2100 Submitted, 2200 PartiallySubmitted, 3000 InProgress, 4000 Approved, 5000 Rejected, 9000 Done. Filter compiles to has_child(task) → nested(collections.collectionStatusId). Available only when SHARE_FOR_EXT_REVIEW or SELECTION_COLLECTIONS subscription features are enabled. Accepts a JSON array of integers or a JSON-encoded string array. Prefer `collectionStatus` (names) for chat use."
+        },
+        {
+          "name": "collectionName",
+          "type": "string",
+          "required": false,
+          "description": "Review-collection name the production is shared into (exact, case-insensitive; comma-separated = OR). For collections themselves use query_collection."
+        },
+        {
+          "name": "collectionStatus",
+          "type": "string",
+          "required": false,
+          "description": "Review-collection status by NAME (comma-separated = OR): New, Awaiting Content, Ready for Review, Published, Review in Progress, Decisions Submitted, Awaiting New Versions, Review Completed. Chat-friendly alternative to collectionStatusIds; both are combined (OR)."
+        },
+        {
+          "name": "collectionRound",
+          "type": "string",
+          "required": false,
+          "description": "Review-collection round number the production is in (1-based). Pass -1 for 'No Round'. Comma-separated = OR. Requires the Share For External Review add-on."
         },
         {
           "name": "groupByStatus",
@@ -2690,10 +3156,72 @@
       "knownLimitations": "External post-production vendors are third-party retouching/editing services wired into the workflow. Lists the vendor connections + last connection-check status only — not the images they process (use query_asset / query_ecomm_production). Connector types: FTP/SFTP, Pixelz, Box.com, Bright River, Gateway API. Distinct from query_product_vendors (image capture, not post-production)."
     },
     {
+      "name": "query_preset_detail",
+      "title": "Query Preset Detail",
+      "module": "Studio Settings",
+      "description": "Open ONE preset (E-comm or Editorial, Photo or Video) by id and return its full, fully-typed output spec configuration — every output variant and nested auto-variant, with every enum id resolved to the name the Studio-Settings preset popup shows. This is the DETAIL companion to query_presets (the LIST tool): query_presets finds a preset by name/workspace/media type; this tool drills into one. It is id-only — it does NOT resolve names. When the user names a preset, call query_presets(keyword=…) first and chain the returned 'id' (and 'presetType'). (Field meanings for interpreting the response — variantCount, specs[], autoVariants, colorProfile, video codec/frameRate, editorial namingConvention, metadataRules, etc. — are in the response '_fieldNotes'; read them there, not here.) Each spec carries a 'specLabel' ('Main' / 'Spec-1' / 'Spec-2'… — or 'Spec' when the preset has only one) that mirrors the name shown in the Studio-Settings preset popup sidebar; ALWAYS refer to a spec by its specLabel when answering the user (that's what they see on screen), not by variantCode. Params: 'presetId' (GUID, required); 'presetType' ('ecomm' default / 'editorial' — picks the endpoint; chain it from the query_presets row). Opt-in slices, each OFF by default and each firing ONE extra REST call — set a flag ONLY when the question needs that slice: 'includeDeliverables' (editorial only — which deliverables use the preset), 'includeUsage' (E-comm only — which style guides use the preset; the closest 'where is this preset applied' answer), 'includeMetadataRules' (the IPTC/EXIF/XMP metadata tags the preset writes onto output; the tag catalogue is per-workspace, so this REQUIRES chaining 'clientId' from the same query_presets row — the call errors pointing back to query_presets if clientId is missing). A slice requested for the wrong preset type is ignored with a note (not an error); a failing slice is omitted and noted in '_partial'. **This tool takes NO job_id.** 'What preset does job X use?' is answered elsewhere: query_ecomm_production → get_styleguide_detail (per-position presetsAndNaming). Presets have NO version — do not look for one. To compare ACROSS presets on a detail-only field (auto-variant count, per-variant format/colour, styleGuideCount, deliverableCount), call query_presets once then this tool once per returned id (it takes a single presetId, not an array), and aggregate.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "presetId",
+          "type": "string",
+          "required": false,
+          "description": "The preset id (GUID) to open. Chain it from a query_presets result 'id'. Missing / non-GUID → error pointing at query_presets."
+        },
+        {
+          "name": "presetType",
+          "type": "string",
+          "required": false,
+          "description": "Preset type: 'ecomm' (default) or 'editorial'. Picks the endpoint. Chain it from the query_presets row. 'editorial' without the Editorial Projects add-on → error."
+        },
+        {
+          "name": "includeDeliverables",
+          "type": "bool",
+          "required": false,
+          "description": "Editorial only. Also return the deliverables that use this preset (one extra call). Ignored (with a note) for E-comm. Set only when asked which deliverables use the preset."
+        },
+        {
+          "name": "deliverablePageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max deliverables returned when includeDeliverables (default 50)."
+        },
+        {
+          "name": "deliverablePage",
+          "type": "int",
+          "required": false,
+          "description": "1-based deliverables page (default 1)."
+        },
+        {
+          "name": "includeUsage",
+          "type": "bool",
+          "required": false,
+          "description": "E-comm only. Also return which style guides use this preset (one extra call). Ignored (with a note) for editorial. Set only when asked where the preset is used."
+        },
+        {
+          "name": "includeMetadataRules",
+          "type": "bool",
+          "required": false,
+          "description": "Also return the preset's metadata rules — the IPTC/EXIF/XMP tags written onto output (one extra call). Set only when asked about the preset's asset metadata."
+        },
+        {
+          "name": "clientId",
+          "type": "string",
+          "required": false,
+          "description": "The preset's owning-workspace clientId — CHAIN the 'clientId' value from the query_presets row. REQUIRED when includeMetadataRules is set (the metadata-tag catalogue is per-workspace, so it resolves each rule's schema/property); the call errors and points you back to query_presets if it's missing. Not needed otherwise."
+        }
+      ],
+      "exampleInput": "{ \"presetId\": \"ed7c2f9e-9bee-414f-b5cf-920a3d4b05c7\", \"presetType\": \"ecomm\", \"includeMetadataRules\": true, \"clientId\": \"c453615332919690370fc5a0b554d1e0\" }",
+      "exampleOutput": "{ \"id\": \"ed7c2f9e-...\", \"name\": \"nghia_test_photography\", \"presetType\": \"ecomm\", \"mediaType\": \"Photo\", \"variantCount\": 2, \"specs\": [ { \"specLabel\": \"Spec\", \"variantCode\": \"main\", \"variantType\": \"Manual\", \"format\": \"JPG\", \"fileExtension\": \".jpg\", \"dpi\": 72, \"colorProfile\": \"sRGB IEC61966-2.1\", \"colorDepth\": \"8 bit\", \"backgroundColor\": { \"type\": \"Color\", \"rgba\": \"255,255,255,1\" }, \"dimension\": { \"method\": \"Dimensions\", \"width\": 1920, \"height\": 1080, \"aspectRatio\": \"16:9\" }, \"autoVariants\": [ { \"variantCode\": \"auto-main-1\", \"baseOnSpecId\": \"ed7c2f9e-...\", \"autoCropping\": { \"method\": \"Face Detection\", \"faceDetection\": { \"mode\": \"Fill\", \"gravity\": \"Face\" } }, \"autoResize\": { \"method\": \"Resize and Fill\", \"width\": 234, \"gravity\": \"Center\" } } ] } ], \"metadataRules\": { \"variantSpecific\": false, \"rules\": [ { \"schema\": \"XMP Basic schema (xmp)\", \"property\": \"Keywords\", \"fullTagName\": \"XMP-xmp:Keywords\", \"tagType\": \"XMP\", \"value\": \"%product_code_testmetadata\", \"valueType\": \"normal\", \"isPersist\": true }, { \"schema\": \"IPTC Extension schema (Iptc4xmpExt)\", \"property\": \"ModelAge\", \"fullTagName\": \"XMP-iptcExt:ModelAge\", \"tagType\": \"XMP\", \"value\": \"1, 2, 3, 4\", \"valueType\": \"normal\", \"isPersist\": false, \"isArrayValue\": true }, { \"schema\": \"EXIF ExifIFD\", \"property\": \"Acceleration\", \"tagType\": \"EXIF\", \"valueType\": \"condition\", \"isPersist\": true, \"conditions\": [ { \"conditions\": [ { \"ruleType\": \"Production rule\", \"detail\": { \"productionType\": \"Producing an outfit\" } }, { \"ruleType\": \"Property rule\", \"detail\": { \"property\": \"Fabric\", \"value\": \"3333\", \"conditionType\": \"Equal to\" } }, { \"ruleType\": \"Source rule\", \"detail\": { \"source\": \"Source is PHOTO PRODUCTION\" } } ], \"value\": \"%dayofmonth_1\" } ] } ] } }",
+      "knownLimitations": "Opens ONE preset by id and returns its full typed spec config (detail companion to query_presets — it is id-only, so resolve a name via query_presets first and chain the returned id + presetType). Each spec carries a specLabel that mirrors the Studio-Settings preset sidebar (a lone spec is 'Spec'; with more than one the first is 'Main' then 'Spec-1', 'Spec-2'…) — refer to specs by specLabel when answering the user, not by the user-typed variantCode. Every enum id is resolved to the FE dropdown name (no magic numbers); colorProfile resolves from the live catalogue (8-value static fallback). Video presets carry codec/frameRate/maximumDuration instead of dpi/colour/cropping (codec/frameRate absent = N/A). Auto-variants surface only the ACTIVE crop/resize branch. Editorial presets add code + a namingConvention string that keeps the FE %field merge-field syntax but wraps every user-typed literal in «…» so the two can't be confused (a literal can itself start with % — «%abc» is plain text, %assetSequenceNumber is a field), e.g. %editorialProduct.color_reference_url«fdsf»%assetSequenceNumber[1]; and require the Editorial Projects add-on (else an explanatory error). Opt-in slices (each one extra call, off by default): includeDeliverables (editorial — deliverables using it), includeUsage (E-comm — style guides using it), includeMetadataRules (IPTC/EXIF/XMP tags — each rule resolved to the FE Metadata popup's SCHEMA + PROPERTY + VALUE columns via the per-workspace metadata-keys catalogue; REQUIRES chaining `clientId` from the same query_presets row — the call errors pointing back to query_presets if clientId is missing — an unresolved tag keeps its raw GUID with a _partial note). A slice requested for the wrong preset type is ignored with a _partial note. No job_id param (job→preset is query_ecomm_production→get_styleguide_detail) and presets have no version. Field meanings are in the response _fieldNotes."
+    },
+    {
       "name": "query_presets",
       "title": "Query Presets",
       "module": "Studio Settings",
-      "description": "List presets configured in the studio. Presets define output specifications for images and videos — file format, DPI, dimensions, color profile, cropping, etc. Each preset has variants (up to 50) that deliver multiple image outputs with different specs from a single position. Media types: Photo, Video. Configured per workspace and assigned to Style Guide positions. Use 'type' param: ecomm (default) or editorial (add-on, not all studios have it). Supports pagination, keyword search, and workspace filter.",
+      "description": "List presets configured in the studio. Presets define output specifications for images and videos — file format, DPI, dimensions, color profile, cropping, etc. Each preset has variants (up to 50) that deliver multiple image outputs with different specs from a single position. Media types: Photo, Video. Configured per workspace and assigned to Style Guide positions. Use 'type' param: ecomm (default) or editorial (add-on, not all studios have it). Supports pagination, keyword search, and workspace filter. Each row carries 'id' + 'presetType' (chain into query_preset_detail) and 'clientId' (the owning-workspace id; chain into query_preset_detail when asking for metadata rules — the tag catalogue is per-workspace). 'numberOfVariants' is E-COMM ONLY (the editorial list API does not return a variant count; editorial presets DO have variants — get the count from query_preset_detail). Editorial rows instead carry 'deliverableCount' = how many deliverables use the preset (NOT a variant count).",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -2730,8 +3258,8 @@
         }
       ],
       "exampleInput": "{ \"type\": \"ecomm\", \"workspace\": \"Acme Studio\", \"pageSize\": 10 }",
-      "exampleOutput": "{ \"total\": 12, \"items\": [ { \"name\": \"Web JPG 2000px\", \"id\": \"pr1...\", \"presetType\": \"ecomm\", \"mediaType\": \"Photo\", \"workspace\": \"Acme Studio\", \"numberOfVariants\": 3 } ] }",
-      "knownLimitations": "Presets define output specs (format, DPI, dimensions, color profile, cropping) and are assigned to Style Guide positions. Set `type`: ecomm (default) or editorial. Editorial is an add-on — if the studio lacks the Editorial Projects feature it silently returns nothing for editorial. Media types: Photo, Video. `numberOfVariants` = configured output variants (ecomm) / deliverables (editorial)."
+      "exampleOutput": "{ \"total\": 12, \"items\": [ { \"name\": \"Web JPG 2000px\", \"id\": \"pr1...\", \"presetType\": \"ecomm\", \"mediaType\": \"Photo\", \"workspace\": \"Acme Studio\", \"clientId\": \"c453...\", \"numberOfVariants\": 3 } ] }",
+      "knownLimitations": "Presets define output specs (format, DPI, dimensions, color profile, cropping) and are assigned to Style Guide positions. Set `type`: ecomm (default) or editorial. Editorial is an add-on — if the studio lacks the Editorial Projects feature it silently returns nothing for editorial. Media types: Photo, Video. `numberOfVariants` = configured output variants, E-COMM ONLY (the editorial list API returns no variant count; editorial presets DO have variants — get the count from query_preset_detail). Editorial rows instead carry `deliverableCount` = how many deliverables use the preset (NOT a variant count). Each row exposes `id` + `presetType` (chain into query_preset_detail) and `clientId` (owning-workspace id — chain into query_preset_detail's `clientId` when asking for metadata rules, since the metadata-tag catalogue is per-workspace)."
     },
     {
       "name": "query_print_configurations",
@@ -3011,7 +3539,7 @@
           "name": "groupByLocation",
           "type": "bool",
           "required": false,
-          "description": "Group by location — aggregation mode."
+          "description": "Group by location — aggregation mode. Returns two bucket sets: byLocation (top-level) and bySubLocation."
         },
         {
           "name": "groupByWorkspace",
@@ -3059,6 +3587,232 @@
       "exampleInput": "{ \"checkInStatus\": \"CheckedIn\", \"location\": \"Shelf B2\", \"pageSize\": 10 }",
       "exampleOutput": "{ \"total\": 21, \"hits\": [ { \"sampleId\": \"s1...\", \"sampleCode\": \"SMP-3001\", \"checkInStatus\": \"CheckedIn\", \"location\": \"Shelf B2\" } ] }",
       "knownLimitations": "The only tool that returns physical sample records. Check-in status values: WaitingForCheckingIn, CheckedIn, CheckedOut."
+    },
+    {
+      "name": "query_shortlist",
+      "title": "Query Short List",
+      "module": "Talent & Crew",
+      "description": "Search Talent & Crew short lists — collections used to shortlist models, photographers, and crew for external review and approval. Each short list groups candidate talent/crew options so stakeholders can give feedback: a short list ends up either 'Feedback Complete' or 'More Options Needed'. This returns SHORT-LIST records (list-first). Use to answer: which short lists contain a given talent / agency / skill, short lists by owner or workspace, short lists awaiting more options, counts and breakdowns. **Direction matters** — to instead list the TALENTS inside a named short list, use query_talent_crew(shortListName=...) (talent-first, the inverse). Do NOT confuse the two. Talent/crew filters (talentFirstName, talentLastName, talentDisplayName, pronouns, jobTitle, userType, employmentType, skill, agencyName, userPropertyFilters) match on the talent the short list CONTAINS — a short list matches when ANY contained talent satisfies the filter. Each record's `talentIds` are the GUIDs of the contained talent/crew — pass them to query_talent_crew(talentCrewIds=[...]) to drill down into full talent details. User types: License (internal team members), Resource (external freelancers/models/agencies). Employment types: Permanent, Freelance. State: Enabled / Disabled. Feedback status: Feedback Complete / More Options Needed (short lists use a feedback decision, NOT the standard collection status enum). All identifiers are names (resolved to IDs automatically). When any groupBy* param is set, returns aggregation buckets instead of a list; pageSize=0 returns count only. Requires the Short List (Resources) subscription add-on; without it the tool returns an explanatory error, not an empty list.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "shortListName",
+          "type": "string",
+          "required": false,
+          "description": "Short list name (contains, case-insensitive). Use for 'open the FW26 Models short list'."
+        },
+        {
+          "name": "ownerName",
+          "type": "string",
+          "required": false,
+          "description": "Short list owner's name (or GUID). Use for 'short lists owned by the Casting team', 'my short lists'."
+        },
+        {
+          "name": "workspaceName",
+          "type": "string",
+          "required": false,
+          "description": "Workspace / client name (or GUID) that owns the short list. Use for 'short lists in workspace Nike'."
+        },
+        {
+          "name": "state",
+          "type": "string",
+          "required": false,
+          "description": "Short list state: 'Enabled' or 'Disabled'."
+        },
+        {
+          "name": "feedbackStatus",
+          "type": "string",
+          "required": false,
+          "description": "Feedback status of the short list: 'Feedback Complete' or 'More Options Needed'. Short lists use this feedback decision instead of the standard collection status. Use for 'short lists awaiting more options'."
+        },
+        {
+          "name": "talentFirstName",
+          "type": "string",
+          "required": false,
+          "description": "First name of a contained talent/crew member (exact match; comma-separated = OR). Mirrors the FE 'First name' filter. Use for 'short lists containing a talent whose first name is Maria'."
+        },
+        {
+          "name": "talentLastName",
+          "type": "string",
+          "required": false,
+          "description": "Last name of a contained talent/crew member (exact match; comma-separated = OR). Mirrors the FE 'Last name' filter."
+        },
+        {
+          "name": "talentDisplayName",
+          "type": "string",
+          "required": false,
+          "description": "Display name of a contained talent/crew member (exact match; comma-separated = OR). Mirrors the FE 'Display Name' filter (under User Properties). Use for 'short lists containing Maria Silva'."
+        },
+        {
+          "name": "pronouns",
+          "type": "string",
+          "required": false,
+          "description": "Pronouns of a contained talent (exact). E.g. 'she/her'."
+        },
+        {
+          "name": "jobTitle",
+          "type": "string",
+          "required": false,
+          "description": "Job title of a contained talent (exact). E.g. 'Hair Stylist'."
+        },
+        {
+          "name": "userType",
+          "type": "string",
+          "required": false,
+          "description": "Whether the short list contains License users (internal team) or Resource users (external freelancers/models). Values: 'License' or 'Resource'."
+        },
+        {
+          "name": "employmentType",
+          "type": "string",
+          "required": false,
+          "description": "Employment type of a contained talent: 'Permanent' or 'Freelance'."
+        },
+        {
+          "name": "skill",
+          "type": "string",
+          "required": false,
+          "description": "Skill of a contained talent (e.g. Photographer, Model, Stylist). Comma-separated = OR. Resolved to skill IDs."
+        },
+        {
+          "name": "agencyName",
+          "type": "string",
+          "required": false,
+          "description": "Agency name of a contained talent (exact). Use for 'short lists with Elite Models talent'."
+        },
+        {
+          "name": "userPropertyFilters",
+          "type": "string",
+          "required": false,
+          "description": "JSON array of custom property filters. Each item: {\"name\":\"PropertyName\",\"value\":\"exact value\"} for exact match, or {\"name\":\"PropertyName\",\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"} for a date range. The sub-field (.number / .keylower / epoch-ms date) is chosen automatically from the property value type. An optional `operator` (case-insensitive — notContains, NOTCONTAINS, notcontains all work; mirrors the UI) refines the match. The valid operators depend on the property's value type: NUMBER: eq, ne, gt, gte, lt, lte, between, notBetween, isEmpty, isNotEmpty — single-bound (eq/ne/gt/gte/lt/lte) read `value` (e.g. {\"name\":\"Qty\",\"operator\":\"gt\",\"value\":\"1\"}); between/notBetween read `from`+`to`; when omitted: value⇒eq, from+to⇒between, from⇒gte, to⇒lte. Always pass plain numeric strings, never dates. TEXT and LIST-of-options: eq, ne, contains, notContains, isEmpty, isNotEmpty — eq/ne/contains/notContains read `value` (e.g. {\"name\":\"Notes\",\"operator\":\"contains\",\"value\":\"urgent\"}); when omitted, value⇒eq. For LIST-of-options, `value` must match a defined option label. DATE: use `from`/`to` for the range (convert relative ranges like 'last 30 days' to absolute dates yourself); operators are not applied to dates. isEmpty/isNotEmpty need no value (filter on whether the property is set). Pick the form that matches the property's value type — a Number filter with date values, or an operator that doesn't fit the type, is silently dropped and returns wrong results. Example: [{\"name\":\"Season\",\"value\":\"SS26\"},{\"name\":\"item_count\",\"operator\":\"between\",\"from\":\"1\",\"to\":\"10\"},{\"name\":\"notes\",\"operator\":\"contains\",\"value\":\"rush\"}] (Talent/crew user custom properties — matched against a contained talent. Resolved via the talent-crew custom-property cache.)"
+        },
+        {
+          "name": "createdFrom",
+          "type": "string",
+          "required": false,
+          "description": "Created from (ISO date, inclusive). Combine with createdTo for a range."
+        },
+        {
+          "name": "createdTo",
+          "type": "string",
+          "required": false,
+          "description": "Created to (ISO date, exclusive)."
+        },
+        {
+          "name": "invitationSentFrom",
+          "type": "string",
+          "required": false,
+          "description": "Invitation sent from (ISO date, inclusive) — filters on when the short list was SHARED / its invitations were SENT to reviewers, NOT when it was created. Use for 'short lists sent/shared before/after date X' or 'invited more than a week ago' (pass invitationSentTo = today-minus-7-days). Combine with feedbackStatus for 'sent >1 week ago and still awaiting more options'. Short lists with no invitation sent yet are excluded."
+        },
+        {
+          "name": "invitationSentTo",
+          "type": "string",
+          "required": false,
+          "description": "Invitation sent to (ISO date, exclusive). See invitationSentFrom."
+        },
+        {
+          "name": "shortListIds",
+          "type": "JsonElement?",
+          "required": false,
+          "description": "Short list GUIDs (JSON array) to look up specific records directly, e.g. from a prior query_shortlist result."
+        },
+        {
+          "name": "groupByAgency",
+          "type": "bool",
+          "required": false,
+          "description": "Group by contained-talent agency — aggregation mode."
+        },
+        {
+          "name": "groupByOwner",
+          "type": "bool",
+          "required": false,
+          "description": "Group by short list owner — aggregation mode."
+        },
+        {
+          "name": "groupByWorkspace",
+          "type": "bool",
+          "required": false,
+          "description": "Group by workspace/client — aggregation mode."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max results (default 50). pageSize=0 returns count only. Ignored in aggregation mode."
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "required": false,
+          "description": "Page (0-based). Ignored in aggregation mode."
+        }
+      ],
+      "exampleInput": "{ \"skill\": \"Model\", \"feedbackStatus\": \"More Options Needed\", \"pageSize\": 10 }",
+      "exampleOutput": "{ \"total\": 4, \"returned\": 4, \"shortLists\": [ { \"id\": \"sl-guid-1\", \"shortListName\": \"FW26 Models\", \"description\": \"...\", \"owner\": \"Anna PM\", \"workspaces\": [\"Acme Corp\"], \"state\": \"Enabled\", \"feedbackStatus\": [\"More Options Needed\"], \"talentCount\": 12, \"hasComment\": true, \"talentNames\": [\"Maria Silva\", \"Jon Doe\"], \"pronouns\": [\"she/her\"], \"jobTitles\": [\"Model\"], \"skills\": [\"Model\", \"Photographer\"], \"agencies\": [\"Elite Models\"], \"talentCustomProperties\": [ { \"name\": \"Nickname\", \"value\": \"Mari\" } ], \"invitationSentAt\": \"2026-06-10T08:00:00Z\", \"talentIds\": [\"t-1\", \"t-2\"] } ] }",
+      "knownLimitations": "Returns SHORT-LIST records (list-first). This is the INVERSE of query_talent_crew(shortListName=...), which lists the TALENTS inside a named short list — do not confuse them. Talent/crew filters (talentFirstName, talentLastName, talentDisplayName, pronouns, jobTitle, userType, employmentType, skill, agencyName, userPropertyFilters) match on the talent a short list CONTAINS (denormalized snapshot) — a short list matches when ANY contained talent satisfies the filter. Each record's `talentIds` are the contained talent/crew GUIDs — chain them into query_talent_crew(talentCrewIds=[...]) to drill down into full talent details. feedbackStatus is Feedback Complete / More Options Needed (short lists use this feedback decision, NOT the standard collection status enum); a short list still mid-flow has no feedback decision yet so feedbackStatus is null. userType is License / Resource. When any groupBy* is set it returns aggregation buckets (byAgency/byOwner/byWorkspace) instead of a list; pageSize=0 returns count only. Requires the Short List add-on. No per-record deep link (short lists open in a modal — list-only, detail deferred). Contained-talent snapshot shape VERIFIED against a live functionType=5 UAT record (flat object; custom-property values under collectionMetadataShortList.customProperties)."
+    },
+    {
+      "name": "query_shortlist_detail",
+      "title": "Query Short List Detail",
+      "module": "Talent & Crew",
+      "description": "Open ONE Talent & Crew short list and return the talent options inside it, each with its reviewer FEEDBACK (like/dislike counts, comment count) and full inline profile (job title, skills, agencies, rates, contact, socials, custom properties). Use this AFTER query_shortlist to answer 'who is in short list X', 'which talent got the most likes / is the front-runner', 'how many options are awaiting more feedback', 'show the models' agencies/rates in this short list'. **ONLY for Talent & Crew short lists** (functionType 5) — for a Review / Photo Review / Selection / Gallery collection use query_collection_detail instead; a non-short-list id returns an error. **shortListCollectionId is required and must be a GUID.** This tool does NOT resolve names: if the user gives a short-list NAME, first call query_shortlist(shortListName=…) and pass the returned `id` here. Talent detail is returned INLINE (no need to chain query_talent_crew for basic profile); each talent's `talentId` is the handle to chain into query_talent_crew(talentCrewIds=[…]) for the deeper profile (schedule, all collections) when the TalentCrew add-on is held. **Flag discipline — set the include* flags ONLY when the question needs that slice** (each gates an extra REST call; the base talent+feedback-count call always runs): set `includeFeedbackVoters=true` only when asked WHO voted ('who approved Maria?', 'which reviewers liked this model'); set `includeComments=true` only when asked WHAT reviewers SAID (the actual comment text) — returns per-talent comments under talents[].comments[] AND short-list-wide general comments under collectionComments[]; set `includeReviewers=true` only when asked about the invited reviewers / who's been invited / who has seen it; set `includeSettings=true` only when asked about the sharing / feedback CONFIGURATION (feedback & decision visibility, download, share-via-email, domain allow-list); set `includeTalentAssets=true` only when asked WHICH assets/photos a talent is ASSIGNED in the short list ('what assets does Maria have', 'which photos is each model assigned') — returns talents[].assets[] (assetName/assetId/assetStatus); otherwise the base call returns feedback + assetCount only. Asset/avatar images are NOT resolved (assets[] carries ids + names, not URLs) — chain the returned assetIds into get_asset_preview to view the photos, or open the short list in Gamma. Read the `_fieldNotes` in the response for what each field means.",
+      "readOnly": true,
+      "idempotent": true,
+      "destructive": false,
+      "parameters": [
+        {
+          "name": "shortListCollectionId",
+          "type": "string",
+          "required": true,
+          "description": "REQUIRED. The short list's collection GUID. Chain from a query_shortlist result `id`. If the user gives a NAME, call query_shortlist(shortListName=…) first and pass the id here — this tool does not resolve names."
+        },
+        {
+          "name": "includeFeedbackVoters",
+          "type": "bool",
+          "required": false,
+          "description": "Add WHO liked/disliked each talent (likeVoters/dislikeVoters names) per talent's feedback block. Set ONLY when asked who voted."
+        },
+        {
+          "name": "includeComments",
+          "type": "bool",
+          "required": false,
+          "description": "Add the actual reviewer comment TEXT per talent (talents[].comments[]) + short-list general comments (collectionComments[]). Set ONLY when asked what reviewers SAID — otherwise the base call returns feedback.commentCount only."
+        },
+        {
+          "name": "includeReviewers",
+          "type": "bool",
+          "required": false,
+          "description": "Add the reviewers[] block (invited external reviewers: name, role, seen, enabled). Set ONLY when asked about reviewers / who's been invited / who's seen it."
+        },
+        {
+          "name": "includeSettings",
+          "type": "bool",
+          "required": false,
+          "description": "Add the settings block (feedback/decision visibility, download, share-via-email, domain allow-list). Set ONLY when asked about the sharing/feedback configuration."
+        },
+        {
+          "name": "includeTalentAssets",
+          "type": "bool",
+          "required": false,
+          "description": "Add the list of assets ASSIGNED to each talent (talents[].assets[] = assetName/assetId/assetStatus). Set ONLY when asked WHICH photos/assets a talent has in the short list ('what assets is Maria assigned', 'which photos does each model have') — otherwise the base call returns assetCount only. Image URLs are NOT included; to view the photos, chain the returned assetIds into get_asset_preview."
+        },
+        {
+          "name": "talentPageSize",
+          "type": "int",
+          "required": false,
+          "description": "Max talent returned (default 100; the short list is loaded in full behind the scenes and capped to this)."
+        },
+        {
+          "name": "talentPage",
+          "type": "int",
+          "required": false,
+          "description": "Talent page (0-based)."
+        }
+      ],
+      "exampleInput": "{ \"shortListCollectionId\": \"sl-guid-1\", \"includeFeedbackVoters\": true }",
+      "exampleOutput": "{ \"id\": \"sl-guid-1\", \"shortListName\": \"FW26 Models\", \"owner\": \"Anna PM\", \"state\": \"Enabled\", \"status\": \"Review In Progress\", \"feedbackStatus\": [\"More Options Needed\"], \"talentCount\": 12, \"returnedTalent\": 12, \"ratesAccess\": \"granted\", \"talents\": [ { \"talentId\": \"t-1\", \"collectionItemId\": \"ci-1\", \"isHidden\": false, \"assetCount\": 4, \"displayName\": \"Maria Silva\", \"jobTitle\": \"Model\", \"userType\": \"Resource\", \"skills\": [\"Model\"], \"agencies\": [\"Elite Models\"], \"feedback\": { \"likeCount\": 3, \"dislikeCount\": 1, \"commentCount\": 2, \"currentUserFeedback\": \"None\", \"likeVoters\": [\"Anna PM\"], \"dislikeVoters\": [\"Reviewer X\"] } } ], \"_partial\": [] }",
+      "knownLimitations": "Opens ONE Talent & Crew short list and returns its contained talent + each talent's reviewer FEEDBACK (like/dislike counts, comment count). Only for short lists (functionType 5) — a review/selection/gallery id returns an error pointing at query_collection_detail. shortListCollectionId is REQUIRED and must be a GUID; this tool does NOT resolve names — call query_shortlist(shortListName=...) first and chain the returned id. The talent profile (jobTitle/skills/agencies/rates/contact/socials/customProps) comes from TWO base calls merged by itemObjectId (items/searchv2 is slim — name+assetCount+feedback only); the profile call is best-effort (a failure keeps name+feedback, flagged in _partial). NOT a query_talent_crew chain — chain talentId → query_talent_crew for the deeper profile. `currentUserFeedback` is the querying user's OWN vote — almost always None for a read; the signal is likeCount/dislikeCount. Rates are gated by the Rates screen (ratesAccess granted|denied). Opt-in flags (each default off, set only when the question needs the slice): includeFeedbackVoters (WHO liked/disliked, names), includeComments (reviewer comment TEXT per talent + general collectionComments), includeTalentAssets (assets ASSIGNED to each talent = assetName/assetId/assetStatus; images NOT resolved — chain get_asset_preview), includeReviewers (invited reviewers: name/role/hasSeen/isEnabled — no per-reviewer decision), includeSettings (feedback/decision visibility, download, share config). Read-only (seen=false). No deep link (short lists open in a modal). Requires the Short List add-on."
     },
     {
       "name": "query_styleguide",
@@ -3126,7 +3880,7 @@
       "name": "query_talent_crew",
       "title": "Query Talent & Crew",
       "module": "Talent & Crew",
-      "description": "Search talent and resource users — both license users (internal team members) and resource users (freelancers, models, agencies). Use this to answer: who is on the team, who has a given skill, what agency a model belongs to, counts of talent by skill / employment type / status. User types: License (internal), Resource (external). Employment types: Permanent, Freelance. States: Enabled, Disabled, NotVerify, Deleted. Common skills: Photographer, Stylist, Model, Art Director, Hair & Makeup, Retoucher, Videographer, Producer, Assistant, Project Manager, Deliverable Owner, Digital Processing. Filter by name, job title, user type, employment type, skill, state, agency, short list, contact info, city, created date range. Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each record's `customProperties` lists only properties that have a value SET. A property name being absent from a record does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for talent/crew, call query_property(entityType='talent_crew') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_talent_crew result alone. Pass `talentCrewIds` (JSON array of talent crew IDs from query_talent_crew_schedule or other tools) to look up specific records directly instead of re-querying by skill. Use human-readable names for all filters (resolved to IDs automatically). Each record includes a `deepLinkUrl` to the talent detail page in the web app. **CRITICAL — UI rendering ownership**: an inline widget handles record-list and aggregation responses, so your text must NOT duplicate them. Per response shape:   • `hits` with ≥1 talent → widget renders compact-card / table. Text = ONE brief sentence (e.g. 'Found 6 talents in the Christmas 24 short list.').   • Aggregation (`byAgency` / `bySkill` / `byStatus` / `byUserType` / `byEmploymentType`) → widget renders bar-chart sections. Text = ONE brief sentence summarising top buckets (e.g. '15 agencies, top 3: ACME (12), aaa (9), 234234 (8).').   • `hits` empty + `total > 0` (count-only, pageSize=0) → widget HIDES (0 height). Text MUST state the count plainly (e.g. 'Có **123** photographers đang active.').   • `hits` empty + `total = 0` → widget HIDES. Text = brief negative reply (e.g. 'Không có crew member nào match.'). Do NOT write a markdown table, list, gallery, or any field-by-field summary. Do NOT embed `![image](avatarUrl)` or `[Show Image](url)`. Do NOT include deep-link URLs in text — the widget already renders the name as a clickable anchor. Avatars are shown by default in compact-card and table views. Pass `includeAvatar=false` only when the caller explicitly wants to skip avatar resolution (e.g. perf-sensitive bulk queries). Still no markdown images in your text — the widget owns the visual. **\"Talent\" terminology** — `skill=\"Talent\"` is a PSEUDO-SKILL meaning Models + AI Models only (server-side OR-match). ✅ TRIGGER on standalone words: \"talent\", \"talents\", \"a talent\", \"the talents\", \"find a talent\", \"show me talents\", \"model agency\", or context implying Models specifically. Examples: 'Find a talent named Jane' → { name: 'Jane', skill: 'Talent' }; 'How many talents do we have?' → { skill: 'Talent', pageSize: 0 }. ❌ DO NOT TRIGGER on: 'Talent & Crew' / 'Talent and Crew' / 'talents and crew' — these are the FULL ENTITY NAME (License + Resource = whole pool). They contain the word \"Talent\" but mean the OPPOSITE — search broad pool, omit `skill`. Examples: 'Find Talent & Crew named Han' → { name: 'Han' } NO skill; 'How many Talent & Crew based in London' → { city: 'London' } NO skill. ❌ DO NOT TRIGGER for explicit roles (Photographers, Stylists, Producers, Hair & Makeup, Videographers, internal team) — pass the explicit skill name or omit the filter. When groupBy params are set, returns counts / aggregations instead of a list. Each hit includes a `rates` array (rateId, name, amount, currency, duration, rateType, agencyFee, payrollFee, isDefault, description) **only if the caller has the `Rates` screen permission**. Top-level `ratesAccess` is `granted` when rates are emitted and `denied` when they are gated out — when `denied`, do not assume the talent has no rates configured, the field is simply hidden by permission. **Rates are sensitive financial data — the widget HIDES them by default.** Even when `ratesAccess=granted` and the `rates` array is populated, the widget does NOT render the rates block in any view (compact card, table drill-down) unless `columns` explicitly includes 'rates'. The schedule tool widget never renders rates. This is a data-minimization safeguard against accidental leaks during screen-shares and casual lookups. To surface rates in the widget, set `columns: ['rates']` (or include 'rates' alongside other columns). You can still reason about rates in your text reply — but only when the user explicitly asked. **STRICT RULE for the `columns` parameter** — you MUST set it whenever the user names specific fields or uses narrowing words ('just', 'only', 'only show', 'just show', 'chỉ', 'chỉ hiển thị', 'khÃ´ng cần'). Do NOT fall back to defaults in those cases. Mapping examples:  • 'List 10 photographers and **just** show their skills' → call with arguments: { skill: 'Photographer', pageSize: 10, columns: ['skills'] }   • '5 models with their **rate info only**' → { skill: 'Model', pageSize: 5, columns: ['rates'] }   • '**Emails and phones** of all stylists' → { skill: 'Stylist', columns: ['email','phone'] }   • 'Which agency does each model belong to' → { skill: 'Model', columns: ['agencies'] }   • 'Talent based in London' → { city: 'London' }   • 'Talent in the Fashion Crew short list' → { shortListName: 'Fashion Crew' }   • 'Talent who are both Photographer AND Videographer' → { skill: 'Photographer|Videographer' }   • 'NotVerify accounts older than 30 days' → { state: 'NotVerify', createdTo: '<today-30d ISO>' }   • 'How many new talents joined in the last 3 months' → { createdFrom: '<today-3m ISO>', pageSize: 0 } (read total)   • 'List talents grouped by skill' (aggregation) → omit columns; the param has no effect on aggregation mode.   • Generic 'list/show me photographers' (no narrowing word) → omit columns; defaults to a broad set. Photo and Name are always rendered as anchors regardless of `columns`. Available column ids: jobTitle, type, employment, status, skills, agencies, email, phone, location, createdAt, pronouns, userCode, rates.",
+      "description": "Search talent and resource users — both license users (internal team members) and resource users (freelancers, models, agencies). Use this to answer: who is on the team, who has a given skill, what agency a model belongs to, counts of talent by skill / employment type / status. User types: License (internal), Resource (external). Employment types: Permanent, Freelance. States: Enabled, Disabled, NotVerify, Deleted. Common skills: Photographer, Stylist, Model, Art Director, Hair & Makeup, Retoucher, Videographer, Producer, Assistant, Project Manager, Deliverable Owner, Digital Processing. Filter by name, job title, user type, employment type, skill, state, agency, short list, contact info, city, created date range. Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each record's `customProperties` lists only properties that have a value SET. A property name being absent from a record does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for talent/crew, call query_property(entityType='talent_crew') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_talent_crew result alone. Pass `talentCrewIds` (JSON array of talent crew IDs from query_talent_crew_schedule or other tools) to look up specific records directly instead of re-querying by skill. Use human-readable names for all filters (resolved to IDs automatically). Each record includes a `deepLinkUrl` to the talent detail page in the web app. Each record also carries a `collections` array — the review collections and short lists the talent belongs to ({ collectionId, collectionName, status, round, hasComment }). To inspect those collections, chain the `collectionId`s into query_collection(collectionIds=[...]). **CRITICAL — UI rendering ownership**: an inline widget handles record-list and aggregation responses, so your text must NOT duplicate them. Per response shape:   • `hits` with ≥1 talent → widget renders compact-card / table. Text = ONE brief sentence (e.g. 'Found 6 talents in the Christmas 24 short list.').   • Aggregation (`byAgency` / `bySkill` / `byStatus` / `byUserType` / `byEmploymentType`) → widget renders bar-chart sections. Text = ONE brief sentence summarising top buckets (e.g. '15 agencies, top 3: ACME (12), aaa (9), 234234 (8).').   • `hits` empty + `total > 0` (count-only, pageSize=0) → widget HIDES (0 height). Text MUST state the count plainly (e.g. 'Có **123** photographers đang active.').   • `hits` empty + `total = 0` → widget HIDES. Text = brief negative reply (e.g. 'Không có crew member nào match.'). Do NOT write a markdown table, list, gallery, or any field-by-field summary. Do NOT embed `![image](avatarUrl)` or `[Show Image](url)`. Do NOT include deep-link URLs in text — the widget already renders the name as a clickable anchor. Avatars are shown by default in compact-card and table views. Pass `includeAvatar=false` only when the caller explicitly wants to skip avatar resolution (e.g. perf-sensitive bulk queries). Still no markdown images in your text — the widget owns the visual. **\"Talent\" terminology** — `skill=\"Talent\"` is a PSEUDO-SKILL meaning Models + AI Models only (server-side OR-match). ✅ TRIGGER on standalone words: \"talent\", \"talents\", \"a talent\", \"the talents\", \"find a talent\", \"show me talents\", \"model agency\", or context implying Models specifically. Examples: 'Find a talent named Jane' → { name: 'Jane', skill: 'Talent' }; 'How many talents do we have?' → { skill: 'Talent', pageSize: 0 }. ❌ DO NOT TRIGGER on: 'Talent & Crew' / 'Talent and Crew' / 'talents and crew' — these are the FULL ENTITY NAME (License + Resource = whole pool). They contain the word \"Talent\" but mean the OPPOSITE — search broad pool, omit `skill`. Examples: 'Find Talent & Crew named Han' → { name: 'Han' } NO skill; 'How many Talent & Crew based in London' → { city: 'London' } NO skill. ❌ DO NOT TRIGGER for explicit roles (Photographers, Stylists, Producers, Hair & Makeup, Videographers, internal team) — pass the explicit skill name or omit the filter. When groupBy params are set, returns counts / aggregations instead of a list. Each hit includes a `rates` array (rateId, name, amount, currency, duration, rateType, agencyFee, payrollFee, isDefault, description) **only if the caller has the `Rates` screen permission**. Top-level `ratesAccess` is `granted` when rates are emitted and `denied` when they are gated out — when `denied`, do not assume the talent has no rates configured, the field is simply hidden by permission. **Rates are sensitive financial data — the widget HIDES them by default.** Even when `ratesAccess=granted` and the `rates` array is populated, the widget does NOT render the rates block in any view (compact card, table drill-down) unless `columns` explicitly includes 'rates'. The schedule tool widget never renders rates. This is a data-minimization safeguard against accidental leaks during screen-shares and casual lookups. To surface rates in the widget, set `columns: ['rates']` (or include 'rates' alongside other columns). You can still reason about rates in your text reply — but only when the user explicitly asked. **STRICT RULE for the `columns` parameter** — you MUST set it whenever the user names specific fields or uses narrowing words ('just', 'only', 'only show', 'just show', 'chỉ', 'chỉ hiển thị', 'khÃ´ng cần'). Do NOT fall back to defaults in those cases. Mapping examples:  • 'List 10 photographers and **just** show their skills' → call with arguments: { skill: 'Photographer', pageSize: 10, columns: ['skills'] }   • '5 models with their **rate info only**' → { skill: 'Model', pageSize: 5, columns: ['rates'] }   • '**Emails and phones** of all stylists' → { skill: 'Stylist', columns: ['email','phone'] }   • 'Which agency does each model belong to' → { skill: 'Model', columns: ['agencies'] }   • 'Talent based in London' → { city: 'London' }   • 'Talent in the Fashion Crew short list' → { shortListName: 'Fashion Crew' }   • 'Talent who are both Photographer AND Videographer' → { skill: 'Photographer|Videographer' }   • 'NotVerify accounts older than 30 days' → { state: 'NotVerify', createdTo: '<today-30d ISO>' }   • 'How many new talents joined in the last 3 months' → { createdFrom: '<today-3m ISO>', pageSize: 0 } (read total)   • 'List talents grouped by skill' (aggregation) → omit columns; the param has no effect on aggregation mode.   • Generic 'list/show me photographers' (no narrowing word) → omit columns; defaults to a broad set. Photo and Name are always rendered as anchors regardless of `columns`. Available column ids: jobTitle, type, employment, status, skills, agencies, email, phone, location, createdAt, pronouns, userCode, rates.",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -3454,7 +4208,7 @@
       "name": "query_task",
       "title": "Query Task",
       "module": "Workflow",
-      "description": "Search tasks (individual workflow steps). Status: New, Todo, InProgress, Rejected, QCRejected, Failed, Bypassed, Done. Use names for step, production type, assignee, vendor, workspace. Can filter by product/job/workspace and includes product, job, assignee info in results. When groupBy params set, returns counts/aggregations instead of list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true.",
+      "description": "Search tasks (individual workflow steps). Status: New, Todo, InProgress, Rejected, QCRejected, Failed, Bypassed, Done. Use names for step, production type, assignee, vendor, workspace. Can filter by product/job/workspace and includes product, job, assignee info in results. When groupBy params set, returns counts/aggregations instead of list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true. Copywriting-step tasks have isCopywritingStep:true; to read the copy call get_text_asset_content(taskIds) with the taskId(s) from the hit(s).",
       "readOnly": true,
       "idempotent": true,
       "destructive": false,
@@ -3611,8 +4365,8 @@
         }
       ],
       "exampleInput": "{ \"status\": \"InProgress\", \"step\": \"InternalPostProduction\", \"assignee\": \"John Smith\", \"pageSize\": 10 }",
-      "exampleOutput": "{ \"total\": 11, \"hits\": [ { \"taskId\": \"wk1...\", \"step\": \"InternalPostProduction\", \"status\": \"InProgress\", \"assignee\": \"John Smith\" } ] }",
-      "knownLimitations": "One workflow step per row. Status values: New, Todo, InProgress, Rejected, QCRejected, Failed, Bypassed, Done."
+      "exampleOutput": "{ \"total\": 11, \"tasks\": [ { \"taskId\": \"wk1...\", \"isCopywritingStep\": false, \"step\": \"InternalPostProduction\", \"status\": \"InProgress\", \"assignee\": \"John Smith\" } ] }",
+      "knownLimitations": "One workflow step per row. Status values: New, Todo, InProgress, Rejected, QCRejected, Failed, Bypassed, Done. Copywriting-step tasks (stepId 5/6) have isCopywritingStep:true — read the copy with get_text_asset_content(taskIds) (a step-based hint; the detail tool enforces the actual Text guard)."
     },
     {
       "name": "query_team_on_set_skills",
