@@ -76,12 +76,12 @@ The Creative Force permission must be set in addition, in its own section of the
 | Query Sample | `query_sample` | Samples → Samples (View) |
 | Query Planning | `query_planning` | Planning → Calendar, Set, Talent &amp; Crew (View) |
 | Query Talent &amp; Resource | `query_talent_crew`, `get_talent_crew_preview`, `query_talent_crew_schedule` | Planning → Talent &amp; Crew (View); Resourcing for the schedule tool |
-| Query Collection | `query_collection`, `query_collection_detail` | *(confirm at release)* |
-| Query Short List | `query_shortlist`, `query_shortlist_detail` | *(confirm at release)* |
+| Query Collection | `query_collection`, `query_collection_detail`, `query_shortlist`, `query_shortlist_detail` | Collaboration → Gallery Collections, Review Collections, Selection Collections, Short Lists (View) |
 | Query Event Log | `query_event_log` | Studio Settings → Event Log (View) |
 | Query Style Guide | `query_styleguide`, `get_styleguide_detail` | Studio Settings → Style Guides (View) |
 | Query Workflow | `query_workflow`, `get_workflow_detail` | Studio Settings → Workflow (View) |
-| Query Studio Setting | `query_containers`, `query_data_sources`, `query_locations`, `query_post_production_vendors`, `query_presets`, `query_preset_detail`, `query_print_configurations`, `query_product_vendors`, `query_production_types`, `query_team_on_set_skills` | Studio Settings → the matching sub-setting (e.g. Production Types) (View) |
+| Query Presets | `query_presets`, `query_preset_detail` | Studio Settings → Presets Settings (View) |
+| Query Studio Setting | `query_containers`, `query_data_sources`, `query_locations`, `query_post_production_vendors`, `query_print_configurations`, `query_product_vendors`, `query_production_types`, `query_team_on_set_skills` | Studio Settings → the matching sub-setting (e.g. Production Types) (View) |
 | Query Workspace | `query_workspace` | Studio Settings → Clients (View) |
 
 So a role using `query_asset`, for example, needs **both** *Query Asset* (MCP SERVER) **and**
@@ -120,6 +120,14 @@ Neither is set on the MCP SERVER tab:
   the user's role: the Delivery tab needs the **Advanced Style Guides** plan feature (or pre-existing
   saved routing), and the Localization tab needs the **Localization** plan feature. A tab the user
   cannot see on the Style Guide screen is not surfaced through the tool either.
+- **Subscription add-ons.** Some tools read Creative Force features that are sold as add-ons. Each
+  collection type (Photo Review, Post Review, Selection, Gallery) requires its own add-on;
+  `query_shortlist` requires the **Short List (Resources)** add-on; editorial presets under
+  `query_preset_detail` require **Editorial Projects**. Querying something the studio has not
+  purchased returns an explanatory error rather than an empty list, so an assistant can tell "you
+  don't have this" apart from "there is nothing here". This is about the underlying Creative Force
+  features — **the MCP server itself needs no add-on**, and access to it is decided solely by the
+  role permissions above.
 
 ## Always available
 

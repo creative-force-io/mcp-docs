@@ -39,8 +39,8 @@ The server exposes **39 tools** across the Creative Force data model:
 | Planning | Search planning sessions by team member or time slot — **and create, change or delete them** |
 | Talent &amp; Crew | Talent and crew records, avatars, scheduling and availability |
 | Editorial | Editorial projects, productions, and deliverables |
-| Collections | Review and approval collections — decisions, ratings, comments, reviewers and sharing |
-| Short Lists | Casting short lists — the talent on each list, votes, comments and feedback |
+| Collections | External review collections — Photo Review, Post Review, Selection and Gallery: decisions, ratings, comments, reviewers and sharing |
+| Short Lists | Casting short lists — the talent on each list, votes by name, comments and feedback status |
 | Event Log | Find specific events and who performed them, for products, samples and more |
 | Style Guides | Style guide configuration — shot positions, asset naming, colour rules |
 | Workflows | Workflow configuration — steps, settings, rejection transitions |
