@@ -26,7 +26,7 @@ Tools are organised into two groups:
 
 | Group | What's in it |
 |-------|--------------|
-| **Read-Only** | Tools that read data without making any changes — 35 of the 39 tools. |
+| **Read-Only** | Tools that read data without making any changes — 38 of the 42 tools. |
 | **Write/Delete** | Tools that change data — the three planning-session tools, gated by the single **Write Planning** permission. |
 
 Each group has one control with four options:
@@ -40,6 +40,9 @@ Each group has one control with four options:
 
 Only **Allow All (incl. new tools)** covers future tools — by design, so that adding a tool never
 silently grants it everywhere. The setting is per role; the server applies it on each request.
+
+Recently added permissions carry a blue **New** badge on the tab — currently *Query Collection* and
+*Query Presets*.
 
 Individual permissions have two settings, **None** and **Access**:
 
@@ -65,23 +68,23 @@ The Creative Force permission must be set in addition, in its own section of the
 
 | MCP SERVER permission | Tools it covers | Creative Force permission (section → permission) |
 |-----------------------|-----------------|--------------------------------------------------|
-| Query Asset | `query_asset`, `get_asset_preview` | Assets → Assets Hub (View) |
+| Query Asset | `query_asset`, `get_asset_preview`, `get_text_asset_content` | Assets → Assets Hub (View) |
 | Query E-Comm Job | `query_ecomm_job` | E-COMM → Jobs (View) |
 | Query E-Comm Production | `query_ecomm_production` | E-COMM → Production (View) |
 | Query E-Comm Product Request | `query_ecomm_product_request` | E-COMM → Products (View) |
 | Query Editorial Production | `query_editorial_production` | Editorial → Production (View) |
-| Query Editorial Project | `query_editorial_project` | Editorial → Editorial projects (View) |
-| Query Editorial Deliverable | `query_editorial_deliverable` | Editorial → Editorial deliverables (View) |
+| Query Editorial Project | `query_editorial_project`, `query_editorial_detail` | Editorial → Editorial projects (View) |
+| Query Editorial Deliverable | `query_editorial_deliverable`, `query_deliverable_detail` | Editorial → Editorial deliverables (View) |
 | Query Task | `query_task` | Task Management → Photography Management, Internal Post Management, Digital Processing Management (View) |
 | Query Sample | `query_sample` | Samples → Samples (View) |
 | Query Planning | `query_planning` | Planning → Calendar, Set, Talent &amp; Crew (View) |
 | Query Talent &amp; Resource | `query_talent_crew`, `get_talent_crew_preview`, `query_talent_crew_schedule` | Planning → Talent &amp; Crew (View); Resourcing for the schedule tool |
-| Query Collection | `query_collection`, `query_collection_detail` | *(confirm at release)* |
-| Query Short List | `query_shortlist`, `query_shortlist_detail` | *(confirm at release)* |
+| Query Collection | `query_collection`, `query_collection_detail`, `query_shortlist`, `query_shortlist_detail` | Collaboration → Gallery Collections, Review Collections, Selection Collections, Short Lists (View) |
 | Query Event Log | `query_event_log` | Studio Settings → Event Log (View) |
 | Query Style Guide | `query_styleguide`, `get_styleguide_detail` | Studio Settings → Style Guides (View) |
 | Query Workflow | `query_workflow`, `get_workflow_detail` | Studio Settings → Workflow (View) |
-| Query Studio Setting | `query_containers`, `query_data_sources`, `query_locations`, `query_post_production_vendors`, `query_presets`, `query_preset_detail`, `query_print_configurations`, `query_product_vendors`, `query_production_types`, `query_team_on_set_skills` | Studio Settings → the matching sub-setting (e.g. Production Types) (View) |
+| Query Presets | `query_presets`, `query_preset_detail` | Studio Settings → Presets Settings (View) |
+| Query Studio Setting | `query_containers`, `query_data_sources`, `query_locations`, `query_post_production_vendors`, `query_print_configurations`, `query_product_vendors`, `query_production_types`, `query_team_on_set_skills` | Studio Settings → the matching sub-setting (e.g. Production Types) (View) |
 | Query Workspace | `query_workspace` | Studio Settings → Clients (View) |
 
 So a role using `query_asset`, for example, needs **both** *Query Asset* (MCP SERVER) **and**
@@ -120,6 +123,15 @@ Neither is set on the MCP SERVER tab:
   the user's role: the Delivery tab needs the **Advanced Style Guides** plan feature (or pre-existing
   saved routing), and the Localization tab needs the **Localization** plan feature. A tab the user
   cannot see on the Style Guide screen is not surfaced through the tool either.
+- **Subscription add-ons.** Some tools read Creative Force features that are sold as add-ons. A tool
+  that spans several add-ons appears when the studio holds **any one** of them, not all: the
+  collection tools need Review **or** Selection **or** Gallery Collections. `query_shortlist` and
+  `query_shortlist_detail` need **Short List (Resources)**; `get_text_asset_content` needs
+  **Copywriting**; the editorial detail tools and editorial presets need **Editorial Projects**.
+  Querying a type the studio has not purchased returns an explanatory error rather than an empty
+  list, so an assistant can tell "you don't have this" apart from "there is nothing here". This is
+  about the underlying Creative Force features — **the MCP server itself needs no add-on**, and
+  access to it is decided solely by the role permissions above.
 
 ## Always available
 
