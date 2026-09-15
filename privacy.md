@@ -8,7 +8,7 @@
 
 The Creative Force MCP server lets an AI assistant query your studio's Creative Force production
 data on your behalf. It is **read-first** and **studio-scoped**: it answers questions using the data
-your own Creative Force account can already see. 35 of its 39 tools are read-only. The four that
+your own Creative Force account can already see. 38 of its 42 tools are read-only. The four that
 write are `create_planning_session`, `update_planning_session` and `delete_planning_session` — which
 change planning sessions only — and `send_feedback`, which sends a message to the Creative Force
 team. Write tools are off by default and must be granted per role.
@@ -28,7 +28,8 @@ Creative Force permissions already allow — from these areas:
 - Planning sessions and schedules
 - Talent and crew records, including avatars, availability and — where your role has the **Rates**
   screen permission — their rate information
-- Editorial projects, productions, and deliverables
+- Editorial projects, productions and deliverables, project document libraries, and deliverable creative briefs including written direction, mock-ups and mood-boards
+- The submitted copy on copywriting tasks — product text, its configured fields and per-task language
 - Review and approval collections: per-asset decisions, ratings, colour flags and markings, comment
   text with its author and timestamp, the invited-reviewer roster (name, email, role, and whether
   they have opened the review), and the collection's sharing settings including its share link and

@@ -13,19 +13,19 @@ in — and notes the tools it triggers.
 | Category | What you can ask about | Tools |
 |----------|------------------------|-------|
 | [Production](#production) | Search productions by step, vendor, photographer, or location | `query_ecomm_production`, `query_editorial_production` |
-| [Assets](#assets) | Search digital assets by job, product, step, or time range | `query_asset`, `get_asset_preview` |
+| [Assets](#assets) | Search digital assets by job, product, step, or time range; read submitted copywriting text | `query_asset`, `get_asset_preview`, `get_text_asset_content` |
 | [Jobs](#jobs) | Search production jobs by code, status, or deadline | `query_ecomm_job` |
 | [Products](#products) | Search the product catalogue by code, name, category, brand, or status | `query_ecomm_product_request` |
 | [Tasks](#tasks) | Search workflow tasks by step, status, assignee, or vendor | `query_task` |
 | [Samples](#samples) | Search physical samples and track check-in status and location | `query_sample` |
 | [Planning](#planning) | Search planning sessions by team member or time slot | `query_planning`, `query_talent_crew`, `query_talent_crew_schedule` |
-| [Editorial](#editorial) | Editorial projects, productions, and deliverables | `query_editorial_project`, `query_editorial_deliverable` |
-| [Collections](#collections) | Review and approval collections — decisions, ratings, comments, reviewers | `query_collection`, `query_collection_detail` |
-| [Short Lists](#short-lists) | Casting short lists — talent, votes, comments and feedback | `query_shortlist`, `query_shortlist_detail` |
+| [Editorial](#editorial) | Editorial projects, productions and deliverables, document libraries and creative briefs | `query_editorial_project`, `query_editorial_deliverable`, `query_editorial_detail`, `query_deliverable_detail` |
+| [Collections](#collections) | External review collections — decisions, ratings, comments, reviewers | `query_collection`, `query_collection_detail` |
+| [Short Lists](#short-lists) | Casting short lists — talent, votes, comments and feedback status | `query_shortlist`, `query_shortlist_detail` |
 | [Event Log](#event-log) | Find specific events and who performed them, for products, samples and more | `query_event_log` |
 | [Style Guides](#style-guides) | Style guide configuration — shot positions, asset naming, colour rules | `query_styleguide`, `get_styleguide_detail` |
 | [Workflows](#workflows) | Workflow configuration — steps, settings, rejection transitions | `query_workflow`, `get_workflow_detail` |
-| [Studio Settings](#studio-settings) | How your studio is configured | nine `query_*` tools |
+| [Studio Settings](#studio-settings) | How your studio is configured, and your presets in full | nine `query_*` tools, `query_presets`, `query_preset_detail` |
 | [Managing planning sessions](#managing-planning-sessions) | **Create, change and delete** sessions | `create_planning_session`, `update_planning_session`, `delete_planning_session` |
 | [Feedback](#feedback) | Send feedback, report issues, or request features | `send_feedback` |
 
@@ -49,6 +49,13 @@ when.
 - *"How many assets have been delivered for Product PCSC187B482C_200?"*
 - *"Show me the hero images for product P456."* — chains `get_asset_preview` after `query_asset` to
   return an inline image gallery rather than filenames.
+
+Copywriting tasks carry text rather than images. Ask for the submitted copy and you get the written
+fields grouped as they are laid out, selection values resolved to their names, colour swatches and
+care-symbol images, and the language each version was written in.
+
+- *"Show me the copy that was submitted for this product."*
+- *"Compare the English and German copy for this product side by side."*
 
 ## Jobs
 
@@ -111,30 +118,48 @@ family and the assistant picks the right tools.
 - *"Which editorial deliverables are overdue for the March issue?"*
 - *"Show the editorial productions still in progress for project Vogue-SS26."*
 
+Go a level deeper on either one: a project's **document library** — what is attached, which
+deliverables each document is assigned to, and its version history — or a deliverable's **creative
+brief**, with the written direction, attached documents, mock-ups and mood-board images.
+
+- *"What documents are attached to this project, and which deliverables use them?"*
+- *"What's the creative brief for this deliverable?"*
+- *"Show me the mood-board images for this shot."*
+
 ## Collections
 
-Review and approval collections across all types — Photo Review, Post Review, Selection and Gallery.
-See where a review has got to, what each reviewer decided, the ratings, colour flags and comments
-left on individual assets, who was invited and whether they have opened it, and how the collection
-was shared.
+Collections are how Creative Force shares assets out to **external reviewers** for feedback,
+approval and decisions. Four types: **Photo Review** and **Post Review** (shown together as
+*Review*), **Selection** for collaborative final-asset picking, and **Gallery** for published
+galleries.
 
+Ask about where a review has got to across the status flow — Awaiting Content, Ready for Review,
+Published, Review in Progress, Decisions Submitted, Awaiting New Versions, Review Completed — what
+each reviewer decided (Approved, Approved with Changes, Rejected, or still Undecided), the star
+ratings, colour flags and comments left on individual assets, which products or deliverables were
+added, who was invited and whether they have opened it, and how the collection was shared.
+
+- *"Summarize external feedback on my project galleries."*
+- *"Surface assets where decision-makers disagree."*
 - *"Which collections are still waiting on reviewer decisions?"*
 - *"Who hasn't opened the review I sent for the Liberty campaign?"*
-- *"Where did reviewers disagree on this collection?"*
-- *"Show me the comments and star ratings left on this gallery."*
-- *"Which Post Review collections are waiting on a re-invite?"*
-- *"Rank our open collections by how many assets still need a decision."*
+- *"Which assets did Anna reject, and what did she say about them?"*
+- *"Any collections that moved to a new round but where invitations were never re-sent?"*
+- *"Which collections were shared more than a week ago and still have no decisions?"*
 
 ## Short Lists
 
-Casting short lists — the talent on each list, who liked and disliked each option by name, the
-comments and @-mentions left on them, the invited reviewer roster, and full talent profiles
-including job title, skills, agencies, rates and contact details.
+Casting short lists group candidate talent and crew so stakeholders can give feedback, ending up
+either **Feedback Complete** or **More Options Needed**. See the talent on each list, who liked and
+disliked each option by name, the comments left on them, the invited reviewer roster, and full
+inline profiles — job title, skills, agencies, rates, contact details and socials.
 
+- *"Report the most-liked talent on my short lists."*
 - *"Show me the short list for the Spring campaign and who voted for whom."*
-- *"Which models got the most likes on this short list?"*
 - *"What feedback did the client leave on the casting options?"*
-- *"Which short lists have been shared but not yet reviewed?"*
+- *"Which short lists are still waiting on more options?"*
+- *"Which short lists contain talent from Elite Models?"*
+- *"Which short lists were shared over a week ago and still aren't complete?"*
 
 ## Event Log
 
@@ -154,6 +179,8 @@ one of them including its rules and asset metadata.
 - *"Are any Style Guides using 'Sequence Token - Letter' in their naming?"*
 - *"Which Style Guides are currently marked as invalid?"*
 - *"Do any of my Style Guides not have Color References enabled?"*
+- *"What tone of voice does this style guide set for copywriting?"* — returns the brand-voice presets
+  with their descriptions and examples.
 
 ## Workflows
 
@@ -175,13 +202,16 @@ Post-Production Vendors, Product Vendors, and Print Configurations.
 - *"Which Data Sources have Sync Rules, and what are they?"*
 - *"Do any of my Presets specs use Color Profile 'ECI-RGB'?"*
 
-Presets go further than the list: ask for a single preset and get its full output spec — variants,
-metadata rules, and every style guide or editorial deliverable it is attached to.
+Presets go further than the list: ask for a single preset and get its full output spec — every
+output variant and nested auto-variant with its format, dimensions, colour profile and, for video,
+codec and frame rate; the IPTC/EXIF/XMP metadata tags it writes onto output; and every style guide
+(e-comm) or deliverable (editorial) it is attached to.
 
+- *"List the differences between Specs in Preset A and Preset B."*
+- *"Which Style Guides are currently using Preset A, Preset B, or Preset C?"*
 - *"What does the Ecom JPG preset actually output?"*
-- *"What's different between these two presets?"*
-- *"Which style guides use this preset?"*
 - *"Which of our presets aren't attached to anything?"*
+- *"What metadata does this preset write onto the files?"*
 
 ## Managing planning sessions
 

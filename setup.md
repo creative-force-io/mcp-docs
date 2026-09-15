@@ -423,6 +423,16 @@ This calls `query_workspace`, the lightest tool, and confirms both the connectio
 permissions. You should get back your workspace names. Other quick checks: *"List all jobs in
 progress"* or *"Which samples haven't been returned yet?"*
 
+## Rate limits
+
+Tool calls are rate limited so one busy conversation cannot degrade the service for the rest of your
+studio. Limits are applied per minute at three levels — per studio, per user, and per tool for that
+user — and the heavier tools have a lower per-tool ceiling than the rest.
+
+Normal conversational use does not come close to them. If a limit is hit, the call fails with a
+clear `RATE_LIMIT` error naming the level that was breached, the tool, and how many seconds to wait
+— it is never answered with a silently empty result. Wait out the retry period and it recovers.
+
 ## Send feedback
 
 If you hit a limitation, ask your AI tool to send feedback — the MCP server forwards it to the
@@ -439,6 +449,7 @@ and use case"* and the AI tool composes it for you.
 | A tool you expect is missing | Your account lacks the screen permission for that area | Request the relevant Creative Force permission; tools are filtered per user. |
 | Tools visible but returning "Access denied" | Permission cache is stale (up to 10 min) | Wait and retry, or re-authenticate. |
 | `401 Unauthorized` on every request | Token missing or expired | Re-run the OAuth login; restart the MCP client to re-authenticate, or clear the client's cached auth (e.g. delete `~/.mcp-auth`). |
+| `RATE_LIMIT` error on a tool call | Too many calls in the last minute — the error names the level and the tool | Wait the `retryAfterSeconds` it reports and retry. See [Rate limits](#rate-limits). |
 | The browser never opens for login | The client did not discover the OAuth metadata, or the auth server is unreachable | Confirm the URL is exactly `https://mcp.creativeforce.io/mcp`, and that your network can reach `https://accounts.creativeforce.io`. |
 | No results returned | Your account has no access to a studio with production data | Verify your Creative Force account is attached to a studio that holds data for the area you asked about. |
 | Connection timeout | Server URL unreachable from your network | Confirm `https://mcp.creativeforce.io/mcp` is reachable from your network. |
