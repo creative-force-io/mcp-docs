@@ -288,7 +288,7 @@ List or count/aggregate digital asset metadata (id, name, step, dates) — does 
 **Parameters**
 
 <details>
-<summary>Show all 41 parameters</summary>
+<summary>Show all 42 parameters</summary>
 
 | Name | Type | Required | Description |
 |------|------|:--------:|-------------|
@@ -309,7 +309,8 @@ List or count/aggregate digital asset metadata (id, name, step, dates) — does 
 | `artDirector` | string | no | Art director name or user ID |
 | `hairAndMakeup` | string | no | Hair & Makeup artist name or user ID |
 | `assistant` | string | no | Assistant on set name or user ID |
-| `externalPostVendor` | string | no | External post-production vendor name or ID |
+| `externalPostVendor` | string | no | External post-production vendor name or ID. Matches the vendor at ANY external-post level unless externalPostLevel narrows it. |
+| `externalPostLevel` | int? | no | Narrow externalPostVendor to one external-post level: 0 (the unlevelled External Post Production step) or 1-5 for L1-L5. Omit to match any level. This scopes the VENDOR on the parent production — it does not filter which step the asset itself was created at (use step for that). |
 | `starRating` | int? | no | Star rating (0-5). 0 = no rating assigned |
 | `isVariant` | bool? | no | Only variant assets |
 | `heroOnly` | bool? | no | Only hero/primary assets |
@@ -350,7 +351,7 @@ List or count/aggregate digital asset metadata (id, name, step, dates) — does 
 
 **Known limitations**
 
-Returns metadata only — no image URLs. To display images, pass these asset ids to get_asset_preview. Each hit carries taskId (drill-down key); copywriting (Text) assets have isTextAsset:true — read their copy with get_text_asset_content(taskIds). When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list.
+Returns metadata only — no image URLs. To display images, pass these asset ids to get_asset_preview. Each hit carries taskId (drill-down key); copywriting (Text) assets have isTextAsset:true — read their copy with get_text_asset_content(taskIds). When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list. `externalPostVendor` matches the PRODUCTION the asset belongs to, at ANY external-post level unless `externalPostLevel` (0 = the unlevelled step, 1-5 = L1-L5) narrows it — so an asset produced at Capture can match, and the asset's own `step` is NOT the vendor's external-post level. Never break a vendor's assets down by `step` and present that as per-level; re-query per level instead.
 
 ---
 
@@ -635,7 +636,7 @@ Returns job containers only — not the products inside them (use query_ecomm_pr
 <a id="tool-query_ecomm_product_request"></a>
 ## `query_ecomm_product_request` — Query E-Comm Product Request
 
-Search products in the catalog. Filter by code, name, job, category, brand, color, style code, vendor material code, status, workspace, product state (Active/Inactive), sample check-in status, sample code, sample location, sample check-in date, pool first-check-in date, product created date, container code, product tagging, custom property. Status: Backlog, Todo, InProgress, Done. Products come in two types: Product (the default) and Wardrobe. Normal searches only match Product items; use productType='Wardrobe' or productType='all' to reach wardrobe records. Use product param to search both productCode and productName (OR). Pass productIds to look up specific products by ID (e.g. from detail page context). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each product's `customProperties` lists only properties that have a value SET. A property name being absent from a product does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for products, call query_property(entityType='product') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_product_request result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. TEXT FILTERS — these params accept inline operators (productCode, productName, category, brand, color, styleCode, vendorMaterialCode): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.
+Search products in the catalog. Filter by code, name, job, category, brand, color, style code, vendor material code, status, workspace, product state (Active/Inactive), sample check-in status, sample code, sample location, sample check-in date, pool first-check-in date, product created date, container code, product tagging, custom property. Status: Backlog, Todo, InProgress, Done. Products come in two types: Product (the default) and Wardrobe. Normal searches only match Product items; use productType='Wardrobe' or productType='all' to reach wardrobe records. Use product param to search both productCode and productName (OR). Pass productIds to look up specific products by ID (e.g. from detail page context). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each product's `customProperties` lists only properties that have a value SET. A property name being absent from a product does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for products, call query_property(entityType='product') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_product_request result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true — do not try to derive workspace names from list results. To SHOW what products look like, set includeDisplayImage=true and chain the returned coverIds into get_asset_preview. TEXT FILTERS — these params accept inline operators (productCode, productName, category, brand, color, styleCode, vendorMaterialCode): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.
 
 - **CF module:** Products
 - **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
@@ -643,7 +644,7 @@ Search products in the catalog. Filter by code, name, job, category, brand, colo
 **Parameters**
 
 <details>
-<summary>Show all 42 parameters</summary>
+<summary>Show all 43 parameters</summary>
 
 | Name | Type | Required | Description |
 |------|------|:--------:|-------------|
@@ -687,6 +688,7 @@ Search products in the catalog. Filter by code, name, job, category, brand, colo
 | `groupByCustomProperty` | bool | no | Group by the value of customPropertyName — aggregation mode. Requires customPropertyName to be set. |
 | `groupByPeriod` | string | no | Time-bucket aggregation: day, week, or month. Pair with groupByPeriodField to choose which date drives the buckets. Bucket boundaries follow the user's timezone. Provide the matching date range (productCreatedDateFrom/To or poolFirstCheckedInDateFrom/To) to bound the buckets; unbounded defaults to the last year. |
 | `groupByPeriodField` | string | no | Date field driving the time-bucket aggregation. Options: productCreated (default), poolFirstCheckedIn. |
+| `includeDisplayImage` | bool | no | Include each product's DISPLAY IMAGE — the photo the Products (or Styling Items) grid shows for it. Returns a `displayImage.coverId` per product (a stable id, NOT a url): chain those into get_asset_preview(fileIds=[…]) to actually SHOW the pictures. A product has one from intake onward, before anything is shot. The correct cover source is picked from productType automatically (Wardrobe records are the Styling Items grid and use its own endpoint). Costs one extra backend call, so leave it off unless the user wants to SEE the products. Ignored in aggregation mode. |
 | `pageSize` | int | no | Max results (ignored in aggregation) |
 | `page` | int | no | Page (0-based, ignored in aggregation) |
 
@@ -695,25 +697,25 @@ Search products in the catalog. Filter by code, name, job, category, brand, colo
 **Example input**
 
 ```json
-{ "category": "Footwear", "status": "InProgress", "pageSize": 10 }
+{ "category": "Footwear", "status": "InProgress", "includeDisplayImage": true, "pageSize": 10 }
 ```
 
 **Example output**
 
 ```json
-{ "total": 34, "hits": [ { "productId": "00010664-...", "productCode": "SKU-9001", "productName": "Runner Low", "category": "Footwear", "status": "InProgress" } ] }
+{ "total": 34, "hits": [ { "productId": "00010664-...", "productCode": "SKU-9001", "productName": "Runner Low", "category": "Footwear", "status": "InProgress", "displayImage": { "coverId": "3c46e952...", "idSpace": "fileId" } } ] }
 ```
 
 **Known limitations**
 
-Searches the product catalog — not physical samples (use query_sample) and not work-unit progress (use query_ecomm_production).
+Searches the product catalog — not physical samples (use query_sample) and not work-unit progress (use query_ecomm_production). DISPLAY IMAGE (opt-in, CPD-1537): set includeDisplayImage=true to get each row's Display Image — the representative photo the CF list grid shows for that item, available even when NOTHING has been shot yet. It returns `displayImage.coverId` (a STABLE id, NOT a viewable url) plus `displayImage.idSpace`; to SHOW the picture, batch the coverIds from every row into ONE get_asset_preview call using the param named by idSpace (idSpace='fileId' → get_asset_preview(fileIds=[…]); idSpace='assetId' → get_asset_preview(assetIds=[…])) — the two are NOT interchangeable and an id passed in the wrong one returns nothing. The flag defaults to false and costs one extra backend call per id space when on (nothing when off); it is ignored in aggregation mode, and enriches only the rows on the current page (pageSize bounds it — no cap error, no truncation). A row with NO `displayImage` has none set, or its id is unknown/inaccessible (the backend cannot tell those apart) — a NORMAL state, not an error — UNLESS `_partial` is present, which means the cover lookup itself failed and says nothing about whether the items have a photo. A product's (and a styling item's) cover is always a fileId, and it exists from intake onward (pre-shoot). Styling items are the WARDROBE product type and are served by their own cover endpoint — the tool routes per row off productTypeId, so a productType='all' page enriches both kinds correctly with no extra flag.
 
 ---
 
 <a id="tool-query_ecomm_production"></a>
 ## `query_ecomm_production` — Query E-Comm Production
 
-Search productions (work units) — the central entity tracking a product through the workflow. Use this to answer: what step is a production on, who's working on it, how many are done/in-progress, production counts by photographer/vendor/location/type, and turnaround times. Status: New, Todo, InProgress, Done. Step names: Capture (a.k.a. Photography), InternalPostProduction, FinalSelection, etc. Filter by job, product, sample, production type, vendor team, post-production vendor, photographer, stylist, model, art director, videographer, digital-processing user, location, workspace. Also filter by the review collection a production is shared into: collectionName, collectionStatus, collectionRound (requires the Share For External Review / Photo Review Collections add-on). **Job lookup param choice — strict per user phrasing:** caller says 'job code JOB-123' → `jobCode`; 'job named Spring Campaign' → `jobName`; 'job X' without saying code-vs-name → `job` (ambiguous, matches code OR name). Same pattern for product (`productCode`/`productName`/`product`). **Codes are EXACT (case-sensitive); names are case-insensitive.** **Sample lookup**: `sample` is ambiguous — matches sample UUID OR sampleCode (exact, case-sensitive) OR cfBarcode (exact, case-sensitive) OR sampleName (case-insensitive). Filter by planning session: `session` (ambiguous session UUID, code, or name partial — matches against planningSessionId OR planningSession.sessionCode OR planningSession.sessionName). Drill-down: pass jobIds/productIds/planningSessionIds from upstream queries. Use human-readable names for all filters (resolved to IDs automatically). Returns: current step & status, production type, products, job, samples (codes/names/cfBarcodes/sizes/total/checkedIn), team on set (all 8 roles), vendors, location, style guide (name + `styleGuideId`), outfit (incl. styling item codes), planning session (id/name/code/start/end), timing. To answer 'what preset/style rules does this job use?' — chain `styleGuideId` into get_styleguide_detail (per-position presetsAndNaming carries the preset + its presetId, which chains into query_preset_detail for the full preset config). CUSTOM PROPERTIES: a production surfaces custom properties from three entities — `jobCustomProperties`, `products[].customProperties`, `samples` — and each lists only properties that have a value SET. A property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('job', 'product', or 'sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_production result alone. When groupBy params set, returns counts/aggregations instead of list.
+Search productions (work units) — the central entity tracking a product through the workflow. Use this to answer: what step is a production on, who's working on it, how many are done/in-progress, production counts by photographer/vendor/location/type, and turnaround times. Status: New, Todo, InProgress, Done. Step names: Capture (a.k.a. Photography), InternalPostProduction, FinalSelection, etc. Filter by job, product, sample, production type, vendor team, post-production vendor, photographer, stylist, model, art director, videographer, digital-processing user, location, workspace. Also filter by the review collection a production is shared into: collectionName, collectionStatus, collectionRound (requires the Share For External Review / Photo Review Collections add-on). **Job lookup param choice — strict per user phrasing:** caller says 'job code JOB-123' → `jobCode`; 'job named Spring Campaign' → `jobName`; 'job X' without saying code-vs-name → `job` (ambiguous, matches code OR name). Same pattern for product (`productCode`/`productName`/`product`). **Codes are EXACT (case-sensitive); names are case-insensitive.** **Sample lookup**: `sample` is ambiguous — matches sample UUID OR sampleCode (exact, case-sensitive) OR cfBarcode (exact, case-sensitive) OR sampleName (case-insensitive). Filter by planning session: `session` (ambiguous session UUID, code, or name partial — matches against planningSessionId OR planningSession.sessionCode OR planningSession.sessionName). Drill-down: pass jobIds/productIds/planningSessionIds from upstream queries. Use human-readable names for all filters (resolved to IDs automatically). Returns: current step & status, production type, products, job, samples (codes/names/cfBarcodes/sizes/total/checkedIn), team on set (all 8 roles), vendors, location, style guide (name + `styleGuideId`), outfit (`outfitCode` + `outfitId`, incl. styling item codes), planning session (id/name/code/start/end), timing. To SHOW what productions look like, set includeDisplayImage=true (the work unit's own photo) and/or includeOutfitDisplayImage=true (the outfit's cover — a different picture), then chain the returned coverIds into get_asset_preview. To answer 'what preset/style rules does this job use?' — chain `styleGuideId` into get_styleguide_detail (per-position presetsAndNaming carries the preset + its presetId, which chains into query_preset_detail for the full preset config). CUSTOM PROPERTIES: a production surfaces custom properties from three entities — `jobCustomProperties`, `products[].customProperties`, `samples` — and each lists only properties that have a value SET. A property name being absent does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing), call query_property with the matching entityType ('job', 'product', or 'sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_ecomm_production result alone. When groupBy params set, returns counts/aggregations instead of list.
 
 - **CF module:** Production
 - **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
@@ -721,7 +723,7 @@ Search productions (work units) — the central entity tracking a product throug
 **Parameters**
 
 <details>
-<summary>Show all 52 parameters</summary>
+<summary>Show all 57 parameters</summary>
 
 | Name | Type | Required | Description |
 |------|------|:--------:|-------------|
@@ -737,7 +739,9 @@ Search productions (work units) — the central entity tracking a product throug
 | `sample` | string | no | Sample identifier — ambiguous match. UUID matches `samples.sampleIds`; sampleCode and cfBarcode match EXACT (case-sensitive); sampleName matches case-insensitive. |
 | `productionType` | string | no | Production type name or ID |
 | `vendorTeam` | string | no | Vendor team name or ID |
-| `postProductionVendor` | string | no | Post-production vendor name or ID |
+| `postProductionVendor` | string | no | Post-production vendor name or ID. Matches the vendor at ANY external-post level unless externalPostLevel narrows it. |
+| `externalPostLevel` | int? | no | Narrow postProductionVendor to one external-post level: 0 (the unlevelled External Post Production step) or 1-5 for L1-L5. Omit to match any level. |
+| `stepDateFilter` | string | no | Date range on ONE workflow step, as a JSON object. The step is required — the dates live on that step's task, so a range without a step would match dates from any step. Shape: {"step":"ExternalPostProductionL2","startedFrom":"2026-08-24","startedTo":"2026-08-31"}. Date keys (pass any, all optional but at least one required): readyFrom/readyTo (step became ready), startedFrom/startedTo (step STARTED — for an external-post step this is when the files were SENT to the vendor), finishedFrom/finishedTo (step completed). Use `started` for 'sent to vendor on date X' questions and `finished` for 'vendor completed on date X'. This is NOT the same as the top-level dateFrom/dateTo, which filters the whole production's finished date — both may be set together. Step names: Capture, FinalSelection, ExternalPostProduction, ExternalPostProductionL1..L5, InternalPostProduction, PostReview, AssetDelivery, etc. |
 | `photographer` | string | no | Photographer name or user ID |
 | `stylist` | string | no | Stylist name or user ID |
 | `model` | string | no | Model name or user ID |
@@ -765,7 +769,7 @@ Search productions (work units) — the central entity tracking a product throug
 | `groupByProductionType` | bool | no | Group by production type — aggregation mode |
 | `groupByLocation` | bool | no | Group by location — aggregation mode |
 | `groupByVendorTeam` | bool | no | Group by vendor team — aggregation mode |
-| `groupByPostProductionVendor` | bool | no | Group by post-production vendor — aggregation mode |
+| `groupByPostProductionVendor` | bool | no | Group by post-production vendor — aggregation mode. Counts productions ASSIGNED to each vendor, per external-post level (one bucket per vendor AND step). This is workload/assignment, NOT how many files were sent: a production counts as soon as the vendor is assigned, even if it is still at Capture. For files sent/returned use includeExternalPostCounts; combine with stepDateFilter to count only productions that actually reached the step. |
 | `groupByPhotographer` | bool | no | Group by photographer — aggregation mode |
 | `groupByPeriod` | string | no | Group by period: hour, day, week, month — aggregation mode |
 | `groupByWorkspace` | bool | no | Group by workspace/client — aggregation mode. Use for any 'per workspace', 'per client', 'by workspace' question. |
@@ -775,6 +779,9 @@ Search productions (work units) — the central entity tracking a product throug
 | `productCustomPropertyName` | string | no | Product custom property name (resolved to GUID) or GUID directly. Used with groupByProductCustomProperty for aggregation. |
 | `groupBySampleCustomProperty` | bool | no | Group by the value of a sample custom property — aggregation mode. Requires sampleCustomPropertyName to be set. |
 | `sampleCustomPropertyName` | string | no | Sample custom property name (resolved to GUID) or GUID directly. Used with groupBySampleCustomProperty for aggregation. |
+| `includeExternalPostCounts` | bool | no | Also return the External-Post asset counts (sent / expected / returned) per external-post level, the same numbers the Production tab shows. Costs one extra REST call per 100 productions returned — set it ONLY when the question is about what an external post-production vendor was sent or has delivered back, not as general enrichment. Ignored in aggregation mode. |
+| `includeDisplayImage` | bool | no | Include each production's own DISPLAY IMAGE — the photo the Production grid shows for the WORK UNIT. Returns `displayImage.coverId` per row (a stable id, NOT a url), whose idSpace is 'assetId': chain those into get_asset_preview(assetIds=[…]) to SHOW the pictures. A work unit's display image is produced BY the shoot, so one still in Backlog/To Do has none yet — that is normal. Independent of includeOutfitDisplayImage (they are different pictures on different endpoints); set only the one you need. Costs one extra backend call. Ignored in aggregation mode. |
+| `includeOutfitDisplayImage` | bool | no | Include each row's OUTFIT display image — the cover of the Shop-The-Look outfit grouping, NOT the production's own photo. Returns `outfit.displayImage.coverId` (a stable id, NOT a url), whose idSpace is 'fileId': chain those into get_asset_preview(fileIds=[…]). An outfit has a cover only if someone set one manually via Change Cover, so it is often absent. Only rows that HAVE an outfit are affected. Independent of includeDisplayImage. Costs one extra backend call. Ignored in aggregation mode. |
 | `pageSize` | int | no | Max results (ignored in aggregation) |
 | `page` | int | no | Page (0-based, ignored in aggregation) |
 
@@ -783,18 +790,18 @@ Search productions (work units) — the central entity tracking a product throug
 **Example input**
 
 ```json
-{ "step": "Capture", "status": "InProgress", "photographer": "John Smith", "pageSize": 10 }
+{ "jobCode": "JOB-1042", "includeExternalPostCounts": true, "includeDisplayImage": true, "pageSize": 10 }
 ```
 
 **Example output**
 
 ```json
-{ "total": 18, "hits": [ { "workUnitId": "c1...", "productCode": "SKU-9001", "step": "Capture", "status": "InProgress", "photographer": "John Smith" } ] }
+{ "total": 18, "productions": [ { "id": "c1...", "step": "ExternalPostProductionL1", "jobCode": "JOB-1042", "displayImage": { "coverId": "a1...", "idSpace": "assetId" }, "externalPost": [ { "step": "External Post Production L1", "vendor": "Simkraft", "vendorType": "PIXELZ Integration", "sentToExternalPost": 1, "expectedFromExternalPost": 3, "returnedFromExternalPost": 3 } ] } ] }
 ```
 
 **Known limitations**
 
-The central work-unit entity. When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list. Pass `workUnitIds` to look up specific production items by their `id` — the same id is the `productionItemId` used to assign them to a planning session via update_planning_session's productionItemOps. The `session` field reflects the planning session this production item is CURRENTLY assigned to; it is null/absent when the item is NOT on any session (do not read a present `session` as a result of your own assign — re-query or use the update tool's response to confirm a write).
+The central work-unit entity. When any groupBy* is set it returns aggregation buckets (counts) instead of a hit list. Pass `workUnitIds` to look up specific production items by their `id` — the same id is the `productionItemId` used to assign them to a planning session via update_planning_session's productionItemOps. The `session` field reflects the planning session this production item is CURRENTLY assigned to; it is null/absent when the item is NOT on any session (do not read a present `session` as a result of your own assign — re-query or use the update tool's response to confirm a write). LH-53624: pass includeExternalPostCounts=true to also get the External-Post asset counts (sent / expected / returned) per external-post level, the same numbers the Production tab shows. Default false because it costs one extra REST call per 100 productions returned (the enrich itself mirrors the FE, which only fetches these counts when the Ext. Post columns are switched on). expected already accounts for preset fan-out so expected &gt; sent is normal; a step is delivered when returned &gt;= expected (over-delivery happens); never compare returned against sent, and never sum counts across levels (one level's output is the next level's input) — within one production the current state is its LAST level, not L1. A level that is absent has not been reached yet. externalPost[].step is a spaced display label ("External Post Production L1"); the production's own top-level `step` keeps the raw enum name, so the two spellings are expected. Report the counts PER PRODUCTION and never roll them up into a single job/product total: productions in one job routinely sit at different steps and use different vendors, so a total merges non-comparable things and hides which production is behind. The counts are FILES after preset fan-out, not original shots (sent=1/expected=3 means one asset became three files), so do not call them images. Ignored in aggregation mode; a failed enrich degrades to no counts rather than failing the tool. `groupByPostProductionVendor` counts productions ASSIGNED to each vendor per external-post step (one bucket per vendor AND step) — workload, NOT files delivered: a production counts from the moment the vendor is set, even at Capture. Never present it as files sent/received; pair it with stepDateFilter to count only productions that reached the step, or use includeExternalPostCounts for real file counts. Filtering by `postProductionVendor` matches any external-post level; `externalPostLevel` (0 = the unlevelled step, 1-5) narrows it. `stepDateFilter` narrows to productions whose ONE named step ran in a date range — {"step":"ExternalPostProductionL2","startedFrom":"...","startedTo":"..."} with ready/started/finished keys. `started` on an external-post step is when the files were SENT to the vendor, which is the date a per-day/week vendor volume report needs; the top-level dateFrom/dateTo is the whole production's finished date instead. Combined with `postProductionVendor` on the same step, both are matched on the SAME task. Each production lists `postProductionVendors[]` — one {step, vendor} per external-post level that has a vendor (the vendor is a per-level field, so a single value would hide those at L1..L5). Each externalPost[] entry also carries `vendor` (the vendor working THAT level, resolved from the work unit's per-level field) — so counts and vendor arrive together and no second query_task call is needed to attribute them; `vendorType` is only the integration kind and does not identify the vendor. DISPLAY IMAGE (opt-in, CPD-1537): set includeDisplayImage=true to get each row's Display Image — the representative photo the CF list grid shows for that item, available even when NOTHING has been shot yet. It returns `displayImage.coverId` (a STABLE id, NOT a viewable url) plus `displayImage.idSpace`; to SHOW the picture, batch the coverIds from every row into ONE get_asset_preview call using the param named by idSpace (idSpace='fileId' → get_asset_preview(fileIds=[…]); idSpace='assetId' → get_asset_preview(assetIds=[…])) — the two are NOT interchangeable and an id passed in the wrong one returns nothing. The flag defaults to false and costs one extra backend call per id space when on (nothing when off); it is ignored in aggregation mode, and enriches only the rows on the current page (pageSize bounds it — no cap error, no truncation). A row with NO `displayImage` has none set, or its id is unknown/inaccessible (the backend cannot tell those apart) — a NORMAL state, not an error — UNLESS `_partial` is present, which means the cover lookup itself failed and says nothing about whether the items have a photo. Production has TWO independent flags for TWO DIFFERENT pictures: includeDisplayImage returns the WORK UNIT's own photo as `displayImage` (idSpace 'assetId'), and includeOutfitDisplayImage returns the outfit's cover as `outfit.displayImage` (idSpace 'fileId'). Set only the one you need — each issues its own backend call, and neither pays for the other. Never present one as the other. A work unit's display image is produced BY the shoot, so a production still in Backlog/To Do legitimately has none; an outfit has one only if someone set it manually via Change Cover. A copywriting work unit with no cover asset borrows its bundle product's image, so its idSpace is 'fileId' too (requires the Copywriting add-on; skipped without it).
 
 ---
 
@@ -933,7 +940,7 @@ Search Editorial Productions (also called Editorial work units) — the central 
 **Parameters**
 
 <details>
-<summary>Show all 66 parameters</summary>
+<summary>Show all 67 parameters</summary>
 
 | Name | Type | Required | Description |
 |------|------|:--------:|-------------|
@@ -1001,6 +1008,7 @@ Search Editorial Productions (also called Editorial work units) — the central 
 | `groupBySharedSamples` | bool | no | Find samples SHARED across more than one deliverable — aggregation mode. Returns sharedSamples buckets [{sampleId, deliverableCount, deliverableIds}]; single-deliverable samples are excluded server-side, so this answers 'which samples are shared across deliverables' in ONE call — do NOT page through list mode and group manually. In this mode `total` = matching work units, NOT the shared-sample count — count sharedSamples instead. Drill down: pass sampleId values to query_sample (sampleIds param) for code/name/location/check-in, and deliverableIds to query_editorial_deliverable for names/status. Caveat: a deliverable with more than 200 samples has an empty samples snapshot and won't be counted. |
 | `groupByPeriod` | string | no | Time-bucket aggregation: hour, day, week, or month. Pair with groupByPeriodField to choose which date drives the histogram. |
 | `groupByPeriodField` | string | no | Date field driving the time-bucket histogram. Default assetDeliveryFinishedDateTimeUtc (delivery completion pace). Alternative: deliverableDueDateUtc (workload by deadline — resolves to editorialDeliverableOfFinalizeWorkflow.deliverableDueDateUtc). |
+| `includeExternalPostCounts` | bool | no | Also return the External-Post asset counts (sent / expected / returned), the same numbers the Editorial Production grid shows. Costs one extra REST call per 100 productions returned — set it ONLY when the question is about what an external post-production vendor was sent or has delivered back, not as general enrichment. Ignored in aggregation mode. |
 | `pageSize` | int | no | Max results in list mode (ignored in aggregation). Default 50. Use 0 for total-count-only. |
 | `page` | int | no | 0-based page index for list mode (ignored in aggregation). Default 0. |
 
@@ -1020,7 +1028,7 @@ Search Editorial Productions (also called Editorial work units) — the central 
 
 **Known limitations**
 
-Editorial work-unit (content moving through the workflow). For the delivery row itself use query_editorial_deliverable. The `session` field reflects the planning session this production item is CURRENTLY assigned to; it is null/absent when the item is NOT on any session (do not read a present `session` as a result of your own assign — confirm a write from the update tool's response).
+Editorial work-unit (content moving through the workflow). For the delivery row itself use query_editorial_deliverable. The `session` field reflects the planning session this production item is CURRENTLY assigned to; it is null/absent when the item is NOT on any session (do not read a present `session` as a result of your own assign — confirm a write from the update tool's response). LH-53624: pass includeExternalPostCounts=true to also get the External-Post asset counts (sent / expected / returned). Editorial has a single external-post step, so the counts come back as a one-element externalPost array (same shape as query_ecomm_production) with no vendor type. Default false because it costs one extra REST call per 100 productions returned. expected already accounts for preset fan-out so expected &gt; sent is normal; delivered means returned &gt;= expected; never compare returned against sent. Report per production rather than as one rolled-up total, and describe the counts as files (post fan-out), not images. Ignored in aggregation mode; a failed enrich degrades to no counts.
 
 ---
 
@@ -1504,7 +1512,7 @@ Lists property *definitions* (the schema) for one entity type — not the proper
 <a id="tool-query_sample"></a>
 ## `query_sample` — Query Sample
 
-Search samples (physical product items) — track location, check-in/out status, and containers. The only tool that returns actual sample records. Sample records carry editorial PROJECT links only (editorialProjectIds) — NOT deliverable links. For sample↔deliverable questions ('which deliverables use this sample', 'which samples are shared across deliverables', 'list samples assigned to a deliverable'), use query_editorial_production instead: filter by sampleCode/sampleName or deliverableCode/deliverableIds — each work-unit hit returns both its deliverable info and its samples snapshot. Use this to answer: where is a sample, is it checked in, which samples are at a location, which samples are overdue for return, which samples belong to a project, counts by location/status. Samples are linked to editorial projects — use editorialProjectIds to filter samples by project. Check-in status: WaitingForCheckingIn, CheckedIn, CheckedOut. Filter by sample code, barcode, product code, size, job, location, check-in status, workspace, container, container type, product type, label recognition, check-in/out dates, editorialProjectIds. Use human-readable names for location (resolved to IDs automatically). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each sample's `customProperties` lists only properties that have a value SET. A property name being absent from a sample does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for samples, call query_property(entityType='sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_sample result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true. TEXT FILTERS — these params accept inline operators (sampleCode, sampleName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.
+Search samples (physical product items) — track location, check-in/out status, and containers. The only tool that returns actual sample records. Sample records carry editorial PROJECT links only (editorialProjectIds) — NOT deliverable links. For sample↔deliverable questions ('which deliverables use this sample', 'which samples are shared across deliverables', 'list samples assigned to a deliverable'), use query_editorial_production instead: filter by sampleCode/sampleName or deliverableCode/deliverableIds — each work-unit hit returns both its deliverable info and its samples snapshot. Use this to answer: where is a sample, is it checked in, which samples are at a location, which samples are overdue for return, which samples belong to a project, counts by location/status. Samples are linked to editorial projects — use editorialProjectIds to filter samples by project. Check-in status: WaitingForCheckingIn, CheckedIn, CheckedOut. Filter by sample code, barcode, product code, size, job, location, check-in status, workspace, container, container type, product type, label recognition, check-in/out dates, editorialProjectIds. Use human-readable names for location (resolved to IDs automatically). Supports custom property filters via customPropertyFilters (JSON array of {name, value} for exact match or {name, from, to} for a Date range. Number-type properties also support a comparison operator (eq/ne/gt/gte/lt/lte/between/notBetween) mirroring the UI — see the customPropertyFilters param for the exact shape). CUSTOM PROPERTIES: each sample's `customProperties` lists only properties that have a value SET. A property name being absent from a sample does NOT mean it is undefined — it may be defined-but-unset. Before telling the user a custom property does not exist (or is missing) for samples, call query_property(entityType='sample') to get the full list of properties defined for this studio; never conclude a property is undefined from a query_sample result alone. When any groupBy* param is set, returns aggregation buckets instead of a list. For any 'per workspace' or 'per client' breakdown, use groupByWorkspace=true. To SHOW what samples look like, set includeDisplayImage=true and chain the returned coverIds into get_asset_preview. TEXT FILTERS — these params accept inline operators (sampleCode, sampleName): Plain text = exact match (case-insensitive). Supports inline operators (case-insensitive): 'isNotEmpty' (has any value), 'isEmpty' (no value), 'contains:foo', 'notContains:foo', 'ne:foo' (not equal), 'eq:foo' (exact). E.g. to find records where this field has a value, pass 'isNotEmpty'.
 
 - **CF module:** Samples
 - **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
@@ -1512,7 +1520,7 @@ Search samples (physical product items) — track location, check-in/out status,
 **Parameters**
 
 <details>
-<summary>Show all 34 parameters</summary>
+<summary>Show all 35 parameters</summary>
 
 | Name | Type | Required | Description |
 |------|------|:--------:|-------------|
@@ -1548,6 +1556,7 @@ Search samples (physical product items) — track location, check-in/out status,
 | `groupByCustomProperty` | bool | no | Group by the value of customPropertyName — aggregation mode. Requires customPropertyName to be set. |
 | `groupByPeriod` | string | no | Time-bucket aggregation: day, week, or month. Pair with groupByPeriodField. Bucket boundaries follow the user's timezone. Provide the matching date range (checkedInDateFrom/To or checkedOutDateFrom/To) to bound the buckets; unbounded defaults to the last year. |
 | `groupByPeriodField` | string | no | Date field driving the time-bucket aggregation: checkedIn (default) or checkedOut. |
+| `includeDisplayImage` | bool | no | Include each sample's DISPLAY IMAGE — the photo the Samples grid shows for it. Returns a `displayImage.coverId` per sample (a stable id, NOT a url): chain those into get_asset_preview(fileIds=[…]) to actually SHOW the pictures. A sample has one from intake onward, before anything is shot. Costs one extra backend call, so leave it off unless the user wants to SEE the samples. Ignored in aggregation mode. |
 | `pageSize` | int | no | Max results (ignored in aggregation). |
 | `page` | int | no | Page (0-based, ignored in aggregation). |
 
@@ -1556,18 +1565,18 @@ Search samples (physical product items) — track location, check-in/out status,
 **Example input**
 
 ```json
-{ "checkInStatus": "CheckedIn", "location": "Shelf B2", "pageSize": 10 }
+{ "checkInStatus": "CheckedIn", "location": "Shelf B2", "includeDisplayImage": true, "pageSize": 10 }
 ```
 
 **Example output**
 
 ```json
-{ "total": 21, "hits": [ { "sampleId": "s1...", "sampleCode": "SMP-3001", "checkInStatus": "CheckedIn", "location": "Shelf B2" } ] }
+{ "total": 21, "hits": [ { "sampleId": "s1...", "sampleCode": "SMP-3001", "checkInStatus": "CheckedIn", "location": "Shelf B2", "displayImage": { "coverId": "6dd1fd14...", "idSpace": "fileId" } } ] }
 ```
 
 **Known limitations**
 
-The only tool that returns physical sample records. Check-in status values: WaitingForCheckingIn, CheckedIn, CheckedOut.
+The only tool that returns physical sample records. Check-in status values: WaitingForCheckingIn, CheckedIn, CheckedOut. DISPLAY IMAGE (opt-in, CPD-1537): set includeDisplayImage=true to get each row's Display Image — the representative photo the CF list grid shows for that item, available even when NOTHING has been shot yet. It returns `displayImage.coverId` (a STABLE id, NOT a viewable url) plus `displayImage.idSpace`; to SHOW the picture, batch the coverIds from every row into ONE get_asset_preview call using the param named by idSpace (idSpace='fileId' → get_asset_preview(fileIds=[…]); idSpace='assetId' → get_asset_preview(assetIds=[…])) — the two are NOT interchangeable and an id passed in the wrong one returns nothing. The flag defaults to false and costs one extra backend call per id space when on (nothing when off); it is ignored in aggregation mode, and enriches only the rows on the current page (pageSize bounds it — no cap error, no truncation). A row with NO `displayImage` has none set, or its id is unknown/inaccessible (the backend cannot tell those apart) — a NORMAL state, not an error — UNLESS `_partial` is present, which means the cover lookup itself failed and says nothing about whether the items have a photo. A sample's cover is always a fileId, and it exists from intake onward (pre-shoot).
 
 ---
 
