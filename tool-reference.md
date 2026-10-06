@@ -2,7 +2,7 @@
 
 # Creative Force MCP — Tool Reference
 
-> **42 tools** · Auth: OAuth 2.1
+> **47 tools** · Auth: OAuth 2.1
 
 | Module | Tools |
 |--------|-------|
@@ -12,7 +12,7 @@
 | Event Log | [`query_event_log`](#tool-query_event_log) |
 | Jobs | [`query_ecomm_job`](#tool-query_ecomm_job) |
 | Planning | [`create_planning_session`](#tool-create_planning_session), [`delete_planning_session`](#tool-delete_planning_session), [`query_planning`](#tool-query_planning), [`update_planning_session`](#tool-update_planning_session) |
-| Platform | [`send_feedback`](#tool-send_feedback) |
+| Platform | [`manage_studio_context_rule`](#tool-manage_studio_context_rule), [`propose_studio_context_rule`](#tool-propose_studio_context_rule), [`query_studio_context`](#tool-query_studio_context), [`query_studio_context_rule`](#tool-query_studio_context_rule), [`send_feedback`](#tool-send_feedback), [`update_studio_context_glossary`](#tool-update_studio_context_glossary) |
 | Production | [`query_ecomm_production`](#tool-query_ecomm_production) |
 | Products | [`query_ecomm_product_request`](#tool-query_ecomm_product_request) |
 | Properties | [`query_property`](#tool-query_property) |
@@ -274,6 +274,83 @@ Get the full definition of a single workflow (production pipeline template) by i
 **Known limitations**
 
 Fetch ONE workflow definition by id or name (use query_workflow to find the id); resolves the published version by default, auto-falling back to the draft when the published version is empty (includeDraft=true to force the draft). Human-readable by default — includeIds=true for raw ids/enums, raw=true for the untouched versionSettings, showDiagram=true only when the user explicitly wants the visual flow chart. If WorkflowManagementUrl points at internal-backend it may return empty — the public gateway is required. workflowTypeName enrichment currently resolves empty (only workflowTypeId is emitted).
+
+---
+
+<a id="tool-manage_studio_context_rule"></a>
+## `manage_studio_context_rule` — Manage Studio Context Rule
+
+The permitted-human gate over an EXISTING rule: apply (proposed-&gt;active), edit, retire (stop serving, keep history), reactivate (retired-&gt;active, same rule and history — no re-propose needed), or delete. Prefer retire over delete unless the rule was added in error. MANDATORY preview + explicit confirm. NEVER creates — that is propose_studio_context_rule, a SEPARATE permission: if it is unavailable to the user, say the 'Propose Studio Context Rule' permission is needed rather than attempting a create here.
+
+- **CF module:** Platform
+- **Read-only:** no · **Idempotent:** no · **Destructive:** yes
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `ruleId` | string | **yes** | Target rule id. |
+| `action` | string | **yes** | apply, edit, retire, reactivate, or delete. |
+| `name` | string | no | On edit: new name (&lt;=200 chars). |
+| `scope` | string | no | On edit: new scope label — WHEN the rule must be read, named in the user's terms (the topic those questions share, or the action itself when they share no topic), not the tool it touches (&lt;=200 chars). |
+| `workspaces` | JsonElement? | no | On edit: new workspace/brand NAMES, as an array — one rule can cover several brands, and this REPLACES the whole set rather than adding to it. Omit to leave the current scope untouched; pass [] to make it studio-wide. Every name must be a workspace you work in; if any is not, the whole call is refused rather than the rule being written with that one dropped. |
+| `strictness` | string | no | On edit: must-follow, should-follow, or good-to-have. |
+| `body` | string | no | On edit: new rule text (&lt;=4000 chars), in the same TWO LAYERS as a proposed rule — and, when strictness is must-follow and the rule narrows something a tool's own description presents as allowed, still opening with the 'IMPORTANT' line declaring that it overrides those tool descriptions. Keep that line: without it a parameter description outranks the rule in practice, so removing it silently turns a must-follow rule back into one the assistant overrides without noticing. Then the requirement in business vocabulary (keeping step, status and role names, and covering the cases that look like the rule does not apply), then a closing paragraph opening with the literal words 'Technical note:' holding the tool and parameter names. An edit REPLACES the whole text, so re-state both layers and keep that label: dropping the first layer makes the rule unreviewable by the non-technical person who approved it, dropping the second leaves a principle the assistant has to translate, and dropping the label leaves an approver reading identifiers to find out whether the rest still concerns them. Changing this REQUIRES shortDescription too. |
+| `shortDescription` | string | no | On edit: new one-line summary (&lt;=500 chars), shown in the LIST. REQUIRED when you change body, so the summary still matches. Omit to leave it untouched; empty string clears it. |
+
+**Example input**
+
+```json
+{ "ruleId": "c5e8...", "action": "apply" }
+```
+
+**Example output**
+
+```json
+{ "ruleId": "c5e8...", "action": "apply", "fromStatus": "proposed", "toStatus": "active", "updatedUtc": "2026-08-25T09:00:00Z" }
+```
+
+**Known limitations**
+
+The permitted-human gate over an EXISTING rule: apply (proposed-&gt;active), edit (an active rule), retire (active-&gt;retired, stop serving but keep history), reactivate (retired-&gt;active, turn a rule back on without re-proposing — same rule/id/history), or delete (remove entirely). Prefer retire over delete for a rule that was once true. Show the user a preview and get an explicit confirm before calling.
+
+---
+
+<a id="tool-propose_studio_context_rule"></a>
+## `propose_studio_context_rule` — Propose Studio Context Rule
+
+Create a NEW house rule as PROPOSED, or edit a still-proposed rule you authored (editing an ACTIVE rule is manage_studio_context_rule). Proposed rules are never served to the AI until a permitted human applies them, which is what makes this safe for AI-drafted rules. MANDATORY: show the full draft and get an explicit 'yes' first. PROACTIVE USE — offer without being asked when the user states a DURABLE studio convention in passing (a naming pattern, a step they always or never do, a threshold, a module they don't use): show a draft in their own words and wait for a 'yes'. Not for one-off instructions, and never re-offer something already declined.
+
+- **CF module:** Platform
+- **Read-only:** no · **Idempotent:** no · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `name` | string | **yes** | Rule name (&lt;=200 chars), e.g. 'Copywriting file naming'. |
+| `scope` | string | **yes** | Free-text label answering WHEN this rule must be read, in the user's terms — not the tool, module or screen it happens to touch (&lt;=200 chars). Derive it by asking which questions would go wrong if the rule were missed, then name what those questions have in common: a topic when they share a subject (e.g. 'copywriting'), or the action itself when they do not (a rule constraining how something is identified, named or filtered applies across every subject, so name the action). A label too broad pulls the rule into unrelated questions; too narrow and it is skipped where it applies. Rules sharing a label are always fetched together, so reuse one only for rules that genuinely belong together. |
+| `strictness` | string | **yes** | must-follow, should-follow, or good-to-have. |
+| `body` | string | **yes** | The full rule text (&lt;=4000 chars) — what to do AND why, in TWO LAYERS, because two different readers use it. FIRST, when strictness is must-follow AND the rule narrows something a tool's own description presents as allowed, the body MUST open with a line starting 'IMPORTANT' stating that the rule overrides those tool descriptions, and naming what it overrides. Without it the rule loses: a parameter description is more specific and comes from the tool being called, so a model takes it as the more authoritative of the two and proceeds believing it complied, never registering a conflict. Repeat the precedence in the technical note, against the specific parameter. Layer 1, the requirement in the studio's own words: a non-technical person APPROVES this rule and must be able to judge it without reading API identifiers, so state it in business vocabulary — step, status and role names BELONG here and must not be moved out or generalised away, since a rule stripped of them is vague rather than reviewable. Where the rule guards against a case that looks fine on the surface, say what to do in that exact case too — a reader who finds the data clean will otherwise read the rule as not applying. Spell out the fallback as well as the main path, so no branch is left to interpretation. Layer 2, a closing paragraph that MUST open with the literal words 'Technical note:' — the label is how a non-technical approver knows they can stop reading, so write it even when the note is one sentence. It holds the concrete call — the tool and parameter names, and what to do when the call returns nothing usable — never a principle the reader has to translate into one. Keep the identifiers in this layer only, so nothing above the label needs them. When the workspaces field is set, do not mention any workspace or brand in the text at all — not as a condition, not as part of an instruction. That field already scopes the rule, and a workspace named in the text reads as a condition the reader cannot verify (they have no reliable way to tell which workspace the record in front of them belongs to), so the rule gets skipped. Write the text as if it is addressed to someone already working in those workspaces. |
+| `ruleId` | string | no | Omit to create. Provide to edit a still-proposed rule you authored. |
+| `workspaces` | JsonElement? | no | Workspace/brand NAMES this rule is served to, as an array — one rule can cover several brands. Omit or pass [] for studio-wide. Every name must be a workspace you work in; if any is not, the whole call is refused rather than the rule being written with that one dropped. On edit this tool REPLACES the whole draft, so omitting it clears the existing workspaces rather than keeping them (unlike manage_studio_context_rule, where omit means leave untouched). |
+| `shortDescription` | string | no | One-line summary (&lt;=500 chars), e.g. 'How delivered copy files are named'. Shown in the LIST so rules can be scanned without fetching bodies — write one whenever the name alone does not say what the rule covers. Required when editing a rule that already has one. |
+
+**Example input**
+
+```json
+{ "name": "Copywriting file naming", "scope": "copywriting", "strictness": "must-follow", "body": "Output files MUST be named ABC-{season}-{styleCode}. Why: TJX ingest keys on this.", "shortDescription": "How delivered copy files are named", "workspaces": ["Levi's", "Dockers"] }
+```
+
+**Example output**
+
+```json
+{ "status": "proposed", "ruleId": "c5e8...", "preview": { "name": "Copywriting file naming", "scope": "copywriting", "strictness": "must-follow", "status": "proposed" } }
+```
+
+**Known limitations**
+
+Creates a rule in PROPOSED status (never served to the AI until a human applies it via manage_studio_context_rule) — safe for AI-drafted rules. Provide ruleId to edit an existing rule ONLY if it is still proposed AND you proposed it; editing an active rule is refused (use manage_studio_context_rule). Show the user the full proposed rule and get an explicit yes before calling.
 
 ---
 
@@ -1680,6 +1757,72 @@ Opens ONE Talent & Crew short list and returns its contained talent + each talen
 
 ---
 
+<a id="tool-query_studio_context"></a>
+## `query_studio_context` — Query Studio Context
+
+MANDATORY FIRST STEP: call once at the start of every session, before any other tool. Returns a conversationId that every other tool requires — pass it verbatim on every subsequent call. Also returns studioContext: this studio's house rules as a LIST (no bodies) plus vocabulary and do-not-use modules in full; null when nothing is configured, or {"unavailable":true} when the rules could not be LOADED (a failure, not an empty configuration — say so). For any rule whose scope matches the question, call query_studio_context_rule for its body before answering.
+
+- **CF module:** Platform
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `conversationId` | string | no | An existing conversationId from earlier in this conversation. Leave empty to start a new session. |
+| `includeProposed` | bool | no | True ONLY when reviewing rules awaiting approval, or when a user asks about a rule THEY proposed. Adds a separate proposedRules[] (with ids) for applying via manage_studio_context_rule. Manage permission sees all; otherwise only your own. |
+| `includeRetired` | bool | no | True ONLY when the user asks about RETIRED rules (history) or wants one brought back. Adds a separate retiredRules[] (with ids). Manage permission sees all; otherwise only your own. |
+
+**Example input**
+
+```json
+{}
+```
+
+**Example output**
+
+```json
+{ "conversationId": "<opaque session token returned here>", "studioContext": { "vocabulary": [ { "term": "PC9", "means": "product" } ], "doNotUseModules": [ { "module": "Editorial", "note": "enabled but unused — don't query unless asked" } ], "rules": [ { "id": "3f9a...", "name": "Copywriting file naming", "shortDescription": "How delivered copy files are named", "scope": "copywriting", "workspace": "Levi's", "strictness": "must-follow", "status": "active", "updatedBy": "Jane Doe", "updatedUtc": "2026-08-14T10:00:00Z" } ] } }
+```
+
+**Known limitations**
+
+Call once at the start of every session, before any other tool — every other tool declares a required conversationId parameter that this tool mints. The server never validates the value: passing an empty string still works (no lock-out), it only skips session correlation in analytics. studioContext is the studio's 'How We Work' rules as a LIST (no rule bodies) plus vocabulary + do-not-use modules in full; it is null when the studio has configured nothing. If studioContext comes back as {"unavailable": true} instead, the rules could NOT be loaded — that is a backend failure, not an empty configuration: say so rather than implying the studio has no rules. The rule list is already filtered to the workspaces you belong to (studio-wide + your own brands). For any rule whose scope matches the question, call query_studio_context_rule to read its body — the list never carries bodies. Pass includeProposed=true ONLY when a permitted reviewer is approving a proposed rule — it adds a separate proposedRules[] (each with its id, for manage_studio_context_rule action=apply), gated to callers with the manage permission; proposed rules are never active and must not be followed.
+
+---
+
+<a id="tool-query_studio_context_rule"></a>
+## `query_studio_context_rule` — Query Studio Context Rule
+
+Fetch the FULL body of one or more house rules by id. Call it for every rule whose scope matches the question (ids come from query_studio_context -&gt; studioContext.rules; this tool does not resolve rules by name). Rules resolve regardless of status, so a reviewer can read a PROPOSED rule before applying it — read it to review, do not follow it. Unknown or out-of-scope ids come back in notFound.
+
+- **CF module:** Platform
+- **Read-only:** yes · **Idempotent:** yes · **Destructive:** no
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `ruleIds` | JsonElement? | no | REQUIRED — a JSON array of rule id strings from query_studio_context (studioContext.rules[].id); a single id string also works. Batch all in-scope rules into one call. |
+
+**Example input**
+
+```json
+{ "ruleIds": [ "3f9a1c2e-..." ] }
+```
+
+**Example output**
+
+```json
+{ "rules": [ { "id": "3f9a1c2e-...", "name": "Copywriting file naming", "scope": "copywriting", "workspace": "Levi's", "strictness": "must-follow", "status": "active", "body": "Copywriting output files MUST be named ABC-{season}-{styleCode}. Why: the TJX ingestion pipeline keys on this pattern.", "updatedBy": "Jane Doe", "updatedUtc": "2026-08-14T10:00:00Z" } ], "notFound": [] }
+```
+
+**Known limitations**
+
+id-only (no name resolution) — pass ruleIds from the query_studio_context list. Rules resolve by id REGARDLESS of status, so a reviewer can read the body of a proposed rule before applying it; each record carries its status, and a proposed or retired rule is not an active instruction. Rules outside your workspace(s) come back in notFound, indistinguishable from an id that does not exist. Read-only; gated on the McpStudioContext per-studio opt-in. At most 100 ruleIds are sent per request (larger sets are split automatically).
+
+---
+
 <a id="tool-query_styleguide"></a>
 ## `query_styleguide` — Query Style Guide
 
@@ -2090,6 +2233,40 @@ Update an existing planning session (a scheduled production shoot). **This is a 
 **Known limitations**
 
 Write tool — targeted partial update; only the fields you pass change. Id-only (find the session with query_planning first). For crew/time-slot edits pass the current state from that query (`currentTeamMembers` / `timeSlots` with their ids) — the tool never re-reads the session. Production items: `productionItemOps` assigns/removes/moves existing production items (work units) — the assignment link only, never the item's own workflow/status (get ids from query_ecomm_production; op add for an unassigned item, move only when it's on another session); production-type compatibility is enforced by the backend and rejected ids come back as a warning. Clears via a sentinel string (location "No set", producer "", color "none"). Verify from the returned `changes` map — do NOT re-query. Booking/hold status is NOT settable (separate flow, blocked by CPD-554). Requires McpWritePlanning (Access) + PlanningView (Write).
+
+---
+
+<a id="tool-update_studio_context_glossary"></a>
+## `update_studio_context_glossary` — Update Studio Context Glossary
+
+The ONLY tool that writes vocabulary terms and do-not-use modules, deletes included (manage_studio_context_rule is for RULES only). One target (term|module) and one action (set|remove) per call — mixing either needs separate calls. Takes effect immediately; there is no propose/apply step. KEY IS THE IDENTITY — there is no id: action=set on an existing key EDITS it in place, so correcting a meaning is just setting the same key again. A key spelled differently is a DIFFERENT entry, so set never renames — fixing a misspelled key is remove (old) then set (new). If the user says a term is wrong, ask whether they mean the MEANING or the TERM ITSELF. MANDATORY: show the exact entries and get an explicit 'yes' first.
+
+- **CF module:** Platform
+- **Read-only:** no · **Idempotent:** no · **Destructive:** yes
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|------|------|:--------:|-------------|
+| `target` | string | **yes** | term or module. |
+| `action` | string | **yes** | set (add, or edit by passing an existing key) or remove. A rename is remove + set. |
+| `entries` | string | **yes** | JSON array: [{"key":"PC9","value":"product"}, ...]. `key` identifies the entry — when editing, copy it EXACTLY as query_studio_context shows it. `value` is the meaning (term) or note (module): required on set, omit on remove. Max 100 entries; key &lt;= 200 chars, value &lt;= 4000. |
+
+**Example input**
+
+```json
+{ "target": "term", "action": "set", "entries": "[{\"key\":\"PC9\",\"value\":\"product\"},{\"key\":\"Shot Matrix\",\"value\":\"style guide\"}]" }
+```
+
+**Example output**
+
+```json
+{ "target": "term", "action": "set", "results": [ { "key": "PC9", "ok": true, "entry": { "term": "PC9", "means": "product" } } ] }
+```
+
+**Known limitations**
+
+The ONLY tool that writes vocabulary terms and do-not-use modules — including deleting them (manage_studio_context_rule is for rules only). One call handles ONE target (term|module) and ONE action (set|remove); entries is a JSON array of {key,value} (value = meaning for a term / note for a module; omit on remove). value is REQUIRED and non-empty on action=set. Batch up to 100 entries in one call (key &lt;= 200 chars, value &lt;= 4000); mix term/module or set/remove across separate calls. The key (the term or module name itself) IS the entry's identity — there is no id — so action=set with an existing key EDITS that entry in place, while a differently-spelled key adds a separate entry rather than renaming: fixing a misspelled key is action=remove on the old one plus action=set on the new one. No propose/apply — takes effect immediately. Per-entry ok/error in results.
 
 ---
 
